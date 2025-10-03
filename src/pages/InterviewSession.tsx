@@ -108,7 +108,7 @@ const InterviewSession = () => {
   const [showSidePanel, setShowSidePanel] = useState(false);
   const [notes, setNotes] = useState("");
   const [questionHistory, setQuestionHistory] = useState<Question[]>([]);
-  const [thinkingTime, setThinkingTime] = useState(30); // 30 seconds thinking time
+  const [thinkingTime, setThinkingTime] = useState(10); // 10 seconds thinking time
 
   // Get config and type from location state, with sessionStorage fallback
   const config =
@@ -159,7 +159,7 @@ const InterviewSession = () => {
       text: "Tell me about yourself and your background.",
       category: "Introduction",
       difficulty: 1,
-      thinkingTime: 30,
+      thinkingTime: 10,
     },
     {
       id: "2",
@@ -194,7 +194,7 @@ const InterviewSession = () => {
       text: "Where do you see yourself in 5 years?",
       category: "Career Goals",
       difficulty: 2,
-      thinkingTime: 30,
+      thinkingTime: 10,
     },
     {
       id: "7",
@@ -208,7 +208,7 @@ const InterviewSession = () => {
       text: "What questions do you have for us?",
       category: "Questions",
       difficulty: 1,
-      thinkingTime: 30,
+      thinkingTime: 10,
     },
   ];
 
@@ -671,7 +671,7 @@ const InterviewSession = () => {
         ...prev,
         currentQuestion: prev.currentQuestion + 1,
       }));
-      setThinkingTime(30); // Reset thinking time
+      setThinkingTime(10); // Reset thinking time
 
       // Add current question to history
       if (currentQuestion) {
@@ -937,7 +937,7 @@ const InterviewSession = () => {
                 {thinkingTime > 0 && (
                   <div className="space-y-2">
                     <Progress
-                      value={(thinkingTime / 30) * 100}
+                      value={(thinkingTime / 10) * 100}
                       className="h-2"
                     />
                     <p className="text-sm text-muted-foreground text-center">

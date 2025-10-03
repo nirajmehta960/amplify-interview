@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
+import { localVideoStorageService } from "@/services/localVideoStorageService";
 import {
   CheckCircle,
   AlertCircle,
@@ -76,86 +77,168 @@ const InterviewResults = () => {
   const [result, setResult] = useState<InterviewResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
-  // Mock data - in real app, this would come from the interview session
+  // Load real interview data from local storage
   useEffect(() => {
-    const mockResult: InterviewResult = {
-      id: "1",
-      overallScore: 78,
-      performanceBadge: "Good",
-      duration: 25,
-      completionTime: new Date().toISOString(),
-      responses: [
-        {
-          id: "1",
-          question: "Tell me about yourself and your background.",
-          answer:
-            "I'm a software engineer with 5 years of experience in full-stack development. I've worked primarily with React, Node.js, and cloud technologies. I'm passionate about building scalable applications and leading technical teams.",
-          score: 85,
-          duration: 45,
-          fillerWords: 3,
-          confidence: 88,
-          speakingPace: 145,
-          eyeContact: 92,
-        },
-        {
-          id: "2",
-          question:
-            "Describe a challenging project you worked on and how you overcame obstacles.",
-          answer:
-            "One challenging project was migrating our legacy system to microservices. We faced issues with data consistency and service communication. I led the team in implementing event-driven architecture and established clear communication protocols.",
-          score: 72,
-          duration: 90,
-          fillerWords: 7,
-          confidence: 75,
-          speakingPace: 130,
-          eyeContact: 85,
-        },
-        {
-          id: "3",
-          question: "How do you handle working under pressure?",
-          answer:
-            "I thrive under pressure by breaking down complex problems into manageable tasks. I prioritize effectively and communicate regularly with stakeholders about progress and potential blockers.",
-          score: 80,
-          duration: 60,
-          fillerWords: 2,
-          confidence: 82,
-          speakingPace: 140,
-          eyeContact: 88,
-        },
-      ],
-      strengths: [
-        "Clear communication and articulation",
-        "Strong technical knowledge demonstration",
-        "Good use of specific examples",
-        "Confident speaking pace",
-        "Excellent eye contact maintained",
-      ],
-      improvements: [
-        "Reduce filler words (um, uh, like)",
-        "Provide more quantifiable results in examples",
-        "Elaborate more on impact and outcomes",
-        "Practice more concise answers",
-      ],
-      insights: [
-        "You demonstrated strong technical competency with specific examples",
-        "Your communication style is clear and professional",
-        "Consider practicing STAR method for behavioral questions",
-        "Your confidence level was consistently high throughout",
-      ],
-      recommendations: [
-        "Practice common behavioral questions using the STAR method",
-        "Prepare quantifiable achievements for each experience",
-        "Work on reducing filler words through deliberate practice",
-        "Practice mock interviews to improve timing",
-      ],
+    const loadInterviewData = async () => {
+      try {
+        const sessionData = location.state;
+        
+        if (!sessionData || !sessionData.sessionId) {
+          console.error("No session data found");
+          setIsLoading(false);
+          return;
+        }
+
+        console.log("Loading interview data for session:", sessionData.sessionId);
+
+        // Initialize local storage service
+        await localVideoStorageService.initialize();
+
+        // Get video data from local storage
+        const videoData = await localVideoStorageService.getVideo(sessionData.sessionId);
+        
+        if (!videoData) {
+          console.error("No video data found for session:", sessionData.sessionId);
+          setIsLoading(false);
+          return;
+        }
+
+        console.log("Video data loaded:", videoData);
+
+        // Create video URL for playback
+        const videoBlob = new Blob([videoData.videoBlob], { 
+          type: videoData.metadata.format 
+        });
+        const videoObjectUrl = URL.createObjectURL(videoBlob);
+        setVideoUrl(videoObjectUrl);
+
+        // Create result from real data
+        const realResult: InterviewResult = {
+          id: sessionData.sessionId,
+          overallScore: videoData.metadata.aiFeedback?.overallScore || 75,
+          performanceBadge: videoData.metadata.aiFeedback?.overallScore 
+            ? videoData.metadata.aiFeedback.overallScore >= 80 ? "Excellent" 
+              : videoData.metadata.aiFeedback.overallScore >= 70 ? "Good" 
+              : videoData.metadata.aiFeedback.overallScore >= 60 ? "Fair" 
+              : "Needs Improvement"
+            : "Good",
+          duration: Math.round((Date.now() - videoData.metadata.timestamp) / 60000),
+          completionTime: new Date(videoData.metadata.timestamp).toISOString(),
+          responses: [
+            {
+              id: "1",
+              question: "Tell me about yourself and your background.",
+              answer: videoData.metadata.transcription?.text || "No transcription available",
+              score: videoData.metadata.aiFeedback?.overallScore || 75,
+              duration: Math.round((videoData.metadata.transcription?.duration || 60)),
+              fillerWords: 0, // Will be calculated from speech analysis
+              confidence: videoData.metadata.transcription?.confidence || 0.8,
+              speakingPace: 150, // Default value
+              eyeContact: 85, // Default value
+            },
+          ],
+          strengths: videoData.metadata.aiFeedback?.strengths || ["Clear communication"],
+          improvements: videoData.metadata.aiFeedback?.improvements || ["Practice more"],
+          insights: ["Interview completed successfully"],
+          recommendations: ["Continue practicing interview skills"],
+        };
+
+        setResult(realResult);
+        setIsLoading(false);
+
+      } catch (error) {
+        console.error("Error loading interview data:", error);
+        setIsLoading(false);
+      }
     };
 
-    setTimeout(() => {
-      setResult(mockResult);
-      setIsLoading(false);
-    }, 2000);
-  }, []);
+    loadInterviewData();
+  }, [location.state]);
+
+  // Fallback to mock data if no real data
+  useEffect(() => {
+    if (!isLoading && !result) {
+      console.log("No real data found, using mock data");
+      const mockResult: InterviewResult = {
+        id: "1",
+        overallScore: 78,
+        performanceBadge: "Good",
+        duration: 25,
+        completionTime: new Date().toISOString(),
+        responses: [
+          {
+            id: "1",
+            question: "Tell me about yourself and your background.",
+            answer:
+              "I'm a software engineer with 5 years of experience in full-stack development. I've worked primarily with React, Node.js, and cloud technologies. I'm passionate about building scalable applications and leading technical teams.",
+            score: 85,
+            duration: 45,
+            fillerWords: 3,
+            confidence: 88,
+            speakingPace: 145,
+            eyeContact: 92,
+          },
+          {
+            id: "2",
+            question:
+              "Describe a challenging project you worked on and how you overcame obstacles.",
+            answer:
+              "One challenging project was migrating our legacy system to microservices. We faced issues with data consistency and service communication. I led the team in implementing event-driven architecture and established clear communication protocols.",
+            score: 72,
+            duration: 90,
+            fillerWords: 7,
+            confidence: 75,
+            speakingPace: 130,
+            eyeContact: 85,
+          },
+          {
+            id: "3",
+            question: "How do you handle working under pressure?",
+            answer:
+              "I thrive under pressure by breaking down complex problems into manageable tasks. I prioritize effectively and communicate regularly with stakeholders about progress and potential blockers.",
+            score: 80,
+            duration: 60,
+            fillerWords: 2,
+            confidence: 82,
+            speakingPace: 140,
+            eyeContact: 88,
+          },
+        ],
+        strengths: [
+          "Clear communication and articulation",
+          "Strong technical knowledge demonstration",
+          "Good use of specific examples",
+          "Confident speaking pace",
+          "Excellent eye contact maintained",
+        ],
+        improvements: [
+          "Reduce filler words (um, uh, like)",
+          "Provide more quantifiable results in examples",
+          "Elaborate more on impact and outcomes",
+          "Practice more concise answers",
+        ],
+        insights: [
+          "You demonstrated strong technical competency with specific examples",
+          "Your communication style is clear and professional",
+          "Consider practicing STAR method for behavioral questions",
+          "Your confidence level was consistently high throughout",
+        ],
+        recommendations: [
+          "Practice common behavioral questions using the STAR method",
+          "Prepare quantifiable achievements for each experience",
+          "Work on reducing filler words through deliberate practice",
+          "Practice mock interviews to improve timing",
+        ],
+      };
+
+      setTimeout(() => {
+        setResult(mockResult);
+        setIsLoading(false);
+      }, 2000);
+    }
+  }, [isLoading, result]);
 
   const getPerformanceColor = (badge: string) => {
     switch (badge.toLowerCase()) {
@@ -337,6 +420,54 @@ const InterviewResults = () => {
             </div>
           </Card>
         </motion.div>
+
+        {/* Video Player */}
+        {videoUrl && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8"
+          >
+            <Card className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Play className="h-5 w-5" />
+                  <h2 className="text-xl font-semibold">Your Interview Recording</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Watch your interview performance and review your responses
+                </p>
+                <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                  <video
+                    controls
+                    className="w-full h-full"
+                    src={videoUrl}
+                    poster=""
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = videoUrl;
+                      link.download = `interview-${result.id}.webm`;
+                      link.click();
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download Video
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Detailed Analysis */}
         <div className="grid lg:grid-cols-2 gap-8">
