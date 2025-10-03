@@ -8,6 +8,10 @@ import { aiFeedbackService } from "@/services/aiFeedbackService";
 import { videoStorageService } from "@/services/videoStorageService";
 import { localVideoStorageService } from "@/services/localVideoStorageService";
 import {
+  getQuestionsForInterview,
+  Question,
+} from "@/services/questionBankService";
+import {
   Clock,
   Pause,
   X,
@@ -56,14 +60,6 @@ interface InterviewState {
   cameraOn: boolean;
 }
 
-interface Question {
-  id: string;
-  text: string;
-  category: string;
-  difficulty: number;
-  thinkingTime: number;
-}
-
 const InterviewSession = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -90,8 +86,8 @@ const InterviewSession = () => {
   const [interviewState, setInterviewState] = useState<InterviewState>({
     status: "preparing",
     currentQuestion: 1,
-    totalQuestions: 8,
-    timeRemaining: 30 * 60, // 30 minutes in seconds
+    totalQuestions: 8, // Will be updated from config
+    timeRemaining: 30 * 60, // Will be updated from config
     isPaused: false,
     isRecording: false,
     isMuted: false,
@@ -141,6 +137,18 @@ const InterviewSession = () => {
     }
   }, [config, interviewType, navigate]);
 
+  // Initialize interview state from config
+  useEffect(() => {
+    if (config) {
+      console.log("Initializing interview state from config:", config);
+      setInterviewState((prev) => ({
+        ...prev,
+        totalQuestions: config.questionCount,
+        timeRemaining: config.duration * 60, // Convert minutes to seconds
+      }));
+    }
+  }, [config]);
+
   // Watch for videoRef to become available and set mediaStream
   const [videoElementReady, setVideoElementReady] = useState(false);
 
@@ -152,65 +160,39 @@ const InterviewSession = () => {
     }
   }, [videoElementReady]);
 
-  // Mock questions - in real app, these would come from your backend
-  const questions: Question[] = [
-    {
-      id: "1",
-      text: "Tell me about yourself and your background.",
-      category: "Introduction",
-      difficulty: 1,
-      thinkingTime: 10,
-    },
-    {
-      id: "2",
-      text: "Describe a challenging project you worked on and how you overcame obstacles.",
-      category: "Experience",
-      difficulty: 3,
-      thinkingTime: 60,
-    },
-    {
-      id: "3",
-      text: "How do you handle working under pressure?",
-      category: "Behavioral",
-      difficulty: 2,
-      thinkingTime: 45,
-    },
-    {
-      id: "4",
-      text: "What are your greatest strengths and how do they help you in your work?",
-      category: "Strengths",
-      difficulty: 2,
-      thinkingTime: 45,
-    },
-    {
-      id: "5",
-      text: "Tell me about a time when you had to work with a difficult team member.",
-      category: "Teamwork",
-      difficulty: 3,
-      thinkingTime: 60,
-    },
-    {
-      id: "6",
-      text: "Where do you see yourself in 5 years?",
-      category: "Career Goals",
-      difficulty: 2,
-      thinkingTime: 10,
-    },
-    {
-      id: "7",
-      text: "Describe a situation where you had to learn something new quickly.",
-      category: "Learning",
-      difficulty: 2,
-      thinkingTime: 45,
-    },
-    {
-      id: "8",
-      text: "What questions do you have for us?",
-      category: "Questions",
-      difficulty: 1,
-      thinkingTime: 10,
-    },
-  ];
+  // State for questions
+  const [questions, setQuestions] = useState<Question[]>([]);
+
+  // Load questions based on configuration
+  useEffect(() => {
+    const loadQuestions = async () => {
+      if (config && interviewType) {
+        try {
+          const allQuestions = await getQuestionsForInterview(
+            interviewType.id,
+            config.useCustomQuestions,
+            config.customQuestions,
+            config.selectedField
+          );
+
+          // Limit questions to the configured count
+          const limitedQuestions = allQuestions.slice(0, config.questionCount);
+          setQuestions(limitedQuestions);
+
+          console.log(
+            `Loaded ${limitedQuestions.length} questions for ${interviewType.id}`
+          );
+        } catch (error) {
+          console.error("Error loading questions:", error);
+          setQuestions([]);
+        }
+      } else {
+        setQuestions([]);
+      }
+    };
+
+    loadQuestions();
+  }, [config, interviewType]);
 
   const currentQuestion = questions[interviewState.currentQuestion - 1];
 
@@ -752,8 +734,10 @@ const InterviewSession = () => {
 
   const progress =
     (interviewState.currentQuestion / interviewState.totalQuestions) * 100;
+  const totalTimeSeconds = config?.duration ? config.duration * 60 : 30 * 60;
   const timeProgress =
-    ((30 * 60 - interviewState.timeRemaining) / (30 * 60)) * 100;
+    ((totalTimeSeconds - interviewState.timeRemaining) / totalTimeSeconds) *
+    100;
 
   if (interviewState.status === "preparing") {
     return (
@@ -1183,7 +1167,7 @@ const InterviewSession = () => {
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {Math.round(
-                        (interviewState.timeRemaining / (30 * 60)) * 100
+                        (interviewState.timeRemaining / totalTimeSeconds) * 100
                       )}
                       % remaining
                     </p>

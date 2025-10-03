@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -21,6 +21,7 @@ import {
   Globe,
   Target,
   Loader2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -49,6 +50,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { getAvailableFields, type Field } from "@/services/questionBankService";
 
 interface InterviewType {
   id: string;
@@ -62,13 +64,11 @@ interface InterviewType {
 
 interface InterviewConfig {
   type: string;
-  difficulty: number;
   duration: number;
-  industry: string;
   questionCount: number;
-  aiFollowUp: boolean;
-  focusAreas: string[];
-  language: string;
+  useCustomQuestions: boolean;
+  customQuestions: string[];
+  selectedField?: string; // For custom interview type
 }
 
 const InterviewSetup = () => {
@@ -76,11 +76,11 @@ const InterviewSetup = () => {
   const { toast } = useToast();
 
   const [selectedType, setSelectedType] = useState<string>("");
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [cameraTest, setCameraTest] = useState(false);
   const [audioTest, setAudioTest] = useState(false);
+  const [newCustomQuestion, setNewCustomQuestion] = useState("");
   const [checklistItems, setChecklistItems] = useState({
     cameraAudio: false,
     environment: false,
@@ -90,13 +90,11 @@ const InterviewSetup = () => {
 
   const [config, setConfig] = useState<InterviewConfig>({
     type: "",
-    difficulty: 3,
-    duration: 30,
-    industry: "",
-    questionCount: 8,
-    aiFollowUp: true,
-    focusAreas: [],
-    language: "en",
+    duration: 15,
+    questionCount: 4,
+    useCustomQuestions: false,
+    customQuestions: [],
+    selectedField: "",
   });
 
   const interviewTypes: InterviewType[] = [
@@ -142,38 +140,21 @@ const InterviewSetup = () => {
     },
   ];
 
-  const industries = [
-    "Technology",
-    "Finance",
-    "Healthcare",
-    "Education",
-    "Marketing",
-    "Sales",
-    "Design",
-    "Consulting",
-    "Non-profit",
-    "Government",
-  ];
-
-  const focusAreas = [
-    "Communication",
-    "Problem Solving",
-    "Leadership",
-    "Technical Skills",
-    "Teamwork",
-    "Time Management",
-    "Adaptability",
-    "Creativity",
-  ];
-
-  const languages = [
-    { code: "en", name: "English" },
-    { code: "es", name: "Spanish" },
-    { code: "fr", name: "French" },
-    { code: "de", name: "German" },
-  ];
-
   const durations = [15, 30, 45, 60];
+  const [availableFields, setAvailableFields] = useState<Field[]>([]);
+
+  // Load available fields on component mount
+  useEffect(() => {
+    const loadFields = async () => {
+      try {
+        const fields = await getAvailableFields();
+        setAvailableFields(fields);
+      } catch (error) {
+        console.error("Error loading fields:", error);
+      }
+    };
+    loadFields();
+  }, []);
 
   const handleTypeSelect = (typeId: string) => {
     const type = interviewTypes.find((t) => t.id === typeId);
@@ -181,17 +162,25 @@ const InterviewSetup = () => {
     setConfig((prev) => ({
       ...prev,
       type: typeId,
-      duration: type?.estimatedDuration.includes("45-60") ? 45 : 30,
-      questionCount: type?.questionCount || 8,
+      duration: prev.duration, // Keep user's duration selection
+      questionCount: prev.questionCount, // Keep user's question count selection
     }));
   };
 
-  const handleFocusAreaToggle = (area: string) => {
+  const handleCustomQuestionAdd = () => {
+    if (newCustomQuestion.trim()) {
+      setConfig((prev) => ({
+        ...prev,
+        customQuestions: [...prev.customQuestions, newCustomQuestion.trim()],
+      }));
+      setNewCustomQuestion("");
+    }
+  };
+
+  const handleCustomQuestionRemove = (index: number) => {
     setConfig((prev) => ({
       ...prev,
-      focusAreas: prev.focusAreas.includes(area)
-        ? prev.focusAreas.filter((a) => a !== area)
-        : [...prev.focusAreas, area],
+      customQuestions: prev.customQuestions.filter((_, i) => i !== index),
     }));
   };
 
@@ -247,6 +236,28 @@ const InterviewSetup = () => {
       toast({
         title: "Select Interview Type",
         description: "Please choose an interview type to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (
+      selectedType === "custom" &&
+      !config.useCustomQuestions &&
+      !config.selectedField
+    ) {
+      toast({
+        title: "Select Field",
+        description: "Please select a field for your custom interview.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (config.useCustomQuestions && config.customQuestions.length === 0) {
+      toast({
+        title: "Add Custom Questions",
+        description: "Please add at least one custom question to continue.",
         variant: "destructive",
       });
       return;
@@ -416,33 +427,149 @@ const InterviewSetup = () => {
               </h2>
 
               <Card className="p-6 space-y-6">
-                {/* Difficulty Slider */}
+                {/* Question Source Selection */}
                 <div className="space-y-3">
-                  <Label className="text-sm font-medium">
-                    Difficulty Level
-                  </Label>
-                  <div className="space-y-2">
-                    <Slider
-                      value={[config.difficulty]}
-                      onValueChange={(value) =>
-                        setConfig((prev) => ({ ...prev, difficulty: value[0] }))
+                  <Label className="text-sm font-medium">Question Source</Label>
+                  <div className="flex gap-4">
+                    <Button
+                      variant={
+                        !config.useCustomQuestions ? "default" : "outline"
                       }
-                      max={5}
-                      min={1}
-                      step={1}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Beginner</span>
-                      <span>Expert</span>
-                    </div>
-                    <div className="flex justify-center">
-                      <Badge variant="outline" className="text-sm">
-                        Level {config.difficulty}
-                      </Badge>
-                    </div>
+                      size="sm"
+                      onClick={() =>
+                        setConfig((prev) => ({
+                          ...prev,
+                          useCustomQuestions: false,
+                        }))
+                      }
+                      className="flex-1"
+                    >
+                      Use App Default Questions
+                    </Button>
+                    <Button
+                      variant={
+                        config.useCustomQuestions ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() =>
+                        setConfig((prev) => ({
+                          ...prev,
+                          useCustomQuestions: true,
+                        }))
+                      }
+                      className="flex-1"
+                    >
+                      Use My Custom Questions
+                    </Button>
                   </div>
                 </div>
+
+                {/* Field Selection for Custom Interview Type */}
+                {selectedType === "custom" && !config.useCustomQuestions && (
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">
+                      Select Your Field
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {availableFields.map((field) => (
+                        <Button
+                          key={field.id}
+                          variant={
+                            config.selectedField === field.id
+                              ? "default"
+                              : "outline"
+                          }
+                          size="sm"
+                          onClick={() =>
+                            setConfig((prev) => ({
+                              ...prev,
+                              selectedField: field.id,
+                            }))
+                          }
+                        >
+                          {field.name}
+                        </Button>
+                      ))}
+                    </div>
+                    {config.selectedField && (
+                      <p className="text-xs text-muted-foreground">
+                        {
+                          availableFields.find(
+                            (f) => f.id === config.selectedField
+                          )?.questions.length
+                        }{" "}
+                        questions available for{" "}
+                        {
+                          availableFields.find(
+                            (f) => f.id === config.selectedField
+                          )?.name
+                        }
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Custom Questions Input */}
+                {config.useCustomQuestions && (
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">
+                      Your Custom Questions
+                    </Label>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Enter your interview question..."
+                          value={newCustomQuestion}
+                          onChange={(e) => setNewCustomQuestion(e.target.value)}
+                          onKeyPress={(e) =>
+                            e.key === "Enter" && handleCustomQuestionAdd()
+                          }
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleCustomQuestionAdd}
+                          size="sm"
+                          disabled={!newCustomQuestion.trim()}
+                        >
+                          Add
+                        </Button>
+                      </div>
+
+                      {/* Custom Questions List */}
+                      {config.customQuestions.length > 0 && (
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {config.customQuestions.map((question, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-2 bg-muted rounded-lg"
+                            >
+                              <span className="text-sm flex-1">{question}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleCustomQuestionRemove(index)
+                                }
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {config.customQuestions.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          No custom questions added yet. Add your questions
+                          above.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Duration Selector */}
                 <div className="space-y-3">
@@ -458,34 +585,11 @@ const InterviewSetup = () => {
                         onClick={() =>
                           setConfig((prev) => ({ ...prev, duration }))
                         }
-                        className="glass"
                       >
                         {duration}m
                       </Button>
                     ))}
                   </div>
-                </div>
-
-                {/* Industry/Role Dropdown */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Industry/Role</Label>
-                  <Select
-                    value={config.industry}
-                    onValueChange={(value) =>
-                      setConfig((prev) => ({ ...prev, industry: value }))
-                    }
-                  >
-                    <SelectTrigger className="glass">
-                      <SelectValue placeholder="Select your industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {industries.map((industry) => (
-                        <SelectItem key={industry} value={industry}>
-                          {industry}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 {/* Question Count */}
@@ -515,113 +619,6 @@ const InterviewSetup = () => {
                     </Badge>
                   </div>
                 </div>
-
-                {/* AI Follow-up Toggle */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">
-                      AI Follow-up Questions
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Get personalized follow-up questions
-                    </p>
-                  </div>
-                  <Switch
-                    checked={config.aiFollowUp}
-                    onCheckedChange={(checked) =>
-                      setConfig((prev) => ({ ...prev, aiFollowUp: checked }))
-                    }
-                  />
-                </div>
-
-                {/* Advanced Settings */}
-                <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-between p-0 h-auto"
-                    >
-                      <span className="font-medium">Advanced Settings</span>
-                      {showAdvanced ? (
-                        <ChevronUp className="w-4 h-4" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-4 pt-4">
-                    {/* Focus Areas */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Focus Areas</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {focusAreas.map((area) => (
-                          <Badge
-                            key={area}
-                            variant={
-                              config.focusAreas.includes(area)
-                                ? "default"
-                                : "outline"
-                            }
-                            className="cursor-pointer hover:bg-primary/10"
-                            onClick={() => handleFocusAreaToggle(area)}
-                          >
-                            {area}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Language Preference */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium flex items-center gap-2">
-                        <Globe className="w-4 h-4" />
-                        Language
-                      </Label>
-                      <Select
-                        value={config.language}
-                        onValueChange={(value) =>
-                          setConfig((prev) => ({ ...prev, language: value }))
-                        }
-                      >
-                        <SelectTrigger className="glass">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {languages.map((lang) => (
-                            <SelectItem key={lang.code} value={lang.code}>
-                              {lang.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Camera/Audio Test */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">Device Test</Label>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCameraTest}
-                          className="flex-1"
-                        >
-                          <Camera className="w-4 h-4 mr-2" />
-                          {cameraTest ? "Camera OK" : "Test Camera"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleAudioTest}
-                          className="flex-1"
-                        >
-                          <Mic className="w-4 h-4 mr-2" />
-                          {audioTest ? "Audio OK" : "Test Audio"}
-                        </Button>
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
               </Card>
             </div>
           </div>
