@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useVideoRecording } from "@/hooks/useVideoRecording";
 import { whisperService } from "@/services/whisperService";
+import { optimizedWhisperService } from "@/services/optimizedWhisperService";
 import { aiFeedbackService } from "@/services/aiFeedbackService";
 import { videoStorageService } from "@/services/videoStorageService";
+import { localVideoStorageService } from "@/services/localVideoStorageService";
 import {
   Clock,
   Pause,
@@ -514,71 +516,52 @@ const InterviewSession = () => {
 
       toast({
         title: "Processing Interview",
-        description: "Uploading video and generating AI feedback...",
+        description: "Storing video locally and generating AI feedback...",
       });
 
-      // Upload video to storage with fallback
-      let videoUploadResult;
+      // Generate unique session ID
+      const sessionId = `session-${Date.now()}`;
+
+      // Store video locally using IndexedDB
+      let videoMetadata;
       try {
-        videoUploadResult = await videoStorageService.uploadVideo(
+        await localVideoStorageService.initialize();
+        videoMetadata = await localVideoStorageService.storeVideo(
+          sessionId,
           videoBlob,
-          "session-1", // In real app, use actual session ID
-          (progress) => {
-            console.log(`Upload progress: ${progress.percentage}%`);
+          undefined, // Audio blob will be extracted during transcription
+          {
+            duration: 0, // Will be calculated
+            size: videoBlob.size,
+            format: videoBlob.type,
           }
         );
-        console.log(
-          "Video uploaded successfully to Supabase:",
-          videoUploadResult
-        );
-      } catch (uploadError) {
-        console.warn(
-          "Supabase upload failed, saving to localStorage:",
-          uploadError
-        );
-
-        // Save video to localStorage as fallback
-        const videoDataUrl = URL.createObjectURL(videoBlob);
-        const videoBase64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(videoBlob);
-        });
-
-        // Store in localStorage with size check
-        const maxLocalStorageSize = 10 * 1024 * 1024; // 10MB limit for localStorage
-        if (videoBlob.size > maxLocalStorageSize) {
-          console.warn("Video too large for localStorage, using mock URL");
-          videoUploadResult = {
-            url: "data:video/webm;base64,VIDEO_TOO_LARGE_FOR_LOCAL_STORAGE",
-            path: "local-fallback",
-            size: videoBlob.size,
-          };
-        } else {
-          localStorage.setItem(`interview-video-${Date.now()}`, videoBase64);
-          videoUploadResult = {
-            url: videoDataUrl,
-            path: "local-storage",
-            size: videoBlob.size,
-          };
-        }
+        console.log("Video stored locally:", videoMetadata);
+      } catch (storageError) {
+        console.error("Failed to store video locally:", storageError);
+        throw new Error("Failed to store video locally");
       }
 
-      // Extract audio for transcription (with fallback)
+      // Process video for transcription and AI analysis
       let transcriptionResult;
       let speechAnalysis;
       let aiFeedback;
 
       try {
-        const audioBlob = await whisperService.extractAudioFromVideo(videoBlob);
+        // Use optimized Whisper service for direct video processing
+        const processingResult =
+          await optimizedWhisperService.processVideoComplete(videoBlob);
+        transcriptionResult = processingResult.transcription;
+        speechAnalysis = processingResult.analysis;
 
-        // Transcribe audio using Whisper
-        transcriptionResult = await whisperService.transcribeAudio(audioBlob);
-
-        // Analyze speech patterns
-        speechAnalysis = whisperService.analyzeSpeechPatterns(
-          transcriptionResult.text
-        );
+        // Update video metadata with transcription
+        await localVideoStorageService.updateVideoMetadata(sessionId, {
+          transcription: {
+            text: transcriptionResult.text,
+            confidence: transcriptionResult.confidence,
+            duration: transcriptionResult.duration,
+          },
+        });
 
         // Generate AI feedback
         aiFeedback = await aiFeedbackService.generateFeedback([
@@ -593,6 +576,16 @@ const InterviewSession = () => {
             fillerWords: speechAnalysis.fillerWords,
           },
         ]);
+
+        // Update video metadata with AI feedback
+        await localVideoStorageService.updateVideoMetadata(sessionId, {
+          aiFeedback: {
+            overallScore: aiFeedback.overallScore,
+            strengths: aiFeedback.strengths,
+            improvements: aiFeedback.improvements,
+            detailedFeedback: aiFeedback.detailedFeedback,
+          },
+        });
       } catch (aiError) {
         console.warn("AI processing failed, using fallback data:", aiError);
 
@@ -622,27 +615,34 @@ const InterviewSession = () => {
         };
       }
 
-      // Save session data to database
+      // Create session data for navigation
       const sessionData = {
-        sessionId: "session-1",
-        videoUrl: videoUploadResult.url,
+        sessionId,
+        videoUrl: null, // Video is stored locally, not as URL
+        videoMetadata, // Include metadata for local access
         transcription: transcriptionResult.text,
         aiFeedback,
         speechAnalysis,
         config,
         type: interviewType,
+        storageType: "local", // Indicate this is stored locally
       };
 
-      // Store in localStorage for now (in real app, save to database)
-      localStorage.setItem("currentSession", JSON.stringify(sessionData));
+      // Store session reference in localStorage for quick access
+      localStorage.setItem(
+        "currentSession",
+        JSON.stringify({
+          sessionId,
+          timestamp: Date.now(),
+          storageType: "local",
+        })
+      );
 
       setInterviewState((prev) => ({ ...prev, status: "complete" }));
 
       toast({
         title: "Interview Complete!",
-        description: `Video saved ${
-          videoUploadResult.path === "local-storage" ? "locally" : "to cloud"
-        }. AI analysis completed successfully.`,
+        description: "Video saved locally. AI analysis completed successfully.",
       });
 
       // Navigate to results
