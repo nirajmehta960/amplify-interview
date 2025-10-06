@@ -26,6 +26,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import EnvironmentTest from "@/components/EnvironmentTest";
+import TranscriptionProviderSelector from "@/components/TranscriptionProviderSelector";
+// Removed BrowserTranscriptionTest - using Deepgram API only
 
 interface InterviewSession {
   id: string;
@@ -229,6 +232,18 @@ const Dashboard = () => {
             Practice Questions
           </Button>
         </div>
+
+        {/* Environment Test */}
+        <div className="mb-8">
+          <EnvironmentTest />
+        </div>
+
+        {/* Transcription Providers */}
+        <div className="mb-8">
+          <TranscriptionProviderSelector />
+        </div>
+
+        {/* Deepgram API is now the only transcription service */}
 
         {/* Recent Sessions */}
         <div className="glass p-6 rounded-2xl">

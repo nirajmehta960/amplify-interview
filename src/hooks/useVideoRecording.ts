@@ -35,6 +35,23 @@ export const useVideoRecording = (): VideoRecordingState &
 
   const startRecording = useCallback(async () => {
     try {
+      // First, check if we have audio permissions
+      try {
+        const audioStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        console.log("Audio permission granted");
+        audioStream.getTracks().forEach((track) => track.stop());
+      } catch (audioError) {
+        console.error("Audio permission denied:", audioError);
+        toast({
+          title: "Audio Permission Required",
+          description: "Please allow microphone access to record audio",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Request camera and microphone access with high-quality settings for MacBooks
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -53,6 +70,49 @@ export const useVideoRecording = (): VideoRecordingState &
       });
 
       streamRef.current = stream;
+
+      // Debug: Check audio and video tracks
+      const audioTracks = stream.getAudioTracks();
+      const videoTracks = stream.getVideoTracks();
+      console.log("Audio tracks:", audioTracks.length);
+      console.log("Video tracks:", videoTracks.length);
+
+      if (audioTracks.length === 0) {
+        console.warn("⚠️ No audio tracks found in stream! Trying fallback...");
+
+        // Try fallback with basic audio settings
+        try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1920, max: 3840 },
+              height: { ideal: 1080, max: 2160 },
+              frameRate: { ideal: 30, max: 60 },
+              facingMode: "user",
+            },
+            audio: true, // Basic audio without constraints
+          });
+
+          console.log(
+            "Fallback stream audio tracks:",
+            fallbackStream.getAudioTracks().length
+          );
+          if (fallbackStream.getAudioTracks().length > 0) {
+            // Stop the original stream and use the fallback
+            stream.getTracks().forEach((track) => track.stop());
+            streamRef.current = fallbackStream;
+            console.log("Using fallback stream with audio");
+          }
+        } catch (fallbackError) {
+          console.error("Fallback audio also failed:", fallbackError);
+        }
+      } else {
+        console.log("Audio track details:", {
+          label: audioTracks[0].label,
+          enabled: audioTracks[0].enabled,
+          muted: audioTracks[0].muted,
+          readyState: audioTracks[0].readyState,
+        });
+      }
 
       // Check for supported MIME types and choose the best one
       let mimeType = "video/webm;codecs=vp9,opus";
@@ -75,10 +135,19 @@ export const useVideoRecording = (): VideoRecordingState &
         audioBitsPerSecond: 128000, // 128kbps for good quality audio
       });
 
+      // Verify MediaRecorder supports audio
+      if (mediaRecorder.mimeType && !mediaRecorder.mimeType.includes("opus")) {
+        console.warn(
+          "⚠️ MediaRecorder MIME type doesn't include audio codec:",
+          mediaRecorder.mimeType
+        );
+      }
+
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
         console.log("Data available:", event.data.size, "bytes");
+        console.log("Data type:", event.data.type);
         if (event.data.size > 0) {
           setState((prev) => ({
             ...prev,
@@ -155,63 +224,84 @@ export const useVideoRecording = (): VideoRecordingState &
 
       console.log("Stopping recording...");
 
-      // Store the current chunks before stopping
-      const currentChunks = state.recordedChunks;
+      // Create a local variable to capture chunks
+      let finalChunks: Blob[] = [];
 
       mediaRecorderRef.current.onstop = () => {
-        console.log(
-          "MediaRecorder stopped, final chunks:",
-          currentChunks.length
-        );
+        // Get the latest chunks from state
+        setState((prev) => {
+          finalChunks = [...prev.recordedChunks];
+          console.log(
+            "MediaRecorder stopped, final chunks:",
+            finalChunks.length
+          );
 
-        if (currentChunks.length === 0) {
-          console.warn("No recorded chunks available");
-          resolve(null);
-          return;
-        }
+          if (finalChunks.length === 0) {
+            console.warn("No recorded chunks available");
+            resolve(null);
+            return prev;
+          }
 
-        // Determine the correct MIME type based on what was used
-        let mimeType = "video/webm";
-        if (mediaRecorderRef.current?.mimeType) {
-          mimeType = mediaRecorderRef.current.mimeType;
-        }
+          // Determine the correct MIME type based on what was used
+          let mimeType = "video/webm";
+          if (mediaRecorderRef.current?.mimeType) {
+            mimeType = mediaRecorderRef.current.mimeType;
+          }
 
-        const blob = new Blob(currentChunks, { type: mimeType });
-        console.log("Created video blob:", blob.size, "bytes");
+          const blob = new Blob(finalChunks, { type: mimeType });
+          console.log("Created video blob:", blob.size, "bytes");
+          console.log("Video blob type:", blob.type);
 
-        // Stop all tracks
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((track) => track.stop());
-          streamRef.current = null;
-        }
+          // Check if the blob contains audio by creating a video element
+          const video = document.createElement("video");
+          video.src = URL.createObjectURL(blob);
+          video.onloadedmetadata = () => {
+            console.log("Video metadata loaded:", {
+              duration: video.duration,
+              videoWidth: video.videoWidth,
+              videoHeight: video.videoHeight,
+              hasAudio:
+                (video as any).mozHasAudio ||
+                (video as any).webkitAudioDecodedByteCount > 0 ||
+                false,
+            });
+            URL.revokeObjectURL(video.src);
+          };
 
-        setState((prev) => ({
-          ...prev,
-          isRecording: false,
-          isPaused: false,
-          stream: null,
-        }));
+          // Stop all tracks
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop());
+            streamRef.current = null;
+          }
 
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
 
-        toast({
-          title: "Recording Stopped",
-          description: `Video recording saved (${(
-            blob.size /
-            1024 /
-            1024
-          ).toFixed(1)}MB)`,
+          toast({
+            title: "Recording Stopped",
+            description: `Video recording saved (${(
+              blob.size /
+              1024 /
+              1024
+            ).toFixed(1)}MB)`,
+          });
+
+          resolve(blob);
+
+          return {
+            ...prev,
+            isRecording: false,
+            isPaused: false,
+            stream: null,
+          };
         });
-
-        resolve(blob);
       };
 
       mediaRecorderRef.current.stop();
     });
-  }, [state.recordedChunks, toast]);
+  }, [toast]);
 
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && state.isRecording && !state.isPaused) {
