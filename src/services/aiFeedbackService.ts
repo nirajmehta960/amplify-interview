@@ -99,7 +99,11 @@ class AIFeedbackService {
       prompt += `Answer: ${response.answer}\n`;
       prompt += `Duration: ${response.duration} seconds\n`;
       prompt += `Speaking Rate: ${response.speakingRate} words per minute\n`;
-      prompt += `Filler Words: ${response.fillerWords.join(", ")}\n\n`;
+      prompt += `Filler Words: ${
+        Array.isArray(response.fillerWords)
+          ? response.fillerWords.join(", ")
+          : response.fillerWords
+      }\n\n`;
     });
 
     prompt += `Please provide feedback in the following JSON format:

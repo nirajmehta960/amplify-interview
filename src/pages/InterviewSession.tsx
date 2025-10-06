@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useVideoRecording } from "@/hooks/useVideoRecording";
-import { whisperService } from "@/services/whisperService";
-import { optimizedWhisperService } from "@/services/optimizedWhisperService";
+// Removed whisperService import - using unifiedTranscriptionService instead
+import { unifiedTranscriptionService } from "@/services/unifiedTranscriptionService";
 import { aiFeedbackService } from "@/services/aiFeedbackService";
-import { videoStorageService } from "@/services/videoStorageService";
 import { localVideoStorageService } from "@/services/localVideoStorageService";
+import { videoSegmentService } from "@/services/videoSegmentService";
 import {
   getQuestionsForInterview,
   Question,
@@ -98,6 +98,9 @@ const InterviewSession = () => {
   const [transcript, setTranscript] = useState<string>("");
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [videoLoading, setVideoLoading] = useState(true);
+
+  // Question-specific tracking state
+  const [questionResponses, setQuestionResponses] = useState<any[]>([]);
   const [videoError, setVideoError] = useState<string | null>(null);
 
   const [showPauseModal, setShowPauseModal] = useState(false);
@@ -195,6 +198,20 @@ const InterviewSession = () => {
   }, [config, interviewType]);
 
   const currentQuestion = questions[interviewState.currentQuestion - 1];
+
+  // Start tracking the first question when interview begins
+  useEffect(() => {
+    if (interviewState.status === "recording" && currentQuestion) {
+      // Start tracking the first question
+      videoSegmentService.startQuestionSegment(
+        currentQuestion.id,
+        currentQuestion.text
+      );
+      console.log(
+        `Started tracking first question ${currentQuestion.id}: ${currentQuestion.text}`
+      );
+    }
+  }, [interviewState.status, currentQuestion]);
 
   // Timer effect
   useEffect(() => {
@@ -303,6 +320,7 @@ const InterviewSession = () => {
             // Add event listeners for video loading
             videoRef.current.onloadedmetadata = () => {
               console.log("Video metadata loaded");
+              setVideoLoading(false);
             };
 
             videoRef.current.onerror = (error) => {
@@ -315,11 +333,18 @@ const InterviewSession = () => {
               .play()
               .then(() => {
                 console.log("Video started playing successfully");
+                setVideoLoading(false);
               })
               .catch((error) => {
                 console.error("Error playing video:", error);
                 setVideoError("Failed to play video");
+                setVideoLoading(false);
               });
+
+            // Fallback: set videoLoading to false after 2 seconds
+            setTimeout(() => {
+              setVideoLoading(false);
+            }, 2000);
           } else if (retryCount < maxRetries) {
             retryCount++;
             console.warn(
@@ -360,27 +385,10 @@ const InterviewSession = () => {
           });
         }
 
-        // Start real-time transcription
-        try {
-          const realtimeTranscription =
-            await whisperService.startRealtimeTranscription();
-          setIsTranscribing(true);
-
-          realtimeTranscription.onResult((text) => {
-            setTranscript((prev) => prev + " " + text);
-          });
-
-          realtimeTranscription.onError((error) => {
-            console.error("Transcription error:", error);
-          });
-
-          realtimeTranscription.start();
-        } catch (transcriptionError) {
-          console.warn(
-            "Real-time transcription not available:",
-            transcriptionError
-          );
-        }
+        // Real-time transcription not implemented - using Deepgram for post-processing
+        console.log(
+          "Real-time transcription not available - will transcribe after recording"
+        );
       } catch (error) {
         console.error("Error accessing media devices:", error);
         let errorMessage = "Unable to access camera or microphone.";
@@ -496,10 +504,13 @@ const InterviewSession = () => {
         return;
       }
 
-      toast({
-        title: "Processing Interview",
-        description: "Storing video locally and generating AI feedback...",
-      });
+      // Use setTimeout to avoid setState during render
+      setTimeout(() => {
+        toast({
+          title: "Processing Interview",
+          description: "Storing video locally and generating AI feedback...",
+        });
+      }, 0);
 
       // Generate unique session ID
       const sessionId = `session-${Date.now()}`;
@@ -524,17 +535,42 @@ const InterviewSession = () => {
         throw new Error("Failed to store video locally");
       }
 
+      // End tracking for current question
+      if (currentQuestion) {
+        videoSegmentService.endQuestionSegment(
+          currentQuestion.id,
+          currentQuestion.text
+        );
+        console.log(`Ended tracking for final question ${currentQuestion.id}`);
+      }
+
       // Process video for transcription and AI analysis
       let transcriptionResult;
       let speechAnalysis;
       let aiFeedback;
+      let questionResponses = [];
 
       try {
-        // Use optimized Whisper service for direct video processing
-        const processingResult =
-          await optimizedWhisperService.processVideoComplete(videoBlob);
-        transcriptionResult = processingResult.transcription;
-        speechAnalysis = processingResult.analysis;
+        // Process video for transcription and AI analysis
+        // Transcribe question segments from video
+        console.log("Starting question segment transcription...");
+        questionResponses =
+          await videoSegmentService.transcribeQuestionSegments(videoBlob);
+        console.log("Question segments transcribed:", questionResponses);
+
+        // Use unified transcription service for direct video processing
+        console.log("Starting main video transcription...");
+        transcriptionResult =
+          await unifiedTranscriptionService.transcribeVideoDirectly(videoBlob);
+        console.log(
+          "Main transcription complete:",
+          transcriptionResult.text.substring(0, 100) + "..."
+        );
+
+        speechAnalysis = unifiedTranscriptionService.analyzeSpeechPatterns(
+          transcriptionResult.text
+        );
+        console.log("Speech analysis complete");
 
         // Update video metadata with transcription
         await localVideoStorageService.updateVideoMetadata(sessionId, {
@@ -545,94 +581,111 @@ const InterviewSession = () => {
           },
         });
 
-        // Generate AI feedback
-        aiFeedback = await aiFeedbackService.generateFeedback([
-          {
-            question:
-              questions[interviewState.currentQuestion - 1]?.text ||
-              "Interview question",
-            answer: transcriptionResult.text,
-            duration: speechAnalysis.wordCount * 0.5, // Estimate
-            transcript: transcriptionResult.text,
-            speakingRate: speechAnalysis.speakingRate,
-            fillerWords: speechAnalysis.fillerWords,
-          },
-        ]);
+        // Generate AI feedback using question responses if available
+        const feedbackData =
+          questionResponses.length > 0
+            ? questionResponses.map((response) => ({
+                question: response.questionText,
+                answer: response.answerText,
+                duration: response.duration,
+                transcript: response.answerText,
+                speakingRate: response.analysis.speakingRate,
+                fillerWords: response.analysis.fillerWords,
+              }))
+            : [
+                {
+                  question:
+                    questions[interviewState.currentQuestion - 1]?.text ||
+                    "Interview question",
+                  answer: transcriptionResult.text,
+                  duration: speechAnalysis.wordCount * 0.5,
+                  transcript: transcriptionResult.text,
+                  speakingRate: speechAnalysis.speakingRate,
+                  fillerWords: speechAnalysis.fillerWords,
+                },
+              ];
+
+        // Generate AI feedback with timeout
+        try {
+          console.log("Starting AI feedback generation...");
+          aiFeedback = await Promise.race([
+            aiFeedbackService.generateFeedback(feedbackData),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("AI feedback timeout")), 30000)
+            ),
+          ]);
+          console.log("AI feedback generation complete");
+        } catch (aiError) {
+          console.warn(
+            "AI feedback generation failed, continuing without it:",
+            aiError
+          );
+          aiFeedback = {
+            overallScore: 75,
+            strengths: ["Good communication skills", "Clear articulation"],
+            improvements: ["AI feedback unavailable"],
+            detailedFeedback:
+              "AI feedback generation timed out, but interview was completed successfully.",
+          };
+        }
 
         // Update video metadata with AI feedback
-        await localVideoStorageService.updateVideoMetadata(sessionId, {
-          aiFeedback: {
-            overallScore: aiFeedback.overallScore,
-            strengths: aiFeedback.strengths,
-            improvements: aiFeedback.improvements,
-            detailedFeedback: aiFeedback.detailedFeedback,
-          },
-        });
-      } catch (aiError) {
-        console.warn("AI processing failed, using fallback data:", aiError);
+        try {
+          await localVideoStorageService.updateVideoMetadata(sessionId, {
+            aiFeedback: {
+              overallScore: aiFeedback.overallScore,
+              strengths: aiFeedback.strengths,
+              improvements: aiFeedback.improvements,
+              detailedFeedback: aiFeedback.detailedFeedback,
+            },
+          });
+          console.log("AI feedback metadata updated");
+        } catch (updateError) {
+          console.warn("Failed to update AI feedback metadata:", updateError);
+        }
 
-        // Fallback data for AI processing
-        transcriptionResult = {
-          text: "Interview completed successfully. AI analysis was not available for this session.",
-          confidence: 0.8,
-          duration: 300, // 5 minutes
-        };
-
-        speechAnalysis = {
-          wordCount: 150,
-          speakingRate: 120,
-          fillerWords: 5,
-          confidence: 0.7,
-        };
-
-        aiFeedback = {
-          overallScore: 75,
-          strengths: ["Good communication skills", "Clear answers"],
-          improvements: [
-            "Practice more interview questions",
-            "Improve confidence",
-          ],
-          detailedFeedback:
-            "Interview completed successfully. For detailed AI analysis, ensure stable internet connection and try again.",
-        };
-      }
-
-      // Create session data for navigation
-      const sessionData = {
-        sessionId,
-        videoUrl: null, // Video is stored locally, not as URL
-        videoMetadata, // Include metadata for local access
-        transcription: transcriptionResult.text,
-        aiFeedback,
-        speechAnalysis,
-        config,
-        type: interviewType,
-        storageType: "local", // Indicate this is stored locally
-      };
-
-      // Store session reference in localStorage for quick access
-      localStorage.setItem(
-        "currentSession",
-        JSON.stringify({
+        // Create session data for navigation
+        const sessionData = {
           sessionId,
-          timestamp: Date.now(),
-          storageType: "local",
-        })
-      );
+          videoUrl: null, // Video is stored locally, not as URL
+          videoMetadata, // Include metadata for local access
+          transcription: transcriptionResult.text,
+          questionResponses, // Include individual question responses
+          aiFeedback,
+          speechAnalysis,
+          config,
+          type: interviewType,
+          storageType: "local", // Indicate this is stored locally
+        };
 
-      setInterviewState((prev) => ({ ...prev, status: "complete" }));
+        // Store session reference in localStorage for quick access
+        localStorage.setItem(
+          "currentSession",
+          JSON.stringify({
+            sessionId,
+            timestamp: Date.now(),
+            storageType: "local",
+          })
+        );
 
-      toast({
-        title: "Interview Complete!",
-        description: "Video saved locally. AI analysis completed successfully.",
-      });
+        setInterviewState((prev) => ({ ...prev, status: "complete" }));
 
-      // Navigate to results
-      setTimeout(() => {
-        navigate("/results/1", {
-          state: sessionData,
+        toast({
+          title: "Interview Complete!",
+          description:
+            "Video saved locally. AI analysis completed successfully.",
         });
-      }, 2000);
+
+        // Navigate to results
+        setTimeout(() => {
+          navigate("/results/1", {
+            state: sessionData,
+          });
+        }, 2000);
+      } catch (error) {
+        console.error("Processing error:", error);
+        throw error;
+      }
     } catch (error) {
       console.error("Interview processing error:", error);
 
@@ -647,8 +700,18 @@ const InterviewSession = () => {
     }
   };
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = async () => {
+    // End tracking for current question
+    if (currentQuestion) {
+      videoSegmentService.endQuestionSegment(
+        currentQuestion.id,
+        currentQuestion.text
+      );
+      console.log(`Ended tracking for question ${currentQuestion.id}`);
+    }
+
     if (interviewState.currentQuestion < interviewState.totalQuestions) {
+      const nextQuestionIndex = interviewState.currentQuestion;
       setInterviewState((prev) => ({
         ...prev,
         currentQuestion: prev.currentQuestion + 1,
@@ -659,6 +722,20 @@ const InterviewSession = () => {
       if (currentQuestion) {
         setQuestionHistory((prev) => [...prev, currentQuestion]);
       }
+
+      // Start tracking the next question after a short delay
+      setTimeout(() => {
+        const nextQuestion = questions[nextQuestionIndex];
+        if (nextQuestion) {
+          videoSegmentService.startQuestionSegment(
+            nextQuestion.id,
+            nextQuestion.text
+          );
+          console.log(
+            `Started tracking question ${nextQuestion.id}: ${nextQuestion.text}`
+          );
+        }
+      }, 1000); // 1 second delay to allow UI to update
     } else {
       handleEndInterview();
     }
@@ -669,7 +746,11 @@ const InterviewSession = () => {
   };
 
   const handleToggleCamera = () => {
-    setInterviewState((prev) => ({ ...prev, cameraOn: !prev.cameraOn }));
+    setInterviewState((prev) => {
+      const newCameraOn = !prev.cameraOn;
+      console.log("Toggling camera:", prev.cameraOn, "->", newCameraOn);
+      return { ...prev, cameraOn: newCameraOn };
+    });
   };
 
   const handleRetryCamera = async () => {
@@ -706,7 +787,17 @@ const InterviewSession = () => {
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        videoRef.current.play().catch(console.error);
+        videoRef.current
+          .play()
+          .then(() => {
+            console.log("Video started playing successfully (fallback)");
+            setVideoLoading(false);
+          })
+          .catch((error) => {
+            console.error("Error playing video (fallback):", error);
+            setVideoError("Failed to play video");
+            setVideoLoading(false);
+          });
       }
 
       streamRef.current = mediaStream;
@@ -731,6 +822,14 @@ const InterviewSession = () => {
       description: "Your notes have been saved successfully.",
     });
   };
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      // Cleanup video segment service when component unmounts
+      videoSegmentService.clearSegments();
+    };
+  }, []);
 
   const progress =
     (interviewState.currentQuestion / interviewState.totalQuestions) * 100;
@@ -973,11 +1072,21 @@ const InterviewSession = () => {
                     muted
                     playsInline
                     className={`w-full h-full object-cover ${
-                      !interviewState.cameraOn || videoLoading || videoError
-                        ? "hidden"
-                        : ""
+                      videoError ? "hidden" : ""
                     }`}
+                    onLoadStart={() => console.log("Video load started")}
+                    onLoadedData={() => console.log("Video data loaded")}
+                    onCanPlay={() => console.log("Video can play")}
+                    onPlay={() => console.log("Video playing")}
+                    onError={(e) => console.error("Video error:", e)}
                   />
+
+                  {/* Debug Info */}
+                  <div className="absolute top-2 left-2 text-xs text-white bg-black bg-opacity-50 p-1 rounded">
+                    Camera: {interviewState.cameraOn ? "ON" : "OFF"} | Loading:{" "}
+                    {videoLoading ? "YES" : "NO"} | Error:{" "}
+                    {videoError ? "YES" : "NO"}
+                  </div>
 
                   {/* Loading State */}
                   {videoLoading && (

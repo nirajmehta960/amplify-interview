@@ -78,29 +78,40 @@ const InterviewResults = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Load real interview data from local storage
   useEffect(() => {
     const loadInterviewData = async () => {
       try {
         const sessionData = location.state;
-        
+
         if (!sessionData || !sessionData.sessionId) {
           console.error("No session data found");
           setIsLoading(false);
           return;
         }
 
-        console.log("Loading interview data for session:", sessionData.sessionId);
+        console.log(
+          "Loading interview data for session:",
+          sessionData.sessionId
+        );
+        console.log("Session data:", sessionData);
+        console.log("Question responses:", sessionData.questionResponses);
 
         // Initialize local storage service
         await localVideoStorageService.initialize();
 
         // Get video data from local storage
-        const videoData = await localVideoStorageService.getVideo(sessionData.sessionId);
-        
+        const videoData = await localVideoStorageService.getVideo(
+          sessionData.sessionId
+        );
+
         if (!videoData) {
-          console.error("No video data found for session:", sessionData.sessionId);
+          console.error(
+            "No video data found for session:",
+            sessionData.sessionId
+          );
           setIsLoading(false);
           return;
         }
@@ -108,8 +119,8 @@ const InterviewResults = () => {
         console.log("Video data loaded:", videoData);
 
         // Create video URL for playback
-        const videoBlob = new Blob([videoData.videoBlob], { 
-          type: videoData.metadata.format 
+        const videoBlob = new Blob([videoData.videoBlob], {
+          type: videoData.metadata.format,
         });
         const videoObjectUrl = URL.createObjectURL(videoBlob);
         setVideoUrl(videoObjectUrl);
@@ -118,36 +129,66 @@ const InterviewResults = () => {
         const realResult: InterviewResult = {
           id: sessionData.sessionId,
           overallScore: videoData.metadata.aiFeedback?.overallScore || 75,
-          performanceBadge: videoData.metadata.aiFeedback?.overallScore 
-            ? videoData.metadata.aiFeedback.overallScore >= 80 ? "Excellent" 
-              : videoData.metadata.aiFeedback.overallScore >= 70 ? "Good" 
-              : videoData.metadata.aiFeedback.overallScore >= 60 ? "Fair" 
+          performanceBadge: videoData.metadata.aiFeedback?.overallScore
+            ? videoData.metadata.aiFeedback.overallScore >= 80
+              ? "Excellent"
+              : videoData.metadata.aiFeedback.overallScore >= 70
+              ? "Good"
+              : videoData.metadata.aiFeedback.overallScore >= 60
+              ? "Fair"
               : "Needs Improvement"
             : "Good",
-          duration: Math.round((Date.now() - videoData.metadata.timestamp) / 60000),
+          duration: Math.round(
+            (Date.now() - videoData.metadata.timestamp) / 60000
+          ),
           completionTime: new Date(videoData.metadata.timestamp).toISOString(),
-          responses: [
-            {
-              id: "1",
-              question: "Tell me about yourself and your background.",
-              answer: videoData.metadata.transcription?.text || "No transcription available",
-              score: videoData.metadata.aiFeedback?.overallScore || 75,
-              duration: Math.round((videoData.metadata.transcription?.duration || 60)),
-              fillerWords: 0, // Will be calculated from speech analysis
-              confidence: videoData.metadata.transcription?.confidence || 0.8,
-              speakingPace: 150, // Default value
-              eyeContact: 85, // Default value
-            },
+          responses:
+            sessionData.questionResponses &&
+            sessionData.questionResponses.length > 0
+              ? sessionData.questionResponses.map(
+                  (response: any, index: number) => ({
+                    id: response.questionId || (index + 1).toString(),
+                    question: response.questionText || `Question ${index + 1}`,
+                    answer: response.answerText || "No transcription available",
+                    score:
+                      Math.round(response.analysis?.confidence * 100) || 75,
+                    duration: Math.round(response.duration || 60),
+                    fillerWords: response.analysis?.fillerWords || 0,
+                    confidence: response.transcription?.confidence || 0.8,
+                    speakingPace: response.analysis?.speakingRate || 150,
+                    eyeContact: 85, // Default value
+                  })
+                )
+              : [
+                  {
+                    id: "1",
+                    question: "Tell me about yourself and your background.",
+                    answer:
+                      videoData.metadata.transcription?.text ||
+                      "No transcription available",
+                    score: videoData.metadata.aiFeedback?.overallScore || 75,
+                    duration: Math.round(
+                      videoData.metadata.transcription?.duration || 60
+                    ),
+                    fillerWords: 0,
+                    confidence:
+                      videoData.metadata.transcription?.confidence || 0.8,
+                    speakingPace: 150,
+                    eyeContact: 85,
+                  },
+                ],
+          strengths: videoData.metadata.aiFeedback?.strengths || [
+            "Clear communication",
           ],
-          strengths: videoData.metadata.aiFeedback?.strengths || ["Clear communication"],
-          improvements: videoData.metadata.aiFeedback?.improvements || ["Practice more"],
+          improvements: videoData.metadata.aiFeedback?.improvements || [
+            "Practice more",
+          ],
           insights: ["Interview completed successfully"],
           recommendations: ["Continue practicing interview skills"],
         };
 
         setResult(realResult);
         setIsLoading(false);
-
       } catch (error) {
         console.error("Error loading interview data:", error);
         setIsLoading(false);
@@ -157,86 +198,14 @@ const InterviewResults = () => {
     loadInterviewData();
   }, [location.state]);
 
-  // Fallback to mock data if no real data
+  // Handle missing data properly
   useEffect(() => {
     if (!isLoading && !result) {
-      console.log("No real data found, using mock data");
-      const mockResult: InterviewResult = {
-        id: "1",
-        overallScore: 78,
-        performanceBadge: "Good",
-        duration: 25,
-        completionTime: new Date().toISOString(),
-        responses: [
-          {
-            id: "1",
-            question: "Tell me about yourself and your background.",
-            answer:
-              "I'm a software engineer with 5 years of experience in full-stack development. I've worked primarily with React, Node.js, and cloud technologies. I'm passionate about building scalable applications and leading technical teams.",
-            score: 85,
-            duration: 45,
-            fillerWords: 3,
-            confidence: 88,
-            speakingPace: 145,
-            eyeContact: 92,
-          },
-          {
-            id: "2",
-            question:
-              "Describe a challenging project you worked on and how you overcame obstacles.",
-            answer:
-              "One challenging project was migrating our legacy system to microservices. We faced issues with data consistency and service communication. I led the team in implementing event-driven architecture and established clear communication protocols.",
-            score: 72,
-            duration: 90,
-            fillerWords: 7,
-            confidence: 75,
-            speakingPace: 130,
-            eyeContact: 85,
-          },
-          {
-            id: "3",
-            question: "How do you handle working under pressure?",
-            answer:
-              "I thrive under pressure by breaking down complex problems into manageable tasks. I prioritize effectively and communicate regularly with stakeholders about progress and potential blockers.",
-            score: 80,
-            duration: 60,
-            fillerWords: 2,
-            confidence: 82,
-            speakingPace: 140,
-            eyeContact: 88,
-          },
-        ],
-        strengths: [
-          "Clear communication and articulation",
-          "Strong technical knowledge demonstration",
-          "Good use of specific examples",
-          "Confident speaking pace",
-          "Excellent eye contact maintained",
-        ],
-        improvements: [
-          "Reduce filler words (um, uh, like)",
-          "Provide more quantifiable results in examples",
-          "Elaborate more on impact and outcomes",
-          "Practice more concise answers",
-        ],
-        insights: [
-          "You demonstrated strong technical competency with specific examples",
-          "Your communication style is clear and professional",
-          "Consider practicing STAR method for behavioral questions",
-          "Your confidence level was consistently high throughout",
-        ],
-        recommendations: [
-          "Practice common behavioral questions using the STAR method",
-          "Prepare quantifiable achievements for each experience",
-          "Work on reducing filler words through deliberate practice",
-          "Practice mock interviews to improve timing",
-        ],
-      };
-
-      setTimeout(() => {
-        setResult(mockResult);
-        setIsLoading(false);
-      }, 2000);
+      console.error("No interview data found");
+      setError(
+        "No interview data available. Please complete an interview first."
+      );
+      return;
     }
   }, [isLoading, result]);
 
@@ -302,6 +271,7 @@ const InterviewResults = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Quota Alert - Show if using mock transcriptions */}
       <div className="container mx-auto px-6 py-8">
         {/* Summary Header */}
         <motion.div
@@ -433,7 +403,9 @@ const InterviewResults = () => {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Play className="h-5 w-5" />
-                  <h2 className="text-xl font-semibold">Your Interview Recording</h2>
+                  <h2 className="text-xl font-semibold">
+                    Your Interview Recording
+                  </h2>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Watch your interview performance and review your responses
@@ -453,7 +425,7 @@ const InterviewResults = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const link = document.createElement('a');
+                      const link = document.createElement("a");
                       link.href = videoUrl;
                       link.download = `interview-${result.id}.webm`;
                       link.click();
