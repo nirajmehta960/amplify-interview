@@ -20,22 +20,24 @@ export interface Field {
 
 // Convert database row to Question interface
 const dbRowToQuestion = (row: InterviewQuestion): Question => ({
-  id: row.id,
+  id: row.question_id.toString(),
   text: row.question_text,
-  category: row.category,
-  difficulty: row.difficulty,
-  thinkingTime: row.thinking_time || 30,
+  category: row.category || "General",
+  difficulty:
+    row.difficulty === "Easy" ? 1 : row.difficulty === "Medium" ? 2 : 3,
+  thinkingTime: 45, // Default thinking time
 });
 
 // Fetch questions from database by interview type
 export const fetchQuestionsByType = async (
-  interviewType: string
+  interviewType: "behavioral" | "technical" | "leadership"
 ): Promise<Question[]> => {
   try {
     const { data, error } = await supabase
       .from("interview_questions")
       .select("*")
       .eq("interview_type", interviewType)
+      .eq("is_active", true)
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -50,53 +52,33 @@ export const fetchQuestionsByType = async (
   }
 };
 
-// Fetch questions by interview type and industry (for custom fields)
-export const fetchQuestionsByTypeAndIndustry = async (
-  interviewType: string,
-  industry: string
+// Fetch questions by custom domain
+export const fetchQuestionsByCustomDomain = async (
+  customDomain:
+    | "product_manager"
+    | "software_engineer"
+    | "data_scientist"
+    | "ui_ux_designer"
+    | "devops_engineer"
+    | "ai_engineer"
 ): Promise<Question[]> => {
   try {
     const { data, error } = await supabase
       .from("interview_questions")
       .select("*")
-      .eq("interview_type", interviewType)
-      .eq("industry", industry)
+      .eq("interview_type", "custom")
+      .eq("custom_domain", customDomain)
+      .eq("is_active", true)
       .order("created_at", { ascending: true });
 
     if (error) {
-      console.error("Error fetching questions by type and industry:", error);
+      console.error("Error fetching questions by custom domain:", error);
       return [];
     }
 
     return data.map(dbRowToQuestion);
   } catch (error) {
-    console.error("Error fetching questions by type and industry:", error);
-    return [];
-  }
-};
-
-// Get all available industries/fields for custom interviews
-export const fetchAvailableIndustries = async (): Promise<string[]> => {
-  try {
-    const { data, error } = await supabase
-      .from("interview_questions")
-      .select("industry")
-      .eq("interview_type", "custom")
-      .not("industry", "is", null)
-      .order("industry", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching industries:", error);
-      return [];
-    }
-
-    // Get unique industries
-    const uniqueIndustries = Array.from(
-      new Set(data.map((row) => row.industry).filter(Boolean))
-    );
-    return uniqueIndustries;
-  } catch (error) {
-    console.error("Error fetching industries:", error);
+    console.error("Error fetching questions by custom domain:", error);
     return [];
   }
 };
@@ -104,34 +86,45 @@ export const fetchAvailableIndustries = async (): Promise<string[]> => {
 // Get questions for custom interviews with field mapping
 export const fetchCustomFieldQuestions = async (): Promise<Field[]> => {
   try {
-    // First get all custom questions
+    // Get all custom questions
     const { data, error } = await supabase
       .from("interview_questions")
       .select("*")
       .eq("interview_type", "custom")
-      .not("industry", "is", null)
-      .order("industry", { ascending: true });
+      .eq("is_active", true)
+      .order("custom_domain", { ascending: true });
 
     if (error) {
       console.error("Error fetching custom field questions:", error);
       return [];
     }
 
-    // Group questions by industry
-    const questionsByIndustry = data.reduce((acc, row) => {
-      const industry = row.industry!;
-      if (!acc[industry]) {
-        acc[industry] = [];
+    // Define domain mapping for display names
+    const domainDisplayNames: Record<string, string> = {
+      product_manager: "Product Manager",
+      software_engineer: "Software Engineer",
+      data_scientist: "Data Scientist",
+      ui_ux_designer: "UI/UX Designer",
+      devops_engineer: "DevOps Engineer",
+      ai_engineer: "AI Engineer",
+    };
+
+    // Group questions by custom domain
+    const questionsByDomain = data.reduce((acc, row) => {
+      const domain = row.custom_domain!;
+
+      if (!acc[domain]) {
+        acc[domain] = [];
       }
-      acc[industry].push(dbRowToQuestion(row));
+      acc[domain].push(dbRowToQuestion(row));
       return acc;
     }, {} as Record<string, Question[]>);
 
     // Convert to Field format
-    const fields: Field[] = Object.entries(questionsByIndustry).map(
-      ([industry, questions]) => ({
-        id: industry.toLowerCase().replace(/\s+/g, "-"),
-        name: industry,
+    const fields: Field[] = Object.entries(questionsByDomain).map(
+      ([domain, questions]) => ({
+        id: domain,
+        name: domainDisplayNames[domain] || domain,
         questions,
       })
     );
@@ -145,7 +138,7 @@ export const fetchCustomFieldQuestions = async (): Promise<Field[]> => {
 
 // Main function to get questions for interview (replaces getQuestionsForInterview)
 export const getQuestionsForInterviewFromDB = async (
-  interviewType: string,
+  interviewType: "behavioral" | "technical" | "leadership" | "custom",
   useCustomQuestions: boolean,
   customQuestions: string[],
   selectedField?: string
@@ -161,15 +154,29 @@ export const getQuestionsForInterviewFromDB = async (
     }));
   }
 
-  // For custom interview type with selected field, fetch by industry
+  // For custom interview type with selected field, fetch by custom domain
   if (interviewType === "custom" && selectedField) {
-    const fields = await fetchCustomFieldQuestions();
-    const selectedFieldObj = fields.find((f) => f.id === selectedField);
-    return selectedFieldObj ? selectedFieldObj.questions : [];
+    const customDomain = selectedField as
+      | "product_manager"
+      | "software_engineer"
+      | "data_scientist"
+      | "ui_ux_designer"
+      | "devops_engineer"
+      | "ai_engineer";
+    return await fetchQuestionsByCustomDomain(customDomain);
   }
 
   // For standard interview types, fetch from database
-  return await fetchQuestionsByType(interviewType);
+  if (
+    interviewType === "behavioral" ||
+    interviewType === "technical" ||
+    interviewType === "leadership"
+  ) {
+    return await fetchQuestionsByType(interviewType);
+  }
+
+  // Fallback for custom without selected field
+  return [];
 };
 
 // Get available fields for custom interview type
@@ -177,90 +184,97 @@ export const getAvailableFieldsFromDB = async (): Promise<Field[]> => {
   return await fetchCustomFieldQuestions();
 };
 
-// Fallback function that combines database and local questions
+// Main function that fetches questions from database only (no fallback to hardcoded)
 export const getQuestionsForInterview = async (
-  interviewType: string,
+  interviewType: "behavioral" | "technical" | "leadership" | "custom",
   useCustomQuestions: boolean,
   customQuestions: string[],
   selectedField?: string
 ): Promise<Question[]> => {
   try {
-    // Try to get questions from database first
-    const dbQuestions = await getQuestionsForInterviewFromDB(
+    // Always fetch from database - no fallback to hardcoded questions
+    const questions = await getQuestionsForInterviewFromDB(
       interviewType,
       useCustomQuestions,
       customQuestions,
       selectedField
     );
 
-    // If we have questions from database, use them
-    if (dbQuestions.length > 0) {
-      return dbQuestions;
+    if (questions.length === 0) {
+      console.warn(
+        `No questions found in database for ${interviewType}${
+          selectedField ? ` (${selectedField})` : ""
+        }`
+      );
     }
 
-    // Fallback to local questions if database is empty or fails
-    console.warn(
-      `No questions found in database for ${interviewType}, using fallback questions`
-    );
-
-    // Import local questions as fallback
-    const {
-      fallbackBehavioralQuestions,
-      fallbackTechnicalQuestions,
-      fallbackLeadershipQuestions,
-      fallbackCustomFields,
-    } = await import("./questionBankService");
-
-    if (useCustomQuestions && customQuestions.length > 0) {
-      return customQuestions.map((question, index) => ({
-        id: `custom-${index + 1}`,
-        text: question,
-        category: "Custom",
-        difficulty: 2,
-        thinkingTime: 45,
-      }));
-    }
-
-    switch (interviewType) {
-      case "behavioral":
-        return fallbackBehavioralQuestions;
-      case "technical":
-        return fallbackTechnicalQuestions;
-      case "leadership":
-        return fallbackLeadershipQuestions;
-      case "custom":
-        if (selectedField) {
-          const field = fallbackCustomFields.find(
-            (f) => f.id === selectedField
-          );
-          return field ? field.questions : fallbackBehavioralQuestions;
-        }
-        return fallbackBehavioralQuestions;
-      default:
-        return fallbackBehavioralQuestions;
-    }
+    return questions;
   } catch (error) {
     console.error("Error getting questions:", error);
-    // Return empty array as last resort
+    // Return empty array instead of fallback questions
     return [];
   }
 };
 
-// Function to get available fields with fallback
+// Function to get available fields (no fallback)
 export const getAvailableFields = async (): Promise<Field[]> => {
   try {
-    // Try database first
-    const dbFields = await getAvailableFieldsFromDB();
-    if (dbFields.length > 0) {
-      return dbFields;
-    }
-
-    // Fallback to local fields
-    const { fallbackCustomFields } = await import("./questionBankService");
-    return fallbackCustomFields;
+    return await getAvailableFieldsFromDB();
   } catch (error) {
     console.error("Error getting available fields:", error);
-    const { fallbackCustomFields } = await import("./questionBankService");
-    return fallbackCustomFields;
+    return [];
+  }
+};
+
+// Get question count for a specific interview type
+export const getQuestionCountByType = async (
+  interviewType: "behavioral" | "technical" | "leadership"
+): Promise<number> => {
+  try {
+    const { count, error } = await supabase
+      .from("interview_questions")
+      .select("*", { count: "exact", head: true })
+      .eq("interview_type", interviewType)
+      .eq("is_active", true);
+
+    if (error) {
+      console.error("Error getting question count:", error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error("Error getting question count:", error);
+    return 0;
+  }
+};
+
+// Get question count for a specific custom domain
+export const getQuestionCountByCustomDomain = async (
+  customDomain:
+    | "product_manager"
+    | "software_engineer"
+    | "data_scientist"
+    | "ui_ux_designer"
+    | "devops_engineer"
+    | "ai_engineer"
+): Promise<number> => {
+  try {
+    const { count, error } = await supabase
+      .from("interview_questions")
+      .select("*", { count: "exact", head: true })
+      .eq("interview_type", "custom")
+      .eq("custom_domain", customDomain)
+      .eq("is_active", true);
+
+    if (error) {
+      console.error("Error getting custom domain question count:", error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error("Error getting custom domain question count:", error);
+    return 0;
   }
 };

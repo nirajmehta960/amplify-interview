@@ -36,7 +36,7 @@ const Navbar = () => {
             whileHover={{ scale: 1.05 }}
             className="text-2xl font-bold gradient-text"
           >
-            AI Interview Master
+            Amplify Interview
           </motion.div>
 
           {/* Desktop Menu */}

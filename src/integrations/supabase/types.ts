@@ -16,38 +16,59 @@ export type Database = {
     Tables: {
       interview_questions: {
         Row: {
-          id: string;
+          question_id: number;
+          interview_type: "behavioral" | "technical" | "leadership" | "custom";
+          custom_domain:
+            | "product_manager"
+            | "software_engineer"
+            | "data_scientist"
+            | "ui_ux_designer"
+            | "devops_engineer"
+            | "ai_engineer"
+            | null;
           question_text: string;
-          category: string;
-          difficulty: number;
-          interview_type: string;
-          thinking_time: number | null;
-          industry: string | null;
+          category: string | null;
           focus_areas: string[] | null;
+          difficulty: "Easy" | "Medium" | "Hard";
+          is_active: boolean;
           created_at: string;
           updated_at: string;
         };
         Insert: {
-          id?: string;
+          question_id?: number;
+          interview_type: "behavioral" | "technical" | "leadership" | "custom";
+          custom_domain?:
+            | "product_manager"
+            | "software_engineer"
+            | "data_scientist"
+            | "ui_ux_designer"
+            | "devops_engineer"
+            | "ai_engineer"
+            | null;
           question_text: string;
-          category: string;
-          difficulty: number;
-          interview_type: string;
-          thinking_time?: number | null;
-          industry?: string | null;
+          category?: string | null;
           focus_areas?: string[] | null;
+          difficulty: "Easy" | "Medium" | "Hard";
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
-          id?: string;
+          question_id?: number;
+          interview_type?: "behavioral" | "technical" | "leadership" | "custom";
+          custom_domain?:
+            | "product_manager"
+            | "software_engineer"
+            | "data_scientist"
+            | "ui_ux_designer"
+            | "devops_engineer"
+            | "ai_engineer"
+            | null;
           question_text?: string;
-          category?: string;
-          difficulty?: number;
-          interview_type?: string;
-          thinking_time?: number | null;
-          industry?: string | null;
+          category?: string | null;
           focus_areas?: string[] | null;
+          difficulty?: "Easy" | "Medium" | "Hard";
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };

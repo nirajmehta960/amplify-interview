@@ -50,7 +50,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { getAvailableFields, type Field } from "@/services/questionBankService";
+import {
+  getAvailableFields,
+  getQuestionCountByType,
+  getQuestionCountByCustomDomain,
+  type Field,
+} from "@/services/questionBankService";
 
 interface InterviewType {
   id: string;
@@ -59,7 +64,7 @@ interface InterviewType {
   description: string;
   details: string;
   estimatedDuration: string;
-  questionCount: number;
+  questionCount?: number; // Make optional since we'll fetch dynamically
 }
 
 interface InterviewConfig {
@@ -106,7 +111,6 @@ const InterviewSetup = () => {
       details:
         "Practice answering behavioral questions using the STAR method (Situation, Task, Action, Result). Perfect for leadership and teamwork scenarios.",
       estimatedDuration: "20-30 min",
-      questionCount: 6,
     },
     {
       id: "technical",
@@ -116,7 +120,6 @@ const InterviewSetup = () => {
       details:
         "Technical questions covering algorithms, data structures, system design, and problem-solving skills.",
       estimatedDuration: "45-60 min",
-      questionCount: 10,
     },
     {
       id: "leadership",
@@ -126,7 +129,6 @@ const InterviewSetup = () => {
       details:
         "Questions about team management, decision-making, conflict resolution, and strategic thinking.",
       estimatedDuration: "25-35 min",
-      questionCount: 7,
     },
     {
       id: "custom",
@@ -136,24 +138,72 @@ const InterviewSetup = () => {
       details:
         "Create a personalized interview based on your industry, role, and experience level.",
       estimatedDuration: "30-45 min",
-      questionCount: 8,
     },
   ];
 
   const durations = [15, 30, 45, 60];
   const [availableFields, setAvailableFields] = useState<Field[]>([]);
+  const [questionCounts, setQuestionCounts] = useState<{
+    behavioral: number;
+    technical: number;
+    leadership: number;
+    custom: Record<string, number>;
+  }>({
+    behavioral: 0,
+    technical: 0,
+    leadership: 0,
+    custom: {},
+  });
 
-  // Load available fields on component mount
+  // Load available fields and question counts on component mount
   useEffect(() => {
-    const loadFields = async () => {
+    const loadData = async () => {
       try {
+        // Load available fields
         const fields = await getAvailableFields();
         setAvailableFields(fields);
+
+        // Load question counts for standard interview types
+        const [behavioralCount, technicalCount, leadershipCount] =
+          await Promise.all([
+            getQuestionCountByType("behavioral"),
+            getQuestionCountByType("technical"),
+            getQuestionCountByType("leadership"),
+          ]);
+
+        // Load question counts for custom domains
+        const customCounts: Record<string, number> = {};
+        for (const field of fields) {
+          const count = await getQuestionCountByCustomDomain(
+            field.id as
+              | "product_manager"
+              | "software_engineer"
+              | "data_scientist"
+              | "ui_ux_designer"
+              | "devops_engineer"
+              | "ai_engineer"
+          );
+          customCounts[field.id] = count;
+        }
+
+        setQuestionCounts({
+          behavioral: behavioralCount,
+          technical: technicalCount,
+          leadership: leadershipCount,
+          custom: customCounts,
+        });
+
+        console.log("Loaded question counts:", {
+          behavioral: behavioralCount,
+          technical: technicalCount,
+          leadership: leadershipCount,
+          custom: customCounts,
+        });
       } catch (error) {
-        console.error("Error loading fields:", error);
+        console.error("Error loading data:", error);
       }
     };
-    loadFields();
+    loadData();
   }, []);
 
   const handleTypeSelect = (typeId: string) => {
@@ -169,6 +219,26 @@ const InterviewSetup = () => {
 
   const handleCustomQuestionAdd = () => {
     if (newCustomQuestion.trim()) {
+      // Check if we've reached the selected question count
+      if (config.customQuestions.length >= config.questionCount) {
+        toast({
+          title: "Question Limit Reached",
+          description: `You have selected ${config.questionCount} questions and cannot add more.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if we've reached the maximum limit of 15 questions
+      if (config.customQuestions.length >= 15) {
+        toast({
+          title: "Maximum Questions Reached",
+          description: "You can add a maximum of 15 custom questions.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setConfig((prev) => ({
         ...prev,
         customQuestions: [...prev.customQuestions, newCustomQuestion.trim()],
@@ -231,6 +301,11 @@ const InterviewSetup = () => {
     return Object.values(checklistItems).every((item) => item === true);
   };
 
+  const isCustomQuestionsValid = () => {
+    if (!config.useCustomQuestions) return true;
+    return config.customQuestions.length === config.questionCount;
+  };
+
   const handleStartInterview = async () => {
     if (!selectedType) {
       toast({
@@ -254,12 +329,20 @@ const InterviewSetup = () => {
       return;
     }
 
-    if (config.useCustomQuestions && config.customQuestions.length === 0) {
-      toast({
-        title: "Add Custom Questions",
-        description: "Please add at least one custom question to continue.",
-        variant: "destructive",
-      });
+    if (config.useCustomQuestions && !isCustomQuestionsValid()) {
+      if (config.customQuestions.length === 0) {
+        toast({
+          title: "Add Custom Questions",
+          description: "Please add at least one custom question to continue.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Question Count Mismatch",
+          description: `You have selected ${config.questionCount} questions but added ${config.customQuestions.length} custom questions. Please add exactly ${config.questionCount} questions.`,
+          variant: "destructive",
+        });
+      }
       return;
     }
 
@@ -408,7 +491,13 @@ const InterviewSetup = () => {
                               {type.details}
                             </p>
                             <Badge variant="secondary" className="text-xs">
-                              {type.questionCount} questions
+                              {type.id === "custom"
+                                ? "Multiple domains available"
+                                : `${
+                                    questionCounts[
+                                      type.id as keyof typeof questionCounts
+                                    ] || 0
+                                  } questions`}
                             </Badge>
                           </motion.div>
                         )}
@@ -493,11 +582,7 @@ const InterviewSetup = () => {
                     </div>
                     {config.selectedField && (
                       <p className="text-xs text-muted-foreground">
-                        {
-                          availableFields.find(
-                            (f) => f.id === config.selectedField
-                          )?.questions.length
-                        }{" "}
+                        {questionCounts.custom[config.selectedField] || 0}{" "}
                         questions available for{" "}
                         {
                           availableFields.find(
@@ -522,7 +607,12 @@ const InterviewSetup = () => {
                           value={newCustomQuestion}
                           onChange={(e) => setNewCustomQuestion(e.target.value)}
                           onKeyPress={(e) =>
-                            e.key === "Enter" && handleCustomQuestionAdd()
+                            e.key === "Enter" &&
+                            newCustomQuestion.trim() &&
+                            config.customQuestions.length <
+                              config.questionCount &&
+                            config.customQuestions.length < 15 &&
+                            handleCustomQuestionAdd()
                           }
                           className="flex-1"
                         />
@@ -530,7 +620,12 @@ const InterviewSetup = () => {
                           type="button"
                           onClick={handleCustomQuestionAdd}
                           size="sm"
-                          disabled={!newCustomQuestion.trim()}
+                          disabled={
+                            !newCustomQuestion.trim() ||
+                            config.customQuestions.length >=
+                              config.questionCount ||
+                            config.customQuestions.length >= 15
+                          }
                         >
                           Add
                         </Button>
@@ -563,10 +658,34 @@ const InterviewSetup = () => {
 
                       {config.customQuestions.length === 0 && (
                         <p className="text-sm text-muted-foreground">
-                          No custom questions added yet. Add your questions
-                          above.
+                          No custom questions added yet. Add exactly{" "}
+                          {config.questionCount} questions above.
                         </p>
                       )}
+
+                      {config.customQuestions.length > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          {config.customQuestions.length} of{" "}
+                          {config.questionCount} questions added.
+                          {config.customQuestions.length <
+                            config.questionCount &&
+                            ` Add ${
+                              config.questionCount -
+                              config.customQuestions.length
+                            } more questions.`}
+                          {config.customQuestions.length ===
+                            config.questionCount &&
+                            " ✓ Ready to start interview!"}
+                        </p>
+                      )}
+
+                      {config.customQuestions.length >= config.questionCount &&
+                        config.customQuestions.length > 0 && (
+                          <p className="text-sm text-green-600 font-medium">
+                            ✓ Question limit reached! You have added all{" "}
+                            {config.questionCount} questions.
+                          </p>
+                        )}
                     </div>
                   </div>
                 )}
@@ -629,7 +748,7 @@ const InterviewSetup = () => {
               <Button
                 size="lg"
                 onClick={handleStartInterview}
-                disabled={!selectedType}
+                disabled={!selectedType || !isCustomQuestionsValid()}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-12 py-6 h-auto"
               >
                 <Play className="w-6 h-6 mr-3" />

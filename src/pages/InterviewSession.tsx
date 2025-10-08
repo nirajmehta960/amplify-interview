@@ -987,17 +987,17 @@ const InterviewSession = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen bg-background overflow-hidden flex flex-col">
       {/* Top Bar */}
-      <header className="glass sticky top-0 z-50 border-b">
-        <div className="container mx-auto px-6 py-4">
+      <header className="glass fixed top-0 left-0 right-0 z-50 border-b">
+        <div className="container mx-auto px-4 py-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
               {/* Timer */}
               <div className="flex items-center gap-2">
-                <div className="relative w-12 h-12">
+                <div className="relative w-8 h-8">
                   <svg
-                    className="w-12 h-12 transform -rotate-90"
+                    className="w-8 h-8 transform -rotate-90"
                     viewBox="0 0 48 48"
                   >
                     <circle
@@ -1067,292 +1067,214 @@ const InterviewSession = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Interview Area */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Question Display */}
-            <Card className="p-8">
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <Badge variant="outline" className="mb-3">
-                      {currentQuestion?.category}
-                    </Badge>
-                    <h2 className="text-2xl font-bold leading-relaxed">
-                      {currentQuestion?.text}
-                    </h2>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">
-                      Thinking time
-                    </p>
-                    <p className="text-lg font-bold text-primary">
-                      {formatTime(thinkingTime)}
-                    </p>
-                  </div>
-                </div>
-
-                {thinkingTime > 0 && (
-                  <div className="space-y-2">
-                    <Progress
-                      value={(thinkingTime / 10) * 100}
-                      className="h-2"
-                    />
-                    <p className="text-sm text-muted-foreground text-center">
-                      Take your time to think before answering
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex justify-end pt-4">
-                  <Button
-                    onClick={handleNextQuestion}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    {interviewState.currentQuestion ===
-                    interviewState.totalQuestions
-                      ? "Finish Interview"
-                      : "Next Question"}
-                    <ChevronRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-
-            {/* Video Section */}
-            <Card className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">Your Video</h3>
-                  <div className="flex items-center gap-2">
-                    {interviewState.isRecording && (
-                      <motion.div
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                        className="flex items-center gap-2"
-                      >
-                        <div className="w-2 h-2 bg-red-500 rounded-full" />
-                        <span className="text-sm text-red-500 font-medium">
-                          Recording
-                        </span>
-                      </motion.div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    muted
-                    playsInline
-                    className={`w-full h-full object-cover ${
-                      videoError ? "hidden" : ""
-                    }`}
-                    onLoadStart={() => console.log("Video load started")}
-                    onLoadedData={() => console.log("Video data loaded")}
-                    onCanPlay={() => console.log("Video can play")}
-                    onPlay={() => console.log("Video playing")}
-                    onError={(e) => console.error("Video error:", e)}
-                  />
-
-                  {/* Loading State */}
-                  {videoLoading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
-                      <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
-                      <span className="text-sm text-muted-foreground">
-                        Loading camera...
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="mt-2"
-                        onClick={handleRetryCamera}
-                      >
-                        Start Camera Manually
-                      </Button>
-                      <div className="mt-2 text-xs text-muted-foreground text-center">
-                        Check browser permissions and try refreshing if needed
+      <div className="flex-1 overflow-y-auto pt-16">
+        <div className="container mx-auto px-4 py-1">
+          <div className="max-w-4xl mx-auto">
+            {/* Main Interview Area */}
+            <div className="space-y-2">
+              {/* Question Display */}
+              <Card className="p-3">
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline">
+                          {currentQuestion?.category}
+                        </Badge>
+                        {thinkingTime > 0 && (
+                          <>
+                            <div className="w-1 h-1 bg-primary rounded-full animate-pulse" />
+                            <span className="text-xs text-primary font-medium">
+                              Thinking time: {formatTime(thinkingTime)}
+                            </span>
+                          </>
+                        )}
                       </div>
+                      <h2 className="text-xl font-bold leading-tight">
+                        {currentQuestion?.text}
+                      </h2>
                     </div>
-                  )}
+                  </div>
 
-                  {/* Error State */}
-                  {videoError && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
-                      <AlertTriangle className="w-8 h-8 text-destructive mb-2" />
-                      <span className="text-sm text-destructive text-center px-4">
-                        {videoError}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="mt-2"
-                        onClick={handleRetryCamera}
-                      >
-                        Retry Camera
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Camera Off State */}
-                  {!interviewState.cameraOn && !videoLoading && !videoError && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                      <VideoOff className="w-12 h-12 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Video Controls */}
-                <div className="flex items-center justify-center gap-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleToggleMute}
-                    className={`${
-                      interviewState.isMuted
-                        ? "bg-destructive text-destructive-foreground"
-                        : ""
-                    }`}
-                  >
-                    {interviewState.isMuted ? (
-                      <MicOff className="w-4 h-4" />
-                    ) : (
-                      <Mic className="w-4 h-4" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleToggleCamera}
-                    className={`${
-                      !interviewState.cameraOn
-                        ? "bg-destructive text-destructive-foreground"
-                        : ""
-                    }`}
-                  >
-                    {interviewState.cameraOn ? (
-                      <Video className="w-4 h-4" />
-                    ) : (
-                      <VideoOff className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-
-            {/* Bottom Controls */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {/* Answer Status Indicators */}
-                <div className="flex gap-1">
-                  {Array.from({ length: interviewState.totalQuestions }).map(
-                    (_, index) => (
-                      <div
-                        key={index}
-                        className={`w-2 h-2 rounded-full ${
-                          index < interviewState.currentQuestion - 1
-                            ? "bg-green-500"
-                            : index === interviewState.currentQuestion - 1
-                            ? "bg-primary"
-                            : "bg-muted"
-                        }`}
+                  {thinkingTime > 0 && (
+                    <div className="mt-2">
+                      <Progress
+                        value={(thinkingTime / 10) * 100}
+                        className="h-1"
                       />
-                    )
+                    </div>
                   )}
+
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      onClick={handleNextQuestion}
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      {interviewState.currentQuestion ===
+                      interviewState.totalQuestions
+                        ? "Finish Interview"
+                        : "Next Question"}
+                      <ChevronRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
                 </div>
-                <Button variant="ghost" size="sm">
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  Report Issue
+              </Card>
+
+              {/* Video Section */}
+              <Card className="p-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Your Video</h3>
+                    <div className="flex items-center gap-2">
+                      {interviewState.isRecording && (
+                        <motion.div
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                          className="flex items-center gap-2"
+                        >
+                          <div className="w-2 h-2 bg-red-500 rounded-full" />
+                          <span className="text-sm text-red-500 font-medium">
+                            Recording
+                          </span>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="relative bg-black rounded-lg overflow-hidden aspect-[16/10]">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      className={`w-full h-full object-cover ${
+                        videoError ? "hidden" : ""
+                      }`}
+                      onLoadStart={() => console.log("Video load started")}
+                      onLoadedData={() => console.log("Video data loaded")}
+                      onCanPlay={() => console.log("Video can play")}
+                      onPlay={() => console.log("Video playing")}
+                      onError={(e) => console.error("Video error:", e)}
+                    />
+
+                    {/* Loading State */}
+                    {videoLoading && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
+                        <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
+                        <span className="text-sm text-muted-foreground">
+                          Loading camera...
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2"
+                          onClick={handleRetryCamera}
+                        >
+                          Start Camera Manually
+                        </Button>
+                        <div className="mt-2 text-xs text-muted-foreground text-center">
+                          Check browser permissions and try refreshing if needed
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Error State */}
+                    {videoError && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
+                        <AlertTriangle className="w-8 h-8 text-destructive mb-2" />
+                        <span className="text-sm text-destructive text-center px-4">
+                          {videoError}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2"
+                          onClick={handleRetryCamera}
+                        >
+                          Retry Camera
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Camera Off State */}
+                    {!interviewState.cameraOn &&
+                      !videoLoading &&
+                      !videoError && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                          <VideoOff className="w-12 h-12 text-muted-foreground" />
+                        </div>
+                      )}
+                  </div>
+
+                  {/* Video Controls */}
+                  <div className="flex items-center justify-center gap-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleToggleMute}
+                      className={`${
+                        interviewState.isMuted
+                          ? "bg-destructive text-destructive-foreground"
+                          : ""
+                      }`}
+                    >
+                      {interviewState.isMuted ? (
+                        <MicOff className="w-4 h-4" />
+                      ) : (
+                        <Mic className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleToggleCamera}
+                      className={`${
+                        !interviewState.cameraOn
+                          ? "bg-destructive text-destructive-foreground"
+                          : ""
+                      }`}
+                    >
+                      {interviewState.cameraOn ? (
+                        <Video className="w-4 h-4" />
+                      ) : (
+                        <VideoOff className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Bottom Controls */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  {/* Answer Status Indicators */}
+                  <div className="flex gap-1">
+                    {Array.from({ length: interviewState.totalQuestions }).map(
+                      (_, index) => (
+                        <div
+                          key={index}
+                          className={`w-2 h-2 rounded-full ${
+                            index < interviewState.currentQuestion - 1
+                              ? "bg-green-500"
+                              : index === interviewState.currentQuestion - 1
+                              ? "bg-primary"
+                              : "bg-muted"
+                          }`}
+                        />
+                      )
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Report Issue
+                  </Button>
+                </div>
+
+                <Button variant="outline" size="sm">
+                  Skip Question
                 </Button>
               </div>
-
-              <Button variant="outline" size="sm">
-                Skip Question
-              </Button>
             </div>
-          </div>
-
-          {/* Side Panel */}
-          <div className="space-y-6">
-            <Button
-              variant="outline"
-              onClick={() => setShowSidePanel(!showSidePanel)}
-              className="w-full lg:hidden"
-            >
-              {showSidePanel ? (
-                <ChevronUp className="w-4 h-4 mr-2" />
-              ) : (
-                <ChevronDown className="w-4 h-4 mr-2" />
-              )}
-              {showSidePanel ? "Hide Panel" : "Show Panel"}
-            </Button>
-
-            <Collapsible open={showSidePanel} onOpenChange={setShowSidePanel}>
-              <CollapsibleContent className="space-y-6">
-                {/* Notes Section */}
-                <Card className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">Notes</h3>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleSaveNotes}
-                      >
-                        <Save className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <Textarea
-                      placeholder="Take notes during your interview..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      className="min-h-[120px] resize-none"
-                    />
-                  </div>
-                </Card>
-
-                {/* Question History */}
-                <Card className="p-6">
-                  <h3 className="font-semibold mb-4">Question History</h3>
-                  <div className="space-y-3">
-                    {questionHistory.map((question, index) => (
-                      <div
-                        key={question.id}
-                        className="p-3 bg-muted rounded-lg"
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline" className="text-xs">
-                            Q{index + 1}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            {question.category}
-                          </Badge>
-                        </div>
-                        <p className="text-sm line-clamp-2">{question.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-
-                {/* Remaining Time */}
-                <Card className="p-6">
-                  <h3 className="font-semibold mb-4">Time Remaining</h3>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-primary mb-2">
-                      {formatTime(interviewState.timeRemaining)}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {Math.round(
-                        (interviewState.timeRemaining / totalTimeSeconds) * 100
-                      )}
-                      % remaining
-                    </p>
-                  </div>
-                </Card>
-              </CollapsibleContent>
-            </Collapsible>
           </div>
         </div>
       </div>

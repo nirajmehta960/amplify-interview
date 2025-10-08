@@ -56,8 +56,7 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-7xl font-bold mb-6 leading-tight"
           >
-            Master Your Interview Skills with{" "}
-            <span className="gradient-text">AI</span>
+            <span className="gradient-text">Amplify Interview</span>
           </motion.h1>
 
           <motion.p
@@ -66,8 +65,9 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-xl md:text-2xl text-muted-foreground mb-10 leading-relaxed"
           >
-            Get personalized AI-powered feedback on your interview performance.
-            Practice, improve, and land your dream job with confidence.
+            Master your interview skills with AI-powered practice sessions. Get
+            personalized feedback, track your progress, and land your dream job
+            with confidence.
           </motion.p>
 
           <motion.div

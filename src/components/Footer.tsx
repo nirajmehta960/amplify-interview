@@ -35,11 +35,11 @@ const Footer = () => {
               viewport={{ once: true }}
               className="text-2xl font-bold mb-4 text-background"
             >
-              AI Interview Master
+              Amplify Interview
             </motion.div>
             <p className="text-background/70 mb-6 leading-relaxed">
-              Empowering professionals worldwide to ace their interviews with
-              AI-powered coaching and feedback.
+              Amplify your interview performance with AI-powered practice
+              sessions, personalized feedback, and real-time coaching.
             </p>
             <div className="flex gap-4">
               {socialLinks.map((social, index) => (
