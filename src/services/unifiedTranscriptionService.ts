@@ -32,16 +32,9 @@ class UnifiedTranscriptionService {
       ...opts.fallbackProviders,
     ].filter(Boolean) as TranscriptionProvider[];
 
-    console.log(
-      "Starting Deepgram API transcription with providers:",
-      providers
-    );
-
     for (const provider of providers) {
       try {
-        console.log(`Trying transcription provider: ${provider}`);
         const result = await this.transcribeWithProvider(videoBlob, provider);
-        console.log(`✅ Transcription successful with ${provider}`);
         return result;
       } catch (error) {
         console.error(`❌ Provider ${provider} failed:`, error);
@@ -107,7 +100,6 @@ class UnifiedTranscriptionService {
     for (const [key, provider] of Object.entries(providers)) {
       if (provider.available) {
         try {
-          console.log(`Testing ${provider.name}...`);
           const startTime = Date.now();
           const result = await this.transcribeWithProvider(
             videoBlob,

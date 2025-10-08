@@ -8,6 +8,8 @@ A professional interview practice platform that helps candidates build confidenc
 
 - **Realistic Interview Practice**: Practice with behavioral, technical, and leadership interview formats
 - **Performance Analytics**: Track your progress with detailed metrics and insights
+- **Video Recording & Playback**: Record your interview sessions with optimized video playback and seeking
+- **Cross-Platform Video Downloads**: Download interviews in both WebM and MP4 formats for maximum compatibility
 - **Personalized Feedback**: Receive tailored coaching based on your specific needs
 - **Video Recording**: Record your practice sessions for review and improvement
 - **Secure & Private**: Your data is protected with enterprise-grade security

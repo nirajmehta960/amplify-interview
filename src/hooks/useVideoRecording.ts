@@ -1,5 +1,9 @@
 import { useState, useRef, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  getBestRecordingFormat,
+  getFormatDisplayName,
+} from "@/utils/videoFormatSupport";
 
 interface VideoRecordingState {
   isRecording: boolean;
@@ -16,6 +20,8 @@ interface VideoRecordingControls {
   resumeRecording: () => void;
   getRecordingUrl: () => string | null;
   clearRecording: () => void;
+  getAudioBlob: () => Blob | null;
+  onAudioChunk: (cb: (chunk: Blob) => void) => () => void;
 }
 
 export const useVideoRecording = (): VideoRecordingState &
@@ -31,6 +37,9 @@ export const useVideoRecording = (): VideoRecordingState &
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioChunkSubscribersRef = useRef<Array<(chunk: Blob) => void>>([]);
   const { toast } = useToast();
 
   const startRecording = useCallback(async () => {
@@ -71,7 +80,6 @@ export const useVideoRecording = (): VideoRecordingState &
 
       streamRef.current = stream;
 
-      // Debug: Check audio and video tracks
       const audioTracks = stream.getAudioTracks();
       const videoTracks = stream.getVideoTracks();
       console.log("Audio tracks:", audioTracks.length);
@@ -114,19 +122,14 @@ export const useVideoRecording = (): VideoRecordingState &
         });
       }
 
-      // Check for supported MIME types and choose the best one
-      let mimeType = "video/webm;codecs=vp9,opus";
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = "video/webm;codecs=vp8,opus";
-      }
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = "video/webm";
-      }
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = "video/mp4";
-      }
+      // Get the best supported format for this browser
+      const mimeType = getBestRecordingFormat();
 
-      console.log("Using MIME type:", mimeType);
+      console.log(
+        "Using MIME type:",
+        mimeType,
+        `(${getFormatDisplayName(mimeType)})`
+      );
 
       // Create MediaRecorder with optimized settings for reliable uploads
       const mediaRecorder = new MediaRecorder(stream, {
@@ -186,6 +189,16 @@ export const useVideoRecording = (): VideoRecordingState &
           clearInterval(intervalRef.current);
           intervalRef.current = null;
         }
+
+        // Stop audio-only recorder
+        if (
+          audioRecorderRef.current &&
+          audioRecorderRef.current.state !== "inactive"
+        ) {
+          try {
+            audioRecorderRef.current.stop();
+          } catch {}
+        }
       };
 
       mediaRecorder.onpause = () => {
@@ -198,6 +211,36 @@ export const useVideoRecording = (): VideoRecordingState &
 
       // Start recording with timeslice for better performance
       mediaRecorder.start(1000);
+
+      // Start parallel audio-only recorder for background transcription
+      try {
+        const audioOnlyStream = new MediaStream(stream.getAudioTracks());
+        const audioMime = MediaRecorder.isTypeSupported(
+          "audio/webm;codecs=opus"
+        )
+          ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : "audio/ogg";
+        const audioRecorder = new MediaRecorder(audioOnlyStream, {
+          mimeType: audioMime,
+          audioBitsPerSecond: 128000,
+        });
+        audioRecorderRef.current = audioRecorder;
+        audioChunksRef.current = [];
+        audioRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+            audioChunkSubscribersRef.current.forEach((cb) => cb(e.data));
+          }
+        };
+        audioRecorder.start(1000);
+      } catch (audioRecError) {
+        console.warn(
+          "Audio-only recorder failed, continuing without it",
+          audioRecError
+        );
+      }
 
       toast({
         title: "Recording Started",
@@ -279,14 +322,17 @@ export const useVideoRecording = (): VideoRecordingState &
             intervalRef.current = null;
           }
 
-          toast({
-            title: "Recording Stopped",
-            description: `Video recording saved (${(
-              blob.size /
-              1024 /
-              1024
-            ).toFixed(1)}MB)`,
-          });
+          // Use setTimeout to avoid calling toast during render
+          setTimeout(() => {
+            toast({
+              title: "Recording Stopped",
+              description: `Video recording saved (${(
+                blob.size /
+                1024 /
+                1024
+              ).toFixed(1)}MB)`,
+            });
+          }, 0);
 
           resolve(blob);
 
@@ -331,6 +377,22 @@ export const useVideoRecording = (): VideoRecordingState &
     return null;
   }, [state.recordedChunks]);
 
+  const getAudioBlob = useCallback((): Blob | null => {
+    if (audioChunksRef.current.length > 0) {
+      const type = audioRecorderRef.current?.mimeType || "audio/webm";
+      return new Blob(audioChunksRef.current, { type });
+    }
+    return null;
+  }, []);
+
+  const onAudioChunk = useCallback((cb: (chunk: Blob) => void) => {
+    audioChunkSubscribersRef.current.push(cb);
+    return () => {
+      audioChunkSubscribersRef.current =
+        audioChunkSubscribersRef.current.filter((fn) => fn !== cb);
+    };
+  }, []);
+
   const clearRecording = useCallback(() => {
     setState({
       isRecording: false,
@@ -361,5 +423,7 @@ export const useVideoRecording = (): VideoRecordingState &
     resumeRecording,
     getRecordingUrl,
     clearRecording,
+    getAudioBlob,
+    onAudioChunk,
   };
 };

@@ -43,13 +43,11 @@ class LocalVideoStorageService {
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log("IndexedDB initialized successfully");
         resolve();
       };
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        console.log("IndexedDB upgrade needed, creating object store");
 
         // Delete existing object store if it exists (for clean upgrade)
         if (db.objectStoreNames.contains(this.storeName)) {
@@ -66,8 +64,6 @@ class LocalVideoStorageService {
         store.createIndex("timestamp", "metadata.timestamp", { unique: false });
         store.createIndex("duration", "metadata.duration", { unique: false });
         store.createIndex("size", "metadata.size", { unique: false });
-        
-        console.log("Object store created with keyPath: metadata.sessionId");
       };
 
       request.onblocked = () => {
@@ -100,7 +96,9 @@ class LocalVideoStorageService {
 
     // Convert Blobs to ArrayBuffers for IndexedDB storage
     const videoArrayBuffer = await videoBlob.arrayBuffer();
-    const audioArrayBuffer = audioBlob ? await audioBlob.arrayBuffer() : undefined;
+    const audioArrayBuffer = audioBlob
+      ? await audioBlob.arrayBuffer()
+      : undefined;
 
     const storedData: StoredVideoData = {
       metadata: videoMetadata,
@@ -112,17 +110,9 @@ class LocalVideoStorageService {
       const transaction = this.db!.transaction([this.storeName], "readwrite");
       const store = transaction.objectStore(this.storeName);
 
-      console.log("Storing video data:", {
-        sessionId,
-        metadata: videoMetadata,
-        videoBlobSize: videoArrayBuffer.byteLength,
-        audioBlobSize: audioArrayBuffer?.byteLength || 0,
-      });
-
       const request = store.put(storedData);
 
       request.onsuccess = () => {
-        console.log("Video stored successfully:", sessionId);
         resolve(videoMetadata);
       };
 
@@ -323,9 +313,11 @@ class LocalVideoStorageService {
     }
 
     // Convert ArrayBuffer back to Blob
-    const videoBlob = new Blob([videoData.videoBlob], { type: videoData.metadata.format });
-    const audioBlob = videoData.audioBlob 
-      ? new Blob([videoData.audioBlob], { type: 'audio/webm' })
+    const videoBlob = new Blob([videoData.videoBlob], {
+      type: videoData.metadata.format,
+    });
+    const audioBlob = videoData.audioBlob
+      ? new Blob([videoData.audioBlob], { type: "audio/webm" })
       : undefined;
 
     const videoUrl = URL.createObjectURL(videoBlob);
@@ -408,21 +400,18 @@ class LocalVideoStorageService {
    */
   async resetDatabase(): Promise<void> {
     return new Promise((resolve, reject) => {
-      console.log("Resetting IndexedDB database...");
-      
       const deleteRequest = indexedDB.deleteDatabase(this.dbName);
-      
+
       deleteRequest.onsuccess = () => {
-        console.log("Database deleted successfully");
         this.db = null;
         resolve();
       };
-      
+
       deleteRequest.onerror = () => {
         console.error("Failed to delete database:", deleteRequest.error);
         reject(new Error("Failed to reset database"));
       };
-      
+
       deleteRequest.onblocked = () => {
         console.warn("Database deletion blocked, close other tabs");
       };

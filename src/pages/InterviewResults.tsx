@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { localVideoStorageService } from "@/services/localVideoStorageService";
+import { videoConversionService } from "@/services/videoConversionService";
+import {
+  getFormatDisplayName,
+  getFileExtension,
+  isMP4Format,
+  getActualVideoFormat,
+} from "@/utils/videoFormatSupport";
 import {
   CheckCircle,
   AlertCircle,
@@ -79,17 +86,64 @@ const InterviewResults = () => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
+
+  // Debug: Track isConverting state changes (disabled)
+  // useEffect(() => {
+  //   console.log("isConverting state changed to:", isConverting);
+  // }, [isConverting]);
+  const [seekableVideoUrl, setSeekableVideoUrl] = useState<string | null>(null);
+
+  // Reset conversion state when component loads
+  useEffect(() => {
+    setIsConverting(false);
+  }, []);
 
   // Load real interview data from local storage
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     const loadInterviewData = async () => {
+      // Add timeout to prevent infinite loading
+      timeoutId = setTimeout(() => {
+        console.error("Loading timeout - forcing error state");
+        setError("Loading timeout. Please try refreshing the page.");
+        setIsLoading(false);
+      }, 30000); // 30 second timeout
+
       try {
-        const sessionData = location.state;
+        let sessionData = location.state;
 
         if (!sessionData || !sessionData.sessionId) {
-          console.error("No session data found");
-          setIsLoading(false);
-          return;
+          console.error("No session data found in location.state");
+          // Try to get session data from localStorage as fallback
+          const currentSession = localStorage.getItem("currentSession");
+          if (currentSession) {
+            try {
+              const parsedSession = JSON.parse(currentSession);
+              console.log(
+                "Using fallback session data from localStorage:",
+                parsedSession
+              );
+              sessionData = parsedSession;
+            } catch (parseError) {
+              console.error(
+                "Failed to parse session data from localStorage:",
+                parseError
+              );
+              setError(
+                "No interview data available. Please complete an interview first."
+              );
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            setError(
+              "No interview data available. Please complete an interview first."
+            );
+            setIsLoading(false);
+            return;
+          }
         }
 
         console.log(
@@ -125,6 +179,38 @@ const InterviewResults = () => {
         const videoObjectUrl = URL.createObjectURL(videoBlob);
         setVideoUrl(videoObjectUrl);
 
+        // Set the video URL for immediate playback
+        setSeekableVideoUrl(videoObjectUrl);
+
+        // Check if video is already in MP4 format - no conversion needed!
+        const actualFormat = getActualVideoFormat(
+          videoData.metadata.format,
+          videoBlob.type
+        );
+        const isMP4 = isMP4Format(actualFormat);
+
+        // Debug: Video format detection (disabled)
+        // console.log("Video format detection:", {
+        //   metadataFormat: videoData.metadata.format,
+        //   blobType: videoBlob.type,
+        //   actualFormat: actualFormat,
+        //   isMP4: isMP4,
+        //   videoData: videoData,
+        // });
+
+        if (isMP4) {
+          console.log("Video is already in MP4 format - no conversion needed!");
+          // Video is already MP4, so we can use it directly
+        } else {
+          // Only attempt conversion for non-MP4 formats
+          console.log(
+            "Video is in",
+            videoData.metadata.format,
+            "format - conversion may be needed for optimal playback"
+          );
+          // Note: We'll keep the original video for now and let users choose
+        }
+
         // Create result from real data
         const realResult: InterviewResult = {
           id: sessionData.sessionId,
@@ -138,9 +224,10 @@ const InterviewResults = () => {
               ? "Fair"
               : "Needs Improvement"
             : "Good",
-          duration: Math.round(
-            (Date.now() - videoData.metadata.timestamp) / 60000
-          ),
+          duration:
+            sessionData.videoMetadata?.duration ||
+            videoData.metadata.duration ||
+            0,
           completionTime: new Date(videoData.metadata.timestamp).toISOString(),
           responses:
             sessionData.questionResponses &&
@@ -185,18 +272,45 @@ const InterviewResults = () => {
           ],
           insights: ["Interview completed successfully"],
           recommendations: ["Continue practicing interview skills"],
+          videoMetadata: {
+            duration: videoData.metadata.duration || 0,
+            format: actualFormat, // Use the actual detected format
+            size: videoBlob.size,
+            hasAudio: videoData.metadata.hasAudio || true,
+          },
         };
 
         setResult(realResult);
         setIsLoading(false);
+        clearTimeout(timeoutId);
       } catch (error) {
         console.error("Error loading interview data:", error);
         setIsLoading(false);
+        clearTimeout(timeoutId);
       }
     };
 
     loadInterviewData();
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [location.state]);
+
+  // Cleanup video URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+      }
+      if (seekableVideoUrl) {
+        URL.revokeObjectURL(seekableVideoUrl);
+      }
+    };
+  }, [videoUrl, seekableVideoUrl]);
 
   // Handle missing data properly
   useEffect(() => {
@@ -261,6 +375,35 @@ const InterviewResults = () => {
             <p className="text-muted-foreground">
               Generating detailed feedback...
             </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              This may take a few moments
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center space-y-6 max-w-md"
+        >
+          <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full mx-auto" />
+          <div>
+            <h2 className="text-2xl font-bold mb-2 text-red-600">
+              Unable to Load Results
+            </h2>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Refresh Page
+            </Button>
           </div>
         </motion.div>
       </div>
@@ -346,7 +489,13 @@ const InterviewResults = () => {
                     <Clock className="w-5 h-5 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Duration</p>
-                      <p className="font-semibold">{result.duration} min</p>
+                      <p className="font-semibold">
+                        {result.duration > 0 && isFinite(result.duration)
+                          ? `${Math.floor(result.duration / 60)}m ${Math.round(
+                              result.duration % 60
+                            )}s`
+                          : "0m 0s"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -410,31 +559,150 @@ const InterviewResults = () => {
                 <p className="text-sm text-muted-foreground">
                   Watch your interview performance and review your responses
                 </p>
-                <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
+                  {isConverting &&
+                    (() => {
+                      const videoFormat =
+                        result?.videoMetadata?.format || "video/webm";
+                      const isMP4 = isMP4Format(videoFormat);
+
+                      // Only show conversion overlay if we're actually converting (not MP4)
+                      if (!isMP4) {
+                        return (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
+                            <div className="text-center text-white">
+                              <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                              <p className="text-sm">
+                                Converting video to MP4...
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   <video
                     controls
                     className="w-full h-full"
-                    src={videoUrl}
+                    src={seekableVideoUrl || videoUrl}
                     poster=""
+                    preload="metadata"
                   >
                     Your browser does not support the video tag.
                   </video>
                 </div>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const link = document.createElement("a");
-                      link.href = videoUrl;
-                      link.download = `interview-${result.id}.webm`;
-                      link.click();
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Download Video
-                  </Button>
+                  {(() => {
+                    const videoFormat =
+                      result?.videoMetadata?.format || "video/webm";
+                    const isMP4 = isMP4Format(videoFormat);
+                    const formatName = getFormatDisplayName(videoFormat);
+                    const fileExtension = getFileExtension(videoFormat);
+
+                    // Debug: Download button logic (disabled)
+                    // console.log("Download button logic:", {
+                    //   videoFormat,
+                    //   isMP4,
+                    //   formatName,
+                    //   fileExtension,
+                    //   result: result,
+                    //   videoMetadata: result?.videoMetadata,
+                    // });
+
+                    if (isMP4) {
+                      // Video is already MP4 - show single download button
+                      return (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const link = document.createElement("a");
+                            link.href = videoUrl;
+                            link.download = `interview-${result.id}.${fileExtension}`;
+                            link.click();
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download {formatName}
+                        </Button>
+                      );
+                    } else {
+                      // Video is not MP4 - show both options
+                      return (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const link = document.createElement("a");
+                              link.href = videoUrl;
+                              link.download = `interview-${result.id}.${fileExtension}`;
+                              link.click();
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <Download className="h-4 w-4" />
+                            Download {formatName}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              if (!videoUrl) return;
+
+                              // console.log("MP4 conversion button clicked - starting conversion");
+                              try {
+                                setIsConverting(true);
+                                toast({
+                                  title: "Converting Video",
+                                  description:
+                                    "Converting to MP4 format for better compatibility...",
+                                });
+
+                                // Get the original video blob
+                                const response = await fetch(videoUrl);
+                                const videoBlob = await response.blob();
+
+                                // Convert to MP4
+                                const mp4Blob =
+                                  await videoConversionService.convertWebMToMP4(
+                                    videoBlob
+                                  );
+
+                                // Download MP4
+                                const link = document.createElement("a");
+                                link.href = URL.createObjectURL(mp4Blob);
+                                link.download = `interview-${result.id}.mp4`;
+                                link.click();
+
+                                toast({
+                                  title: "Download Complete",
+                                  description:
+                                    "MP4 video downloaded successfully!",
+                                });
+                              } catch (error) {
+                                console.error("MP4 conversion failed:", error);
+                                toast({
+                                  title: "Conversion Failed",
+                                  description:
+                                    "Failed to convert to MP4. Please try downloading the WebM version.",
+                                  variant: "destructive",
+                                });
+                              } finally {
+                                setIsConverting(false);
+                              }
+                            }}
+                            disabled={isConverting}
+                            className="flex items-center gap-2"
+                          >
+                            <Download className="h-4 w-4" />
+                            {isConverting ? "Converting..." : "Download MP4"}
+                          </Button>
+                        </>
+                      );
+                    }
+                  })()}
                 </div>
               </div>
             </Card>

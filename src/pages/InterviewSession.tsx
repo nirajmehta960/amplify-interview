@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useVideoRecording } from "@/hooks/useVideoRecording";
+import deepgramTranscriptionService from "@/services/deepgramTranscriptionService";
 // Removed whisperService import - using unifiedTranscriptionService instead
 import { unifiedTranscriptionService } from "@/services/unifiedTranscriptionService";
 import { aiFeedbackService } from "@/services/aiFeedbackService";
@@ -81,6 +82,7 @@ const InterviewSession = () => {
     resumeRecording,
     getRecordingUrl,
     clearRecording,
+    onAudioChunk,
   } = useVideoRecording();
 
   const [interviewState, setInterviewState] = useState<InterviewState>({
@@ -199,10 +201,15 @@ const InterviewSession = () => {
 
   const currentQuestion = questions[interviewState.currentQuestion - 1];
 
-  // Start tracking the first question when interview begins
+  // Start tracking the first question only once when interview begins
+  const firstQuestionStartedRef = useRef(false);
   useEffect(() => {
-    if (interviewState.status === "recording" && currentQuestion) {
-      // Start tracking the first question
+    if (
+      interviewState.status === "recording" &&
+      currentQuestion &&
+      !firstQuestionStartedRef.current
+    ) {
+      firstQuestionStartedRef.current = true;
       videoSegmentService.startQuestionSegment(
         currentQuestion.id,
         currentQuestion.text
@@ -375,6 +382,28 @@ const InterviewSession = () => {
         try {
           await startRecording();
           console.log("Recording started successfully");
+          // Mark recording start for precise transcript mapping
+          videoSegmentService.markRecordingStart();
+          // Ensure prep gap is 10s
+          videoSegmentService.setPrepGapSeconds(10);
+
+          // Start background streaming session for low-latency transcription
+          const session = deepgramTranscriptionService.createStreamingSession();
+          const unsubscribe = onAudioChunk(async (chunk) => {
+            try {
+              await session.pushChunk(chunk);
+            } catch (e) {
+              console.warn("Streaming push failed, continuing", e);
+            }
+          });
+          // Save finalize on window for later
+          (window as any).__dgFinalize = async () => {
+            try {
+              return await session.finalize();
+            } finally {
+              unsubscribe();
+            }
+          };
         } catch (recordingError) {
           console.error("Failed to start recording:", recordingError);
           toast({
@@ -517,6 +546,23 @@ const InterviewSession = () => {
 
       // Store video locally using IndexedDB
       let videoMetadata;
+      // Calculate video duration from recording time instead of video element
+      // MediaRecorder blobs often don't have proper duration metadata
+      const recordingStartTime = videoSegmentService.getRecordingStartTime();
+      const recordingEndTime = Date.now();
+      let videoDuration = 0;
+
+      if (recordingStartTime) {
+        videoDuration = (recordingEndTime - recordingStartTime) / 1000;
+      } else {
+        // Fallback: calculate from question segments if available
+        const segments = videoSegmentService.getQuestionSegments();
+        if (segments.length > 0) {
+          const lastSegment = segments[segments.length - 1];
+          videoDuration = (lastSegment.endTime - lastSegment.startTime) / 1000;
+        }
+      }
+
       try {
         await localVideoStorageService.initialize();
         videoMetadata = await localVideoStorageService.storeVideo(
@@ -524,7 +570,7 @@ const InterviewSession = () => {
           videoBlob,
           undefined, // Audio blob will be extracted during transcription
           {
-            duration: 0, // Will be calculated
+            duration: videoDuration,
             size: videoBlob.size,
             format: videoBlob.type,
           }
@@ -551,17 +597,44 @@ const InterviewSession = () => {
       let questionResponses = [];
 
       try {
-        // Process video for transcription and AI analysis
-        // Transcribe question segments from video
-        console.log("Starting question segment transcription...");
-        questionResponses =
-          await videoSegmentService.transcribeQuestionSegments(videoBlob);
-        console.log("Question segments transcribed:", questionResponses);
+        // Prefer background streaming transcript if available
+        let streamed: any = null;
+        if ((window as any).__dgFinalize) {
+          try {
+            streamed = await (window as any).__dgFinalize();
+            console.log("Using streamed transcription result");
+          } catch (e) {
+            console.warn("Stream finalize failed, fallback to upload", e);
+          }
+        }
 
-        // Use unified transcription service for direct video processing
-        console.log("Starting main video transcription...");
-        transcriptionResult =
-          await unifiedTranscriptionService.transcribeVideoDirectly(videoBlob);
+        // Process video for transcription and AI analysis
+        console.log("Starting question segment transcription...");
+        if (streamed) {
+          // If we already have the full transcript with words, inject to segmenter
+          const original = unifiedTranscriptionService.transcribeVideoDirectly;
+          // Monkey patch just for this call: return streamed result
+          (unifiedTranscriptionService as any).transcribeVideoDirectly =
+            async () => streamed;
+          try {
+            questionResponses =
+              await videoSegmentService.transcribeQuestionSegments(videoBlob);
+          } finally {
+            (unifiedTranscriptionService as any).transcribeVideoDirectly =
+              original;
+          }
+          transcriptionResult = streamed;
+        } else {
+          // Fallback: upload entire video and then segment
+          questionResponses =
+            await videoSegmentService.transcribeQuestionSegments(videoBlob);
+          console.log("Question segments transcribed:", questionResponses);
+          console.log("Starting main video transcription...");
+          transcriptionResult =
+            await unifiedTranscriptionService.transcribeVideoDirectly(
+              videoBlob
+            );
+        }
         console.log(
           "Main transcription complete:",
           transcriptionResult.text.substring(0, 100) + "..."
@@ -648,7 +721,10 @@ const InterviewSession = () => {
         const sessionData = {
           sessionId,
           videoUrl: null, // Video is stored locally, not as URL
-          videoMetadata, // Include metadata for local access
+          videoMetadata: {
+            ...videoMetadata,
+            duration: videoDuration, // Ensure duration is included
+          }, // Include metadata for local access
           transcription: transcriptionResult.text,
           questionResponses, // Include individual question responses
           aiFeedback,
@@ -723,7 +799,7 @@ const InterviewSession = () => {
         setQuestionHistory((prev) => [...prev, currentQuestion]);
       }
 
-      // Start tracking the next question after a short delay
+      // Start tracking the next question after the 10s thinking time
       setTimeout(() => {
         const nextQuestion = questions[nextQuestionIndex];
         if (nextQuestion) {
@@ -735,7 +811,7 @@ const InterviewSession = () => {
             `Started tracking question ${nextQuestion.id}: ${nextQuestion.text}`
           );
         }
-      }, 1000); // 1 second delay to allow UI to update
+      }, 10000); // 10 seconds to honor prep gap and avoid overlap
     } else {
       handleEndInterview();
     }
@@ -1080,13 +1156,6 @@ const InterviewSession = () => {
                     onPlay={() => console.log("Video playing")}
                     onError={(e) => console.error("Video error:", e)}
                   />
-
-                  {/* Debug Info */}
-                  <div className="absolute top-2 left-2 text-xs text-white bg-black bg-opacity-50 p-1 rounded">
-                    Camera: {interviewState.cameraOn ? "ON" : "OFF"} | Loading:{" "}
-                    {videoLoading ? "YES" : "NO"} | Error:{" "}
-                    {videoError ? "YES" : "NO"}
-                  </div>
 
                   {/* Loading State */}
                   {videoLoading && (
