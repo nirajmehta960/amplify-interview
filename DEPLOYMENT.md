@@ -50,9 +50,31 @@ VITE_DEEPGRAM_API_KEY=your_deepgram_api_key
 - Check that there are no TypeScript errors
 - Verify all imports are correct
 
+## Speed Insights & Analytics:
+
+✅ **Implemented**: Vercel Speed Insights and Analytics are now integrated into the application.
+
+### What's Included:
+
+- **Speed Insights**: Tracks Core Web Vitals and performance metrics
+- **Analytics**: Tracks page views and user interactions
+- **Real User Monitoring**: Collects data from actual users visiting your site
+
+### How It Works:
+
+- Automatically tracks performance metrics like:
+  - First Contentful Paint (FCP)
+  - Largest Contentful Paint (LCP)
+  - Cumulative Layout Shift (CLS)
+  - First Input Delay (FID)
+  - Time to First Byte (TTFB)
+- Provides Real Experience Score (RES) for overall user experience
+- Shows performance data per route in Vercel dashboard
+
 ## Testing Deployment:
 
 1. Visit your Vercel URL
 2. Try navigating to `/auth/signin`
 3. Try navigating to `/auth/signup`
 4. All routes should work without 404 errors
+5. Check Vercel dashboard → Speed Insights for performance data (may take a few minutes to appear)
