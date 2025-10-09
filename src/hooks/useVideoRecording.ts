@@ -122,8 +122,61 @@ export const useVideoRecording = (): VideoRecordingState &
         });
       }
 
+      // Log audio track settings for debugging
+      audioTracks.forEach((track, index) => {
+        const settings = track.getSettings();
+        console.log(`Audio track ${index} settings:`, {
+          echoCancellation: settings.echoCancellation,
+          noiseSuppression: settings.noiseSuppression,
+          autoGainControl: settings.autoGainControl,
+          sampleRate: settings.sampleRate,
+          channelCount: settings.channelCount,
+        });
+      });
+
+      if (audioTracks.length === 0) {
+        console.warn("⚠️ No audio tracks found in stream! Trying fallback...");
+
+        // Try fallback with basic audio settings
+        try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1920, max: 3840 },
+              height: { ideal: 1080, max: 2160 },
+              frameRate: { ideal: 30, max: 60 },
+              facingMode: "user",
+            },
+            audio: true, // Basic audio without constraints
+          });
+
+          console.log(
+            "Fallback stream audio tracks:",
+            fallbackStream.getAudioTracks().length
+          );
+          if (fallbackStream.getAudioTracks().length > 0) {
+            // Stop the original stream and use the fallback
+            stream.getTracks().forEach((track) => track.stop());
+            streamRef.current = fallbackStream;
+            console.log("Using fallback stream with audio");
+          }
+        } catch (fallbackError) {
+          console.error("Fallback audio also failed:", fallbackError);
+        }
+      } else {
+        console.log("Audio track details:", {
+          label: audioTracks[0].label,
+          enabled: audioTracks[0].enabled,
+          muted: audioTracks[0].muted,
+          readyState: audioTracks[0].readyState,
+        });
+      }
+
       // Get the best supported format for this browser
-      const mimeType = getBestRecordingFormat();
+      const formatSupport = getBestRecordingFormat();
+      const mimeType =
+        formatSupport.preferredFormat ||
+        formatSupport.fallbackFormat ||
+        "video/webm;codecs=vp9,opus";
 
       console.log(
         "Using MIME type:",

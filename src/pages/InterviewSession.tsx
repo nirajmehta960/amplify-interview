@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
+// Removed InterviewContext import - using direct configuration flow
 import { useVideoRecording } from "@/hooks/useVideoRecording";
 import deepgramTranscriptionService from "@/services/deepgramTranscriptionService";
 // Removed whisperService import - using unifiedTranscriptionService instead
@@ -8,6 +9,9 @@ import { unifiedTranscriptionService } from "@/services/unifiedTranscriptionServ
 import { aiFeedbackService } from "@/services/aiFeedbackService";
 import { localVideoStorageService } from "@/services/localVideoStorageService";
 import { videoSegmentService } from "@/services/videoSegmentService";
+import { localInterviewStorageService } from "@/services/localInterviewStorageService";
+import { interviewSessionService } from "@/services/interviewSessionService";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   getQuestionsForInterview,
   Question,
@@ -65,6 +69,9 @@ const InterviewSession = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  // Removed InterviewContext integration - using direct configuration flow
+  const { user } = useAuth();
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -85,10 +92,13 @@ const InterviewSession = () => {
     onAudioChunk,
   } = useVideoRecording();
 
+  // State for questions
+  const [questions, setQuestions] = useState<Question[]>([]);
+
   const [interviewState, setInterviewState] = useState<InterviewState>({
     status: "preparing",
     currentQuestion: 1,
-    totalQuestions: 8, // Will be updated from config
+    totalQuestions: 0, // Will be updated when questions are loaded
     timeRemaining: 30 * 60, // Will be updated from config
     isPaused: false,
     isRecording: false,
@@ -134,39 +144,13 @@ const InterviewSession = () => {
       }
     })();
 
-  // Redirect to setup if no config is available
+  // Redirect to setup if no session is available
   useEffect(() => {
     if (!config || !interviewType) {
       console.warn("No interview config found, redirecting to setup");
       navigate("/interview/setup");
     }
   }, [config, interviewType, navigate]);
-
-  // Initialize interview state from config
-  useEffect(() => {
-    if (config) {
-      console.log("Initializing interview state from config:", config);
-      setInterviewState((prev) => ({
-        ...prev,
-        totalQuestions: config.questionCount,
-        timeRemaining: config.duration * 60, // Convert minutes to seconds
-      }));
-    }
-  }, [config]);
-
-  // Watch for videoRef to become available and set mediaStream
-  const [videoElementReady, setVideoElementReady] = useState(false);
-
-  useEffect(() => {
-    if (videoRef.current && streamRef.current && !videoRef.current.srcObject) {
-      console.log("VideoRef became available, setting mediaStream");
-      videoRef.current.srcObject = streamRef.current;
-      videoRef.current.play().catch(console.error);
-    }
-  }, [videoElementReady]);
-
-  // State for questions
-  const [questions, setQuestions] = useState<Question[]>([]);
 
   // Load questions based on configuration
   useEffect(() => {
@@ -187,6 +171,34 @@ const InterviewSession = () => {
           console.log(
             `Loaded ${limitedQuestions.length} questions for ${interviewType.id}`
           );
+
+          // Create database session after questions are loaded
+          if (user && config && interviewType) {
+            try {
+              const { sessionId } =
+                await interviewSessionService.createInterviewSession({
+                  userId: user.id,
+                  interviewType: interviewType.id as any,
+                  config: {
+                    duration: config.duration,
+                    questionCount: config.questionCount,
+                    useCustomQuestions: config.useCustomQuestions,
+                    customQuestions: config.customQuestions,
+                    selectedField: config.selectedField,
+                  },
+                });
+              setCurrentSessionId(sessionId);
+              console.log("Created database session:", sessionId);
+            } catch (error) {
+              console.error("Error creating database session:", error);
+              toast({
+                title: "Session Creation Error",
+                description:
+                  "Failed to create interview session. Please try again.",
+                variant: "destructive",
+              });
+            }
+          }
         } catch (error) {
           console.error("Error loading questions:", error);
           setQuestions([]);
@@ -197,7 +209,48 @@ const InterviewSession = () => {
     };
 
     loadQuestions();
-  }, [config, interviewType]);
+  }, [config, interviewType, user, toast]);
+
+  // Initialize interview state from config and questions
+  useEffect(() => {
+    if (config && questions.length > 0) {
+      console.log("Initializing interview state from config:", config);
+      setInterviewState((prev) => ({
+        ...prev,
+        totalQuestions: questions.length,
+        timeRemaining: config.duration * 60, // Convert minutes to seconds
+        status: "ready", // Change status to ready when questions are loaded
+      }));
+    }
+  }, [config, questions.length]);
+
+  // Watch for videoRef to become available and set mediaStream
+  const [videoElementReady, setVideoElementReady] = useState(false);
+
+  useEffect(() => {
+    if (videoRef.current && streamRef.current && !videoRef.current.srcObject) {
+      console.log("VideoRef became available, setting mediaStream");
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(console.error);
+      setVideoElementReady(false); // Reset the flag
+    }
+  }, [videoElementReady]);
+
+  // Retry setting video element when it becomes available
+  useEffect(() => {
+    if (videoElementReady && streamRef.current) {
+      console.log("Retrying video element setup after it became available");
+      const retrySetVideoElement = () => {
+        if (videoRef.current && streamRef.current) {
+          videoRef.current.srcObject = streamRef.current;
+          setVideoElementReady(false);
+        } else {
+          setTimeout(retrySetVideoElement, 100);
+        }
+      };
+      setTimeout(retrySetVideoElement, 100);
+    }
+  }, [videoElementReady]);
 
   const currentQuestion = questions[interviewState.currentQuestion - 1];
 
@@ -370,8 +423,10 @@ const InterviewSession = () => {
           }
         };
 
-        // Try to set video element
-        setVideoElement();
+        // Wait for next tick to ensure video element is rendered
+        setTimeout(() => {
+          setVideoElement();
+        }, 100);
 
         toast({
           title: "Camera Ready",
@@ -482,103 +537,20 @@ const InterviewSession = () => {
       // Stop recording and get video blob
       const videoBlob = await stopRecording();
 
-      if (!videoBlob) {
-        console.warn("No recording available, creating fallback session");
-
-        // Create a fallback session with mock data
-        const fallbackSessionData = {
-          sessionId: "session-1",
-          videoUrl: null,
-          transcription: "Interview completed successfully",
-          aiFeedback: {
-            overallScore: 75,
-            strengths: ["Good communication skills", "Clear answers"],
-            improvements: [
-              "Practice more interview questions",
-              "Improve confidence",
-            ],
-            detailedFeedback:
-              "This was a practice session. Consider recording your next interview for detailed AI feedback.",
-          },
-          speechAnalysis: {
-            wordCount: 150,
-            speakingRate: 120,
-            fillerWords: 5,
-          },
-          config,
-          type: interviewType,
-        };
-
-        // Store fallback session
-        localStorage.setItem(
-          "currentSession",
-          JSON.stringify(fallbackSessionData)
-        );
-
-        setInterviewState((prev) => ({ ...prev, status: "complete" }));
-
-        toast({
-          title: "Interview Complete!",
-          description:
-            "Session completed. Recording was not available, but your progress has been saved.",
-        });
-
-        // Navigate to results
-        setTimeout(() => {
-          navigate("/results/1", {
-            state: fallbackSessionData,
-          });
-        }, 2000);
-
-        return;
-      }
-
-      // Use setTimeout to avoid setState during render
-      setTimeout(() => {
-        toast({
-          title: "Processing Interview",
-          description: "Storing video locally and generating AI feedback...",
-        });
-      }, 0);
-
-      // Generate unique session ID
-      const sessionId = `session-${Date.now()}`;
-
-      // Store video locally using IndexedDB
-      let videoMetadata;
-      // Calculate video duration from recording time instead of video element
-      // MediaRecorder blobs often don't have proper duration metadata
+      // Calculate total duration
       const recordingStartTime = videoSegmentService.getRecordingStartTime();
       const recordingEndTime = Date.now();
-      let videoDuration = 0;
+      let totalDuration = 0;
 
       if (recordingStartTime) {
-        videoDuration = (recordingEndTime - recordingStartTime) / 1000;
+        totalDuration = (recordingEndTime - recordingStartTime) / 1000;
       } else {
         // Fallback: calculate from question segments if available
         const segments = videoSegmentService.getQuestionSegments();
         if (segments.length > 0) {
           const lastSegment = segments[segments.length - 1];
-          videoDuration = (lastSegment.endTime - lastSegment.startTime) / 1000;
+          totalDuration = (lastSegment.endTime - lastSegment.startTime) / 1000;
         }
-      }
-
-      try {
-        await localVideoStorageService.initialize();
-        videoMetadata = await localVideoStorageService.storeVideo(
-          sessionId,
-          videoBlob,
-          undefined, // Audio blob will be extracted during transcription
-          {
-            duration: videoDuration,
-            size: videoBlob.size,
-            format: videoBlob.type,
-          }
-        );
-        console.log("Video stored locally:", videoMetadata);
-      } catch (storageError) {
-        console.error("Failed to store video locally:", storageError);
-        throw new Error("Failed to store video locally");
       }
 
       // End tracking for current question
@@ -645,15 +617,6 @@ const InterviewSession = () => {
         );
         console.log("Speech analysis complete");
 
-        // Update video metadata with transcription
-        await localVideoStorageService.updateVideoMetadata(sessionId, {
-          transcription: {
-            text: transcriptionResult.text,
-            confidence: transcriptionResult.confidence,
-            duration: transcriptionResult.duration,
-          },
-        });
-
         // Generate AI feedback using question responses if available
         const feedbackData =
           questionResponses.length > 0
@@ -702,68 +665,143 @@ const InterviewSession = () => {
           };
         }
 
-        // Update video metadata with AI feedback
-        try {
-          await localVideoStorageService.updateVideoMetadata(sessionId, {
-            aiFeedback: {
-              overallScore: aiFeedback.overallScore,
-              strengths: aiFeedback.strengths,
-              improvements: aiFeedback.improvements,
-              detailedFeedback: aiFeedback.detailedFeedback,
-            },
-          });
-          console.log("AI feedback metadata updated");
-        } catch (updateError) {
-          console.warn("Failed to update AI feedback metadata:", updateError);
+        console.log(`Generated ${questionResponses.length} question responses`);
+
+        // Save each response to the database
+        if (currentSessionId && questionResponses.length > 0) {
+          for (const response of questionResponses) {
+            try {
+              await interviewSessionService.saveQuestionResponse(
+                currentSessionId,
+                {
+                  questionId: Number(response.questionId), // Convert to number for database int8
+                  questionText: response.questionText,
+                  responseText: response.answerText,
+                  duration: response.duration,
+                }
+              );
+              console.log(
+                `Saved response for question ${response.questionId} to database`
+              );
+            } catch (error) {
+              console.error(
+                `Error saving response for question ${response.questionId}:`,
+                error
+              );
+            }
+          }
         }
 
-        // Create session data for navigation
-        const sessionData = {
-          sessionId,
-          videoUrl: null, // Video is stored locally, not as URL
-          videoMetadata: {
-            ...videoMetadata,
-            duration: videoDuration, // Ensure duration is included
-          }, // Include metadata for local access
-          transcription: transcriptionResult.text,
-          questionResponses, // Include individual question responses
-          aiFeedback,
-          speechAnalysis,
-          config,
-          type: interviewType,
-          storageType: "local", // Indicate this is stored locally
-        };
-
-        // Store session reference in localStorage for quick access
-        localStorage.setItem(
-          "currentSession",
-          JSON.stringify({
-            sessionId,
-            timestamp: Date.now(),
-            storageType: "local",
-          })
-        );
-
-        setInterviewState((prev) => ({ ...prev, status: "complete" }));
-
-        toast({
-          title: "Interview Complete!",
-          description:
-            "Video saved locally. AI analysis completed successfully.",
-        });
-
-        // Navigate to results
-        setTimeout(() => {
-          navigate("/results/1", {
-            state: sessionData,
-          });
-        }, 2000);
+        // Complete the interview session in the database
+        if (currentSessionId) {
+          try {
+            await interviewSessionService.completeInterviewSession(
+              currentSessionId,
+              totalDuration
+            );
+            console.log(`Completed session ${currentSessionId} in database`);
+          } catch (error) {
+            console.error(
+              `Error completing session ${currentSessionId}:`,
+              error
+            );
+          }
+        }
       } catch (error) {
         console.error("Processing error:", error);
         throw error;
       }
+
+      // Generate unique session ID for local storage (keep for video storage)
+      const sessionId = currentSessionId || `session-${Date.now()}`;
+
+      // Store video locally for playback
+      if (videoBlob) {
+        try {
+          await localVideoStorageService.initialize();
+          await localVideoStorageService.storeVideo(
+            sessionId,
+            videoBlob,
+            undefined,
+            {
+              duration: totalDuration,
+              size: videoBlob.size,
+              format: videoBlob.type,
+            }
+          );
+
+          // Update video metadata with transcription
+          await localVideoStorageService.updateVideoMetadata(sessionId, {
+            transcription: {
+              text: transcriptionResult.text,
+              confidence: transcriptionResult.confidence,
+              duration: transcriptionResult.duration,
+            },
+          });
+
+          // Update video metadata with AI feedback
+          try {
+            await localVideoStorageService.updateVideoMetadata(sessionId, {
+              aiFeedback: {
+                overallScore: aiFeedback.overallScore,
+                strengths: aiFeedback.strengths,
+                improvements: aiFeedback.improvements,
+                detailedFeedback: aiFeedback.detailedFeedback,
+              },
+            });
+            console.log("AI feedback metadata updated");
+          } catch (updateError) {
+            console.warn("Failed to update AI feedback metadata:", updateError);
+          }
+        } catch (storageError) {
+          console.error("Error storing video locally:", storageError);
+        }
+      }
+
+      setInterviewState((prev) => ({ ...prev, status: "complete" }));
+
+      toast({
+        title: "Interview Complete!",
+        description: "Video saved locally. AI analysis completed successfully.",
+      });
+
+      // Create session data for navigation
+      const sessionData = {
+        sessionId: currentSessionId || sessionId, // Use database session ID if available
+        videoUrl: null, // Video is stored locally, not as URL
+        videoMetadata: {
+          duration: totalDuration,
+          size: videoBlob?.size,
+          format: videoBlob?.type,
+        },
+        transcription: transcriptionResult.text,
+        questionResponses, // Include individual question responses
+        aiFeedback,
+        speechAnalysis,
+        config,
+        type: interviewType,
+        storageType: "database", // Indicate this is stored in database
+      };
+
+      // Store session reference in localStorage for quick access
+      localStorage.setItem(
+        "currentSession",
+        JSON.stringify({
+          sessionId: currentSessionId || sessionId,
+          timestamp: Date.now(),
+          storageType: "database",
+        })
+      );
+
+      // Navigate to results
+      setTimeout(() => {
+        navigate("/results/1", {
+          state: sessionData,
+        });
+      }, 2000);
     } catch (error) {
       console.error("Interview processing error:", error);
+      setInterviewState((prev) => ({ ...prev, status: "error" }));
 
       toast({
         title: "Processing Error",
@@ -771,8 +809,6 @@ const InterviewSession = () => {
           "There was an error processing your interview. Please try again.",
         variant: "destructive",
       });
-
-      setInterviewState((prev) => ({ ...prev, status: "recording" }));
     }
   };
 
@@ -787,7 +823,7 @@ const InterviewSession = () => {
     }
 
     if (interviewState.currentQuestion < interviewState.totalQuestions) {
-      const nextQuestionIndex = interviewState.currentQuestion;
+      const nextQuestionIndex = interviewState.currentQuestion; // This is the next question index (1-indexed)
       setInterviewState((prev) => ({
         ...prev,
         currentQuestion: prev.currentQuestion + 1,
@@ -801,7 +837,7 @@ const InterviewSession = () => {
 
       // Start tracking the next question after the 10s thinking time
       setTimeout(() => {
-        const nextQuestion = questions[nextQuestionIndex];
+        const nextQuestion = questions[nextQuestionIndex]; // Use nextQuestionIndex directly (already 0-indexed for next question)
         if (nextQuestion) {
           videoSegmentService.startQuestionSegment(
             nextQuestion.id,
@@ -850,39 +886,23 @@ const InterviewSession = () => {
             sampleRate: 44100,
           },
         });
+        console.log("Ideal constraints successful");
       } catch (idealError) {
-        console.warn(
-          "Ideal constraints failed, trying basic constraints:",
-          idealError
-        );
+        console.log("Ideal constraints failed, trying basic constraints");
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
         });
-      }
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current
-          .play()
-          .then(() => {
-            console.log("Video started playing successfully (fallback)");
-            setVideoLoading(false);
-          })
-          .catch((error) => {
-            console.error("Error playing video (fallback):", error);
-            setVideoError("Failed to play video");
-            setVideoLoading(false);
-          });
+        console.log("Basic constraints successful");
       }
 
       streamRef.current = mediaStream;
       setVideoLoading(false);
 
-      toast({
-        title: "Camera Connected",
-        description: "Your camera is now working properly.",
-      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.play().catch(console.error);
+      }
     } catch (error) {
       console.error("Camera retry failed:", error);
       setVideoError(
@@ -923,63 +943,11 @@ const InterviewSession = () => {
           className="text-center space-y-6"
         >
           <Loader2 className="w-16 h-16 text-primary animate-spin mx-auto" />
-          <div>
-            <h2 className="text-2xl font-bold mb-2">
-              Preparing Your Interview
-            </h2>
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold">Preparing Interview</h2>
             <p className="text-muted-foreground">
-              Setting up camera and microphone...
+              Setting up your interview environment...
             </p>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (interviewState.status === "processing") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center space-y-6 max-w-md"
-        >
-          <Loader2 className="w-16 h-16 text-primary animate-spin mx-auto" />
-          <div>
-            <h2 className="text-2xl font-bold mb-2">
-              Processing Your Interview
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              Analyzing your responses and generating feedback...
-            </p>
-            <Progress value={66} className="w-full" />
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (interviewState.status === "complete") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center space-y-6 max-w-md"
-        >
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Interview Complete!</h2>
-            <p className="text-muted-foreground mb-6">
-              Your responses are being analyzed. You'll receive detailed
-              feedback shortly.
-            </p>
-            <Button
-              onClick={() => navigate("/dashboard")}
-              className="bg-primary hover:bg-primary/90"
-            >
-              Return to Dashboard
-            </Button>
           </div>
         </motion.div>
       </div>
@@ -1007,7 +975,7 @@ const InterviewSession = () => {
                       stroke="currentColor"
                       strokeWidth="4"
                       fill="none"
-                      className="text-muted-foreground"
+                      className="text-muted-foreground/20"
                     />
                     <circle
                       cx="24"
@@ -1020,309 +988,217 @@ const InterviewSession = () => {
                       strokeDashoffset={`${
                         2 * Math.PI * 20 * (1 - timeProgress / 100)
                       }`}
-                      className="text-primary transition-all duration-1000"
+                      className="text-primary transition-all duration-300 ease-in-out"
+                      strokeLinecap="round"
                     />
                   </svg>
-                  <Clock className="absolute inset-0 m-auto w-4 h-4 text-primary" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Clock className="w-4 h-4 text-primary" />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">
                     {formatTime(interviewState.timeRemaining)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">remaining</p>
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {Math.round(timeProgress)}% used
+                  </span>
                 </div>
               </div>
 
-              {/* Question Counter */}
+              {/* Progress */}
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-sm">
-                  {interviewState.currentQuestion} /{" "}
+                <span className="text-sm font-medium">
+                  Question {interviewState.currentQuestion} of{" "}
                   {interviewState.totalQuestions}
-                </Badge>
-                <span className="text-sm text-muted-foreground">questions</span>
+                </span>
+                <div className="w-24 h-1 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-300 ease-in-out"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
               </div>
             </div>
 
+            {/* Controls */}
             <div className="flex items-center gap-2">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={handlePause}
-                className="glass"
+                onClick={handleToggleMute}
+                className="flex items-center gap-2"
               >
-                <Pause className="w-4 h-4 mr-2" />
-                Pause
+                {interviewState.isMuted ? (
+                  <MicOff className="w-4 h-4" />
+                ) : (
+                  <Mic className="w-4 h-4" />
+                )}
+                {interviewState.isMuted ? "Unmute" : "Mute"}
               </Button>
               <Button
-                variant="destructive"
+                variant="ghost"
                 size="sm"
-                onClick={handleEndInterview}
-                className="glass"
+                onClick={handleToggleCamera}
+                className="flex items-center gap-2"
               >
-                <X className="w-4 h-4 mr-2" />
-                End Interview
+                {interviewState.cameraOn ? (
+                  <VideoOff className="w-4 h-4" />
+                ) : (
+                  <Video className="w-4 h-4" />
+                )}
+                {interviewState.cameraOn ? "Turn Off Camera" : "Turn On Camera"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePause}
+                className="flex items-center gap-2"
+              >
+                <Pause className="w-4 h-4" />
+                Pause
               </Button>
             </div>
           </div>
         </div>
       </header>
 
+      {/* Main Content */}
       <div className="flex-1 overflow-y-auto pt-16">
         <div className="container mx-auto px-4 py-1">
           <div className="max-w-4xl mx-auto">
-            {/* Main Interview Area */}
-            <div className="space-y-2">
-              {/* Question Display */}
-              <Card className="p-3">
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline">
-                          {currentQuestion?.category}
-                        </Badge>
-                        {thinkingTime > 0 && (
-                          <>
-                            <div className="w-1 h-1 bg-primary rounded-full animate-pulse" />
-                            <span className="text-xs text-primary font-medium">
-                              Thinking time: {formatTime(thinkingTime)}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                      <h2 className="text-xl font-bold leading-tight">
-                        {currentQuestion?.text}
-                      </h2>
+            <div className="grid gap-4">
+              {/* Interview Area */}
+              <div className="space-y-2">
+                {/* Question Card */}
+                <Card className="p-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline">
+                        {currentQuestion?.category}
+                      </Badge>
+                      {thinkingTime > 0 && (
+                        <>
+                          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" />
+                          <span className="text-xs text-primary font-medium">
+                            Thinking time: {formatTime(thinkingTime)}
+                          </span>
+                        </>
+                      )}
                     </div>
-                  </div>
-
-                  {thinkingTime > 0 && (
-                    <div className="mt-2">
-                      <Progress
-                        value={(thinkingTime / 10) * 100}
-                        className="h-1"
+                    <h2 className="text-xl font-semibold leading-tight">
+                      {currentQuestion?.text || "Loading question..."}
+                    </h2>
+                    <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-1000 ease-linear"
+                        style={{
+                          width:
+                            thinkingTime > 0
+                              ? `${(thinkingTime / 10) * 100}%`
+                              : "100%",
+                        }}
                       />
                     </div>
-                  )}
-
-                  <div className="flex justify-end pt-2">
-                    <Button
-                      onClick={handleNextQuestion}
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      {interviewState.currentQuestion ===
-                      interviewState.totalQuestions
-                        ? "Finish Interview"
-                        : "Next Question"}
-                      <ChevronRight className="w-4 h-4 ml-2" />
-                    </Button>
                   </div>
-                </div>
-              </Card>
+                </Card>
 
-              {/* Video Section */}
-              <Card className="p-3">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Your Video</h3>
-                    <div className="flex items-center gap-2">
-                      {interviewState.isRecording && (
-                        <motion.div
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                          className="flex items-center gap-2"
-                        >
-                          <div className="w-2 h-2 bg-red-500 rounded-full" />
-                          <span className="text-sm text-red-500 font-medium">
-                            Recording
-                          </span>
-                        </motion.div>
+                {/* Video Card */}
+                <Card className="p-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium">Your Video</h3>
+                      <div className="flex items-center gap-2">
+                        {interviewState.isRecording && (
+                          <div className="flex items-center gap-2 text-red-500">
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                            <span className="text-xs font-medium">
+                              Recording
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="relative aspect-[16/10] bg-muted rounded-lg overflow-hidden">
+                      {videoLoading ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 className="w-8 h-8 animate-spin" />
+                        </div>
+                      ) : videoError ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
+                          <AlertTriangle className="w-12 h-12 text-destructive" />
+                          <div className="text-center">
+                            <p className="font-medium text-destructive">
+                              Camera Error
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {videoError}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRetryCamera}
+                          >
+                            Retry Camera
+                          </Button>
+                        </div>
+                      ) : (
+                        <video
+                          ref={videoRef}
+                          className="w-full h-full object-cover"
+                          muted={true}
+                          playsInline
+                          autoPlay
+                        />
                       )}
                     </div>
                   </div>
+                </Card>
 
-                  <div className="relative bg-black rounded-lg overflow-hidden aspect-[16/10]">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      muted
-                      playsInline
-                      className={`w-full h-full object-cover ${
-                        videoError ? "hidden" : ""
-                      }`}
-                      onLoadStart={() => console.log("Video load started")}
-                      onLoadedData={() => console.log("Video data loaded")}
-                      onCanPlay={() => console.log("Video can play")}
-                      onPlay={() => console.log("Video playing")}
-                      onError={(e) => console.error("Video error:", e)}
-                    />
-
-                    {/* Loading State */}
-                    {videoLoading && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
-                        <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
-                        <span className="text-sm text-muted-foreground">
-                          Loading camera...
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="mt-2"
-                          onClick={handleRetryCamera}
-                        >
-                          Start Camera Manually
-                        </Button>
-                        <div className="mt-2 text-xs text-muted-foreground text-center">
-                          Check browser permissions and try refreshing if needed
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Error State */}
-                    {videoError && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
-                        <AlertTriangle className="w-8 h-8 text-destructive mb-2" />
-                        <span className="text-sm text-destructive text-center px-4">
-                          {videoError}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="mt-2"
-                          onClick={handleRetryCamera}
-                        >
-                          Retry Camera
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Camera Off State */}
-                    {!interviewState.cameraOn &&
-                      !videoLoading &&
-                      !videoError && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-muted">
-                          <VideoOff className="w-12 h-12 text-muted-foreground" />
-                        </div>
-                      )}
-                  </div>
-
-                  {/* Video Controls */}
-                  <div className="flex items-center justify-center gap-4">
+                {/* Action Buttons */}
+                <div className="flex justify-center pt-2">
+                  {interviewState.currentQuestion <
+                  interviewState.totalQuestions ? (
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleToggleMute}
-                      className={`${
-                        interviewState.isMuted
-                          ? "bg-destructive text-destructive-foreground"
-                          : ""
-                      }`}
+                      onClick={handleNextQuestion}
+                      size="lg"
+                      className="flex items-center gap-2"
                     >
-                      {interviewState.isMuted ? (
-                        <MicOff className="w-4 h-4" />
-                      ) : (
-                        <Mic className="w-4 h-4" />
-                      )}
+                      Next Question
+                      <ChevronRight className="w-4 h-4" />
                     </Button>
+                  ) : (
                     <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleToggleCamera}
-                      className={`${
-                        !interviewState.cameraOn
-                          ? "bg-destructive text-destructive-foreground"
-                          : ""
-                      }`}
+                      onClick={handleEndInterview}
+                      size="lg"
+                      className="flex items-center gap-2"
+                      variant="destructive"
                     >
-                      {interviewState.cameraOn ? (
-                        <Video className="w-4 h-4" />
-                      ) : (
-                        <VideoOff className="w-4 h-4" />
-                      )}
+                      <Square className="w-4 h-4" />
+                      End Interview
                     </Button>
-                  </div>
+                  )}
                 </div>
-              </Card>
-
-              {/* Bottom Controls */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  {/* Answer Status Indicators */}
-                  <div className="flex gap-1">
-                    {Array.from({ length: interviewState.totalQuestions }).map(
-                      (_, index) => (
-                        <div
-                          key={index}
-                          className={`w-2 h-2 rounded-full ${
-                            index < interviewState.currentQuestion - 1
-                              ? "bg-green-500"
-                              : index === interviewState.currentQuestion - 1
-                              ? "bg-primary"
-                              : "bg-muted"
-                          }`}
-                        />
-                      )
-                    )}
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <AlertTriangle className="w-4 h-4 mr-2" />
-                    Report Issue
-                  </Button>
-                </div>
-
-                <Button variant="outline" size="sm">
-                  Skip Question
-                </Button>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Pause/Resume Modal */}
+      {/* Pause Modal */}
       <Dialog open={showPauseModal} onOpenChange={setShowPauseModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Interview Paused</DialogTitle>
             <DialogDescription>
-              Your interview is currently paused. Choose an option below.
+              Your interview has been paused. You can resume when you're ready.
             </DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="text-center py-4">
-              <Clock className="w-12 h-12 text-primary mx-auto mb-2" />
-              <p className="text-lg font-semibold">
-                {formatTime(interviewState.timeRemaining)}
-              </p>
-              <p className="text-sm text-muted-foreground">time remaining</p>
-            </div>
-
-            <div className="space-y-3">
-              <Button
-                onClick={handleResume}
-                className="w-full bg-primary hover:bg-primary/90"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Resume Interview
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleEndInterview}
-                className="w-full"
-              >
-                <Square className="w-4 h-4 mr-2" />
-                End Interview
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setShowPauseModal(false)}
-                className="w-full"
-              >
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Report Technical Issue
-              </Button>
-            </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleResume}>
+              Resume Interview
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

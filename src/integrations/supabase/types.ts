@@ -78,7 +78,7 @@ export type Database = {
         Row: {
           id: string;
           session_id: string;
-          question_id: string;
+          question_id: number;
           response_text: string | null;
           response_audio_url: string | null;
           response_video_url: string | null;
@@ -90,7 +90,7 @@ export type Database = {
         Insert: {
           id?: string;
           session_id: string;
-          question_id: string;
+          question_id: number;
           response_text?: string | null;
           response_audio_url?: string | null;
           response_video_url?: string | null;
@@ -102,7 +102,7 @@ export type Database = {
         Update: {
           id?: string;
           session_id?: string;
-          question_id?: string;
+          question_id?: number;
           response_text?: string | null;
           response_audio_url?: string | null;
           response_video_url?: string | null;
@@ -124,7 +124,7 @@ export type Database = {
             columns: ["question_id"];
             isOneToOne: false;
             referencedRelation: "interview_questions";
-            referencedColumns: ["id"];
+            referencedColumns: ["question_id"];
           }
         ];
       };
