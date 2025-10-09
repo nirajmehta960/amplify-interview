@@ -39,13 +39,15 @@ class VideoSegmentService {
     }
 
     const endTime = Date.now();
-    const duration = (endTime - this.currentQuestionStartTime) / 1000; // Convert to seconds
+    // Add a 2-second buffer to ensure we capture the complete response
+    const bufferedEndTime = endTime + 2000;
+    const duration = (bufferedEndTime - this.currentQuestionStartTime) / 1000; // Convert to seconds
 
     const segment: QuestionSegment = {
       questionId,
       questionText,
       startTime: this.currentQuestionStartTime,
-      endTime,
+      endTime: bufferedEndTime,
       duration,
     };
 

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { localVideoStorageService } from "@/services/localVideoStorageService";
+import { localInterviewStorageService } from "@/services/localInterviewStorageService";
+import { interviewSessionService } from "@/services/interviewSessionService";
 import { videoConversionService } from "@/services/videoConversionService";
 import {
   getFormatDisplayName,
@@ -116,19 +118,31 @@ const InterviewResults = () => {
 
         if (!sessionData || !sessionData.sessionId) {
           console.error("No session data found in location.state");
-          // Try to get session data from localStorage as fallback
-          const currentSession = localStorage.getItem("currentSession");
-          if (currentSession) {
+          // Try to get session data from local storage as fallback
+          const sessionId =
+            sessionIdFromUrl ||
+            localInterviewStorageService.getCurrentSessionId();
+          if (sessionId) {
             try {
-              const parsedSession = JSON.parse(currentSession);
-              console.log(
-                "Using fallback session data from localStorage:",
-                parsedSession
-              );
-              sessionData = parsedSession;
+              const localSession =
+                localInterviewStorageService.getSession(sessionId);
+              if (localSession) {
+                sessionData =
+                  localInterviewStorageService.createSessionData(sessionId);
+                console.log(
+                  "Using session data from local storage:",
+                  sessionData
+                );
+              } else {
+                setError(
+                  "Session not found. Please complete an interview first."
+                );
+                setIsLoading(false);
+                return;
+              }
             } catch (parseError) {
               console.error(
-                "Failed to parse session data from localStorage:",
+                "Failed to get session data from local storage:",
                 parseError
               );
               setError(
@@ -152,6 +166,49 @@ const InterviewResults = () => {
         );
         console.log("Session data:", sessionData);
         console.log("Question responses:", sessionData.questionResponses);
+
+        // If session is stored in database, fetch additional data
+        if (sessionData.storageType === "database") {
+          try {
+            const dbSessionData =
+              await interviewSessionService.fetchInterviewSession(
+                sessionData.sessionId
+              );
+            if (dbSessionData) {
+              // Merge database session data with existing session data
+              sessionData.questionResponses = dbSessionData.responses.map(
+                (response) => {
+                  // Find the corresponding question text from the fetched questions
+                  const question = dbSessionData.questions.find(
+                    (q) => q.question_id === response.question_id
+                  );
+                  const questionText = question
+                    ? question.question_text
+                    : `Question ${response.question_id}`;
+
+                  return {
+                    questionId: response.question_id.toString(), // Keep as string for display
+                    questionText: questionText, // Use actual question text from database
+                    answerText: response.response_text,
+                    duration: response.duration,
+                    analysis: {
+                      confidence: 0.8,
+                      speakingRate: 150,
+                      fillerWords: 0,
+                    },
+                  };
+                }
+              );
+              console.log(
+                "Enhanced session data with database responses:",
+                sessionData.questionResponses
+              );
+            }
+          } catch (error) {
+            console.error("Error fetching database session data:", error);
+            // Continue with existing session data if database fetch fails
+          }
+        }
 
         // Initialize local storage service
         await localVideoStorageService.initialize();

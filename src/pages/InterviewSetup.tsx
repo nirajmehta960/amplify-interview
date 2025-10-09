@@ -56,6 +56,7 @@ import {
   getQuestionCountByCustomDomain,
   type Field,
 } from "@/services/questionBankService";
+// Removed InterviewContext import - using direct configuration flow
 
 interface InterviewType {
   id: string;
@@ -79,6 +80,7 @@ interface InterviewConfig {
 const InterviewSetup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  // Removed InterviewContext integration - using direct configuration flow
 
   const [selectedType, setSelectedType] = useState<string>("");
   const [showChecklist, setShowChecklist] = useState(false);
@@ -96,7 +98,7 @@ const InterviewSetup = () => {
   const [config, setConfig] = useState<InterviewConfig>({
     type: "",
     duration: 15,
-    questionCount: 4,
+    questionCount: 15, // Default to 15 questions
     useCustomQuestions: false,
     customQuestions: [],
     selectedField: "",
@@ -209,11 +211,26 @@ const InterviewSetup = () => {
   const handleTypeSelect = (typeId: string) => {
     const type = interviewTypes.find((t) => t.id === typeId);
     setSelectedType(typeId);
+
+    // Get the appropriate question count for this type
+    let newQuestionCount = 15; // Default
+    if (typeId === "custom" && config.selectedField) {
+      newQuestionCount = questionCounts.custom[config.selectedField] || 15;
+    } else if (
+      typeId === "behavioral" ||
+      typeId === "technical" ||
+      typeId === "leadership"
+    ) {
+      newQuestionCount =
+        questionCounts[typeId as "behavioral" | "technical" | "leadership"] ||
+        15;
+    }
+
     setConfig((prev) => ({
       ...prev,
       type: typeId,
       duration: prev.duration, // Keep user's duration selection
-      questionCount: prev.questionCount, // Keep user's question count selection
+      questionCount: newQuestionCount, // Use dynamic question count
     }));
   };
 
@@ -495,7 +512,10 @@ const InterviewSetup = () => {
                                 ? "Multiple domains available"
                                 : `${
                                     questionCounts[
-                                      type.id as keyof typeof questionCounts
+                                      type.id as
+                                        | "behavioral"
+                                        | "technical"
+                                        | "leadership"
                                     ] || 0
                                   } questions`}
                             </Badge>
