@@ -98,7 +98,7 @@ const InterviewSetup = () => {
   const [config, setConfig] = useState<InterviewConfig>({
     type: "",
     duration: 15,
-    questionCount: 15, // Default to 15 questions
+    questionCount: 3, // Default to 3 questions for easier testing
     useCustomQuestions: false,
     customQuestions: [],
     selectedField: "",
@@ -746,7 +746,7 @@ const InterviewSetup = () => {
                         }))
                       }
                       max={15}
-                      min={3}
+                      min={1}
                       step={1}
                       className="flex-1"
                     />

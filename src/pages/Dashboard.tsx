@@ -14,6 +14,7 @@ import {
   ChevronRight,
   LogOut,
   RefreshCw,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -298,7 +299,7 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Button
             size="lg"
             className="bg-primary hover:bg-primary/90 text-primary-foreground h-20"
@@ -319,6 +320,15 @@ const Dashboard = () => {
           <Button variant="outline" size="lg" className="glass h-20">
             <MessageCircle className="w-6 h-6 mr-2" />
             Practice Questions
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="glass h-20"
+            onClick={() => (window.location.href = "/test-environment")}
+          >
+            <Settings className="w-6 h-6 mr-2" />
+            Test Environment
           </Button>
         </div>
 

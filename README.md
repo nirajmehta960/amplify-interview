@@ -1,28 +1,28 @@
 # Amplify Interview
 
-A professional interview practice platform that helps candidates build confidence and improve their interview skills through realistic practice sessions.
-
-<!-- Force deployment update -->
+A professional AI-powered interview practice platform that helps candidates build confidence and improve their interview skills through realistic practice sessions with comprehensive AI analysis and feedback.
 
 ## Features
 
+- **AI-Powered Analysis**: Real-time analysis using OpenRouter API with multiple AI models
 - **Realistic Interview Practice**: Practice with behavioral, technical, and leadership interview formats
 - **Performance Analytics**: Track your progress with detailed metrics and insights
-- **Video Recording & Playback**: Record your interview sessions with optimized video playback and seeking
-- **Cross-Platform Video Downloads**: Download interviews in both WebM and MP4 formats for maximum compatibility
-- **Personalized Feedback**: Receive tailored coaching based on your specific needs
-- **Video Recording**: Record your practice sessions for review and improvement
+- **Video Recording & Playback**: Record your interview sessions with optimized video playback
+- **Speech-to-Text Transcription**: Automatic transcription using Deepgram API
+- **Personalized AI Feedback**: Receive detailed scoring, strengths, improvements, and actionable feedback
+- **Cost Tracking**: Monitor AI analysis costs and usage
 - **Secure & Private**: Your data is protected with enterprise-grade security
 
 ## Technology Stack
 
 - **Frontend**: React 18, TypeScript, Vite
 - **UI Components**: shadcn/ui, Tailwind CSS
-- **Animations**: Framer Motion
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
 - **Storage**: Supabase Storage
-- **AI Integration**: OpenAI Whisper API for speech-to-text
+- **AI Integration**: OpenRouter API (Claude, GPT models)
+- **Speech-to-Text**: Deepgram API
+- **Video Processing**: WebRTC MediaRecorder API
 
 ## Getting Started
 
@@ -49,18 +49,21 @@ npm install
 
 3. Set up environment variables:
 
+Create a `.env` file in the project root with the following variables:
+
 ```bash
-cp .env.example .env.local
-```
-
-4. Configure your Supabase credentials in `.env.local`:
-
-```
+# Supabase Configuration
 VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+
+# AI Analysis (OpenRouter)
+VITE_OPENROUTER_API_KEY=your_openrouter_api_key
+
+# Speech-to-Text (Deepgram)
+VITE_DEEPGRAM_API_KEY=your_deepgram_api_key
 ```
 
-5. Start the development server:
+4. Start the development server:
 
 ```bash
 npm run dev

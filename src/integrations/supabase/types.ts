@@ -128,6 +128,233 @@ export type Database = {
           }
         ];
       };
+      interview_analysis: {
+        Row: {
+          id: string;
+          interview_response_id: string;
+          session_id: string;
+          question_id: number;
+          user_id: string;
+          interview_type: string;
+          custom_domain: string | null;
+          model_used: string;
+          overall_score: number | null;
+          star_scores: Json | null;
+          technical_scores: Json | null;
+          communication_scores: Json | null;
+          content_scores: Json | null;
+          strengths: Json | null;
+          improvements: Json | null;
+          actionable_feedback: string | null;
+          improved_example: string | null;
+          filler_words: Json | null;
+          speaking_pace: string | null;
+          confidence_score: number | null;
+          response_length_assessment: string | null;
+          tokens_used: number | null;
+          input_tokens: number | null;
+          output_tokens: number | null;
+          cost_cents: number | null;
+          processing_time_ms: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          interview_response_id: string;
+          session_id: string;
+          question_id: number;
+          user_id: string;
+          interview_type: string;
+          custom_domain?: string | null;
+          model_used: string;
+          overall_score?: number | null;
+          star_scores?: Json | null;
+          technical_scores?: Json | null;
+          communication_scores?: Json | null;
+          content_scores?: Json | null;
+          strengths?: Json | null;
+          improvements?: Json | null;
+          actionable_feedback?: string | null;
+          improved_example?: string | null;
+          filler_words?: Json | null;
+          speaking_pace?: string | null;
+          confidence_score?: number | null;
+          response_length_assessment?: string | null;
+          tokens_used?: number | null;
+          input_tokens?: number | null;
+          output_tokens?: number | null;
+          cost_cents?: number | null;
+          processing_time_ms?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          interview_response_id?: string;
+          session_id?: string;
+          question_id?: number;
+          user_id?: string;
+          interview_type?: string;
+          custom_domain?: string | null;
+          model_used?: string;
+          overall_score?: number | null;
+          star_scores?: Json | null;
+          technical_scores?: Json | null;
+          communication_scores?: Json | null;
+          content_scores?: Json | null;
+          strengths?: Json | null;
+          improvements?: Json | null;
+          actionable_feedback?: string | null;
+          improved_example?: string | null;
+          filler_words?: Json | null;
+          speaking_pace?: string | null;
+          confidence_score?: number | null;
+          response_length_assessment?: string | null;
+          tokens_used?: number | null;
+          input_tokens?: number | null;
+          output_tokens?: number | null;
+          cost_cents?: number | null;
+          processing_time_ms?: number | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interview_analysis_interview_response_id_fkey";
+            columns: ["interview_response_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_responses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "interview_analysis_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "interview_analysis_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "interview_questions";
+            referencedColumns: ["question_id"];
+          },
+          {
+            foreignKeyName: "interview_analysis_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      interview_summary: {
+        Row: {
+          id: string;
+          session_id: string;
+          user_id: string;
+          total_questions: number;
+          questions_answered: number;
+          average_score: number | null;
+          median_score: number | null;
+          score_distribution: Json | null;
+          performance_trend: string | null;
+          model_breakdown: Json | null;
+          total_tokens: number | null;
+          total_input_tokens: number | null;
+          total_output_tokens: number | null;
+          total_cost_cents: number | null;
+          overall_strengths: Json | null;
+          overall_improvements: Json | null;
+          pattern_insights: Json | null;
+          readiness_level: string;
+          readiness_score: number | null;
+          role_specific_feedback: string | null;
+          next_steps: Json | null;
+          recommended_practice_areas: Json | null;
+          estimated_practice_time: string | null;
+          total_duration_seconds: number | null;
+          average_time_per_question: number | null;
+          time_distribution: Json | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          user_id: string;
+          total_questions: number;
+          questions_answered: number;
+          average_score?: number | null;
+          median_score?: number | null;
+          score_distribution?: Json | null;
+          performance_trend?: string | null;
+          model_breakdown?: Json | null;
+          total_tokens?: number | null;
+          total_input_tokens?: number | null;
+          total_output_tokens?: number | null;
+          total_cost_cents?: number | null;
+          overall_strengths?: Json | null;
+          overall_improvements?: Json | null;
+          pattern_insights?: Json | null;
+          readiness_level: string;
+          readiness_score?: number | null;
+          role_specific_feedback?: string | null;
+          next_steps?: Json | null;
+          recommended_practice_areas?: Json | null;
+          estimated_practice_time?: string | null;
+          total_duration_seconds?: number | null;
+          average_time_per_question?: number | null;
+          time_distribution?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          session_id?: string;
+          user_id?: string;
+          total_questions?: number;
+          questions_answered?: number;
+          average_score?: number | null;
+          median_score?: number | null;
+          score_distribution?: Json | null;
+          performance_trend?: string | null;
+          model_breakdown?: Json | null;
+          total_tokens?: number | null;
+          total_input_tokens?: number | null;
+          total_output_tokens?: number | null;
+          total_cost_cents?: number | null;
+          overall_strengths?: Json | null;
+          overall_improvements?: Json | null;
+          pattern_insights?: Json | null;
+          readiness_level?: string;
+          readiness_score?: number | null;
+          role_specific_feedback?: string | null;
+          next_steps?: Json | null;
+          recommended_practice_areas?: Json | null;
+          estimated_practice_time?: string | null;
+          total_duration_seconds?: number | null;
+          average_time_per_question?: number | null;
+          time_distribution?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "interview_summary_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: true;
+            referencedRelation: "interview_sessions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "interview_summary_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       interview_sessions: {
         Row: {
           id: string;
