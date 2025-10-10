@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
@@ -19,6 +19,8 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: "dist",
-    sourcemap: mode === "development",
+    sourcemap: true,
   },
-}));
+  // Vite automatically loads .env files, so we don't need to manually define them
+  // The VITE_ prefix makes them available to the client
+});

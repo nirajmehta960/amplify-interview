@@ -203,6 +203,73 @@ const InterviewResults = () => {
                 "Enhanced session data with database responses:",
                 sessionData.questionResponses
               );
+
+              // Try to fetch AI analysis data if available
+              try {
+                const { aiAnalysisService } = await import(
+                  "../services/aiAnalysisService"
+                );
+                const analyses = await aiAnalysisService.getSessionAnalyses(
+                  sessionData.sessionId
+                );
+                const summary = await aiAnalysisService.getSummaryBySession(
+                  sessionData.sessionId
+                );
+
+                if (analyses.length > 0 || summary) {
+                  console.log("Found AI analysis data:", {
+                    analyses: analyses.length,
+                    summary: !!summary,
+                  });
+
+                  // Update session data with real AI analysis
+                  if (summary) {
+                    sessionData.aiFeedback = {
+                      overallScore:
+                        summary.average_score ||
+                        sessionData.aiFeedback?.overallScore ||
+                        75,
+                      strengths: summary.overall_strengths ||
+                        sessionData.aiFeedback?.strengths || [
+                          "Good communication",
+                        ],
+                      improvements: summary.overall_improvements ||
+                        sessionData.aiFeedback?.improvements || [
+                          "Continue practicing",
+                        ],
+                      detailedFeedback:
+                        summary.role_specific_feedback ||
+                        sessionData.aiFeedback?.detailedFeedback ||
+                        "Analysis completed",
+                    };
+                  }
+
+                  // Update individual question responses with analysis scores
+                  if (analyses.length > 0) {
+                    sessionData.questionResponses =
+                      sessionData.questionResponses.map((response, index) => {
+                        const analysis = analyses[index];
+                        if (analysis) {
+                          return {
+                            ...response,
+                            score: analysis.overall_score,
+                            analysis: {
+                              confidence: analysis.confidence_score || 0.8,
+                              speakingRate: 150, // Could be calculated from analysis
+                              fillerWords: analysis.filler_words?.total || 0,
+                            },
+                          };
+                        }
+                        return response;
+                      });
+                  }
+                }
+              } catch (analysisError) {
+                console.warn(
+                  "Could not fetch AI analysis data:",
+                  analysisError
+                );
+              }
             }
           } catch (error) {
             console.error("Error fetching database session data:", error);
@@ -271,16 +338,24 @@ const InterviewResults = () => {
         // Create result from real data
         const realResult: InterviewResult = {
           id: sessionData.sessionId,
-          overallScore: videoData.metadata.aiFeedback?.overallScore || 75,
-          performanceBadge: videoData.metadata.aiFeedback?.overallScore
-            ? videoData.metadata.aiFeedback.overallScore >= 80
-              ? "Excellent"
-              : videoData.metadata.aiFeedback.overallScore >= 70
-              ? "Good"
-              : videoData.metadata.aiFeedback.overallScore >= 60
-              ? "Fair"
-              : "Needs Improvement"
-            : "Good",
+          overallScore:
+            sessionData.aiFeedback?.overallScore ||
+            videoData.metadata.aiFeedback?.overallScore ||
+            75,
+          performanceBadge:
+            sessionData.aiFeedback?.overallScore ||
+            videoData.metadata.aiFeedback?.overallScore
+              ? (sessionData.aiFeedback?.overallScore ||
+                  videoData.metadata.aiFeedback?.overallScore) >= 80
+                ? "Excellent"
+                : (sessionData.aiFeedback?.overallScore ||
+                    videoData.metadata.aiFeedback?.overallScore) >= 70
+                ? "Good"
+                : (sessionData.aiFeedback?.overallScore ||
+                    videoData.metadata.aiFeedback?.overallScore) >= 60
+                ? "Fair"
+                : "Needs Improvement"
+              : "Good",
           duration:
             sessionData.videoMetadata?.duration ||
             videoData.metadata.duration ||
@@ -310,7 +385,10 @@ const InterviewResults = () => {
                     answer:
                       videoData.metadata.transcription?.text ||
                       "No transcription available",
-                    score: videoData.metadata.aiFeedback?.overallScore || 75,
+                    score:
+                      sessionData.aiFeedback?.overallScore ||
+                      videoData.metadata.aiFeedback?.overallScore ||
+                      75,
                     duration: Math.round(
                       videoData.metadata.transcription?.duration || 60
                     ),
@@ -321,13 +399,14 @@ const InterviewResults = () => {
                     eyeContact: 85,
                   },
                 ],
-          strengths: videoData.metadata.aiFeedback?.strengths || [
-            "Clear communication",
+          strengths: sessionData.aiFeedback?.strengths ||
+            videoData.metadata.aiFeedback?.strengths || ["Clear communication"],
+          improvements: sessionData.aiFeedback?.improvements ||
+            videoData.metadata.aiFeedback?.improvements || ["Practice more"],
+          insights: [
+            sessionData.aiFeedback?.detailedFeedback ||
+              "Interview completed successfully",
           ],
-          improvements: videoData.metadata.aiFeedback?.improvements || [
-            "Practice more",
-          ],
-          insights: ["Interview completed successfully"],
           recommendations: ["Continue practicing interview skills"],
           videoMetadata: {
             duration: videoData.metadata.duration || 0,

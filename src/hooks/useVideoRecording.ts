@@ -172,11 +172,7 @@ export const useVideoRecording = (): VideoRecordingState &
       }
 
       // Get the best supported format for this browser
-      const formatSupport = getBestRecordingFormat();
-      const mimeType =
-        formatSupport.preferredFormat ||
-        formatSupport.fallbackFormat ||
-        "video/webm;codecs=vp9,opus";
+      const mimeType = getBestRecordingFormat();
 
       console.log(
         "Using MIME type:",

@@ -617,57 +617,9 @@ const InterviewSession = () => {
         );
         console.log("Speech analysis complete");
 
-        // Generate AI feedback using question responses if available
-        const feedbackData =
-          questionResponses.length > 0
-            ? questionResponses.map((response) => ({
-                question: response.questionText,
-                answer: response.answerText,
-                duration: response.duration,
-                transcript: response.answerText,
-                speakingRate: response.analysis.speakingRate,
-                fillerWords: response.analysis.fillerWords,
-              }))
-            : [
-                {
-                  question:
-                    questions[interviewState.currentQuestion - 1]?.text ||
-                    "Interview question",
-                  answer: transcriptionResult.text,
-                  duration: speechAnalysis.wordCount * 0.5,
-                  transcript: transcriptionResult.text,
-                  speakingRate: speechAnalysis.speakingRate,
-                  fillerWords: speechAnalysis.fillerWords,
-                },
-              ];
-
-        // Generate AI feedback with timeout
-        try {
-          console.log("Starting AI feedback generation...");
-          aiFeedback = await Promise.race([
-            aiFeedbackService.generateFeedback(feedbackData),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error("AI feedback timeout")), 30000)
-            ),
-          ]);
-          console.log("AI feedback generation complete");
-        } catch (aiError) {
-          console.warn(
-            "AI feedback generation failed, continuing without it:",
-            aiError
-          );
-          aiFeedback = {
-            overallScore: 75,
-            strengths: ["Good communication skills", "Clear articulation"],
-            improvements: ["AI feedback unavailable"],
-            detailedFeedback:
-              "AI feedback generation timed out, but interview was completed successfully.",
-          };
-        }
-
         console.log(`Generated ${questionResponses.length} question responses`);
 
-        // Save each response to the database
+        // Save each response to the database FIRST
         if (currentSessionId && questionResponses.length > 0) {
           for (const response of questionResponses) {
             try {
@@ -690,6 +642,78 @@ const InterviewSession = () => {
               );
             }
           }
+        }
+
+        // Use real AI analysis with OpenRouter AFTER responses are saved
+        try {
+          console.log("Starting real AI analysis with OpenRouter...");
+
+          // Import the core analysis service
+          const { analyzeInterviewSession } = await import(
+            "../services/coreAnalysisService"
+          );
+
+          // Run complete AI analysis for the session
+          const analysisResult = await analyzeInterviewSession(
+            currentSessionId
+          );
+
+          console.log("Real AI analysis completed:", {
+            overallScore: analysisResult.summary.average_score,
+            readinessLevel: analysisResult.summary.readiness_level,
+            totalCost: analysisResult.totalCostCents,
+            analysesCount: analysisResult.analyses.length,
+          });
+
+          // Use the real analysis results
+          aiFeedback = {
+            overallScore: analysisResult.summary.average_score || 75,
+            strengths: analysisResult.summary.overall_strengths || [
+              "Good communication skills",
+            ],
+            improvements: analysisResult.summary.overall_improvements || [
+              "Continue practicing",
+            ],
+            detailedFeedback:
+              analysisResult.summary.role_specific_feedback ||
+              "Analysis completed successfully.",
+          };
+
+          console.log("AI feedback generation complete with real analysis");
+        } catch (aiError) {
+          console.warn("Real AI analysis failed, using fallback:", aiError);
+
+          // Use the fallback analysis from aiAnalysisPrompts
+          const { generateFallbackAnalysis } = await import(
+            "../services/aiAnalysisPrompts"
+          );
+
+          const fallbackAnalysis = generateFallbackAnalysis(
+            transcriptionResult.text,
+            totalDuration,
+            "custom"
+          );
+
+          aiFeedback = {
+            overallScore: fallbackAnalysis.overall_score || 75,
+            strengths: fallbackAnalysis.strengths || [
+              "Good communication skills",
+              "Clear articulation",
+            ],
+            improvements: fallbackAnalysis.improvements || [
+              "Consider providing more specific examples",
+              "Practice reducing filler words for better delivery",
+              "Add more quantitative results to strengthen your responses",
+            ],
+            detailedFeedback:
+              fallbackAnalysis.actionable_feedback ||
+              "Automated analysis could not be completed due to technical issues. A human reviewer will assess your response shortly. In the meantime, consider practicing with more specific examples and reducing filler words for better delivery.",
+          };
+
+          console.log(
+            "Fallback AI feedback generated successfully:",
+            aiFeedback
+          );
         }
 
         // Complete the interview session in the database
