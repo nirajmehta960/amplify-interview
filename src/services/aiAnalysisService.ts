@@ -33,7 +33,7 @@ class AIAnalysisService {
     try {
       const { data: analysis, error } = await supabase
         .from("interview_analysis")
-        .insert(data)
+        .insert(data as any)
         .select()
         .single();
 
@@ -41,7 +41,7 @@ class AIAnalysisService {
         throw new Error(`Failed to create analysis: ${error.message}`);
       }
 
-      return analysis;
+      return analysis as unknown as InterviewAnalysis;
     } catch (error) {
       console.error("Error creating analysis:", error);
       throw error;
@@ -58,7 +58,7 @@ class AIAnalysisService {
     try {
       const { data: analysis, error } = await supabase
         .from("interview_analysis")
-        .update(data)
+        .update(data as any)
         .eq("id", id)
         .select()
         .single();
@@ -67,7 +67,7 @@ class AIAnalysisService {
         throw new Error(`Failed to update analysis: ${error.message}`);
       }
 
-      return analysis;
+      return analysis as unknown as InterviewAnalysis;
     } catch (error) {
       console.error("Error updating analysis:", error);
       throw error;
@@ -92,33 +92,9 @@ class AIAnalysisService {
         throw new Error(`Failed to get analysis: ${error.message}`);
       }
 
-      return analysis;
+      return analysis as unknown as InterviewAnalysis;
     } catch (error) {
       console.error("Error getting analysis:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all analyses for a session
-   */
-  public async getSessionAnalyses(
-    sessionId: string
-  ): Promise<InterviewAnalysis[]> {
-    try {
-      const { data: analyses, error } = await supabase
-        .from("interview_analysis")
-        .select("*")
-        .eq("session_id", sessionId)
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        throw new Error(`Failed to get session analyses: ${error.message}`);
-      }
-
-      return analyses || [];
-    } catch (error) {
-      console.error("Error getting session analyses:", error);
       throw error;
     }
   }
@@ -163,7 +139,7 @@ class AIAnalysisService {
       }
 
       return {
-        analysis: result,
+        analysis: result as unknown as InterviewAnalysis,
         response: result.interview_responses,
         question: result.interview_questions,
       };
@@ -219,7 +195,6 @@ class AIAnalysisService {
     const startTime = Date.now();
 
     try {
-
       // Get AI analysis from OpenRouter
       const { analysis, cost, usage } = await openRouterService.analyzeResponse(
         responseText,
@@ -251,7 +226,6 @@ class AIAnalysisService {
       // Save to database
       const savedAnalysis = await this.createAnalysis(analysisData);
 
-
       return savedAnalysis;
     } catch (error) {
       console.error(
@@ -264,7 +238,7 @@ class AIAnalysisService {
 
       const fallbackAnalysis = generateFallbackAnalysis(
         responseText,
-        sessionData.duration || 60, // Default duration if not provided
+        (sessionData as any).duration || 60, // Default duration if not provided
         questionData.interview_type
       );
 
@@ -274,7 +248,7 @@ class AIAnalysisService {
         session_id: sessionData.session_id,
         question_id: questionData.question_id,
         user_id: sessionData.user_id,
-        interview_type: questionData.interview_type,
+        interview_type: questionData.interview_type as any,
         custom_domain: questionData.custom_domain || null,
         model_used: "fallback",
         overall_score: fallbackAnalysis.overall_score || 75,
@@ -303,8 +277,8 @@ class AIAnalysisService {
       // Save fallback analysis to database
       const savedAnalysis = await this.createAnalysis(analysisData);
 
-      console.log(
-        `Fallback analysis completed for question ${questionData.question_id}: Score ${fallbackAnalysis.overall_score}`
+      console.warn(
+        `⚠️ FALLBACK analysis used for question ${questionData.question_id} - AI analysis failed. Score: ${fallbackAnalysis.overall_score}`
       );
 
       return savedAnalysis;
@@ -337,7 +311,6 @@ class AIAnalysisService {
     const concurrency = options?.concurrency || 3;
     const results: InterviewAnalysis[] = [];
 
-
     // Process in batches to avoid overwhelming the API
     for (let i = 0; i < responses.length; i += concurrency) {
       const batch = responses.slice(i, i + concurrency);
@@ -365,7 +338,6 @@ class AIAnalysisService {
           (result) => result !== null
         );
         results.push(...successfulResults);
-
       } catch (error) {
         console.error(
           `Error processing batch ${Math.floor(i / concurrency) + 1}:`,
@@ -388,7 +360,7 @@ class AIAnalysisService {
     try {
       const { data: summary, error } = await supabase
         .from("interview_summary")
-        .insert(data)
+        .insert(data as any)
         .select()
         .single();
 
@@ -396,7 +368,7 @@ class AIAnalysisService {
         throw new Error(`Failed to create summary: ${error.message}`);
       }
 
-      return summary;
+      return summary as unknown as InterviewSummary;
     } catch (error) {
       console.error("Error creating summary:", error);
       throw error;
@@ -413,7 +385,7 @@ class AIAnalysisService {
     try {
       const { data: summary, error } = await supabase
         .from("interview_summary")
-        .update(data)
+        .update(data as any)
         .eq("id", id)
         .select()
         .single();
@@ -422,41 +394,10 @@ class AIAnalysisService {
         throw new Error(`Failed to update summary: ${error.message}`);
       }
 
-      return summary;
+      return summary as unknown as InterviewSummary;
     } catch (error) {
       console.error("Error updating summary:", error);
       throw error;
-    }
-  }
-
-  /**
-   * Get summary by session ID
-   */
-  public async getSummaryBySession(
-    sessionId: string
-  ): Promise<InterviewSummary | null> {
-    try {
-      const { data: summary, error } = await supabase
-        .from("interview_summary")
-        .select("*")
-        .eq("session_id", sessionId)
-        .single();
-
-      if (error) {
-        if (error.code === "PGRST116") {
-          return null; // Not found
-        }
-        console.warn(
-          `Failed to get summary for session ${sessionId}:`,
-          error.message
-        );
-        return null; // Return null instead of throwing error
-      }
-
-      return summary;
-    } catch (error) {
-      console.warn("Error getting summary:", error);
-      return null; // Return null instead of throwing error
     }
   }
 
@@ -499,7 +440,7 @@ class AIAnalysisService {
         .eq("session_id", sessionId);
 
       return {
-        summary: result,
+        summary: result as unknown as InterviewSummary,
         session: result.interview_sessions,
         analysis_count: analysisCount || 0,
       };
@@ -517,7 +458,7 @@ class AIAnalysisService {
     limit: number = 10
   ): Promise<UserInterviewHistory[]> {
     try {
-      const { data: history, error } = await supabase.rpc(
+      const { data: history, error } = await (supabase as any).rpc(
         "get_user_interview_history",
         {
           p_user_id: userId,
@@ -545,7 +486,7 @@ class AIAnalysisService {
     sessionId: string
   ): Promise<SessionAnalytics | null> {
     try {
-      const { data: analytics, error } = await supabase.rpc(
+      const { data: analytics, error } = await (supabase as any).rpc(
         "get_session_analytics",
         {
           p_session_id: sessionId,
@@ -556,7 +497,7 @@ class AIAnalysisService {
         throw new Error(`Failed to get session analytics: ${error.message}`);
       }
 
-      return analytics?.[0] || null;
+      return (analytics as any)?.[0] || null;
     } catch (error) {
       console.error("Error getting session analytics:", error);
       throw error;
@@ -595,24 +536,22 @@ class AIAnalysisService {
     }
   ): Promise<InterviewSummary> {
     try {
-
       // First try the database function
       try {
-      const { data: summaryId, error } = await supabase.rpc(
-        "create_interview_summary",
-        {
-          p_session_id: sessionId,
-        }
-      );
+        const { data: summaryId, error } = await (supabase as any).rpc(
+          "create_interview_summary",
+          {
+            p_session_id: sessionId,
+          }
+        );
 
         if (!error) {
-      // Get the created summary
-      const summary = await this.getSummaryBySession(sessionId);
+          // Get the created summary
+          const summary = await this.getSummaryBySession(sessionId);
           if (summary) {
-      console.log(
-        `Session summary created: ${summary.readiness_level} (${summary.readiness_score}%)`
-      );
-      return summary;
+              `Session summary created: ${summary.readiness_level} (${summary.readiness_score}%)`
+            );
+            return summary;
           }
         }
       } catch (dbError) {
@@ -675,40 +614,71 @@ class AIAnalysisService {
       const medianScore = this.calculateMedian(validScores);
 
       // Calculate readiness level
-      const readinessLevel =
-        averageScore >= 80
-          ? "ready"
-          : averageScore >= 60
-          ? "needs_practice"
-          : "significant_improvement";
+      const readinessLevel = this.calculateReadinessLevel(averageScore).level;
 
-      // Aggregate strengths and improvements
-      const allStrengths = analyses
-        .map((a) => a.strengths)
-        .filter((s) => s && Array.isArray(s))
-        .flat() as string[];
+      // Aggregate strengths and improvements (filter out fallback data)
+      const validAnalyses = analyses.filter(
+        (analysis) => analysis.model_used !== "fallback"
+      );
 
-      const allImprovements = analyses
-        .map((a) => a.improvements)
-        .filter((i) => i && Array.isArray(i))
-        .flat() as string[];
+      // Only proceed with AI-generated summary if we have valid analyses
+      if (validAnalyses.length === 0) {
+        console.warn(
+          "⚠️ No valid AI analyses found for summary generation - using fallback summary"
+        );
+        return this.createFallbackSummary(sessionId);
+      }
 
-      // Get top 5 most common strengths and improvements
-      const strengthCounts = this.countOccurrences(allStrengths);
-      const improvementCounts = this.countOccurrences(allImprovements);
+      const allStrengths = validAnalyses.flatMap(
+        (analysis) => (analysis.strengths as string[]) || []
+      );
+      const allImprovements = validAnalyses.flatMap(
+        (analysis) => (analysis.improvements as string[]) || []
+      );
 
-      const topStrengths = Object.entries(strengthCounts)
-        .sort(([, a], [, b]) => (b as number) - (a as number))
-        .slice(0, 5)
-        .map(([strength]) => strength);
-
-      const topImprovements = Object.entries(improvementCounts)
-        .sort(([, a], [, b]) => (b as number) - (a as number))
-        .slice(0, 5)
-        .map(([improvement]) => improvement);
+      // Get top 5 unique strengths and improvements
+      const topStrengths = [...new Set(allStrengths)].slice(0, 5);
+      const topImprovements = [...new Set(allImprovements)].slice(0, 5);
 
       // Calculate score distribution
       const scoreDistribution = this.calculateScoreDistribution(validScores);
+
+      // Detect patterns/trends (only from valid analyses)
+      const patternInsights =
+        validAnalyses.length > 0
+          ? this.detectPatterns(validAnalyses as unknown as InterviewAnalysis[])
+          : [];
+
+      const performanceTrend = this.detectPerformanceTrend(validScores);
+
+      // Generate practice areas and estimated practice time (only from valid analyses)
+      const practiceAreas =
+        validAnalyses.length > 0
+          ? this.generatePracticeAreas(
+              validAnalyses as unknown as InterviewAnalysis[]
+            )
+          : ["General interview preparation"];
+      const estimatedPracticeTime = this.estimatePracticeTime(
+        readinessLevel,
+        topImprovements.length,
+        averageScore
+      );
+
+      // Generate role-specific feedback and next steps using model (with safe parse)
+      const roleSpecificFeedback = await this.generateRoleSpecificFeedback(
+        sessionId,
+        sessionData.interview_type,
+        (sessionData as any).interview_config?.domain || null,
+        topStrengths,
+        topImprovements
+      );
+
+      const nextSteps = await this.generateNextSteps(
+        sessionId,
+        readinessLevel,
+        topImprovements,
+        patternInsights
+      );
 
       // Calculate costs and tokens
       const totalCost = analyses.reduce(
@@ -743,50 +713,25 @@ class AIAnalysisService {
         questions_answered: questionsAnswered,
         average_score: Math.round(averageScore * 100) / 100,
         median_score: Math.round(medianScore * 100) / 100,
-        score_distribution: scoreDistribution,
-        performance_trend: "consistent", // Simplified for now
+        score_distribution: scoreDistribution as any,
+        performance_trend: performanceTrend,
         model_breakdown: modelBreakdown,
         total_tokens: totalTokens,
         total_input_tokens: totalInputTokens,
         total_output_tokens: totalOutputTokens,
         total_cost_cents: totalCost,
-        overall_strengths: topStrengths,
-        overall_improvements: topImprovements,
-        pattern_insights: [
-          `Performance ${
-            readinessLevel === "ready"
-              ? "demonstrates strong readiness"
-              : readinessLevel === "needs_practice"
-              ? "shows good potential with room for improvement"
-              : "requires significant practice"
-          }`,
-          `Average score of ${Math.round(averageScore)} indicates ${
-            averageScore >= 80
-              ? "consistently high-quality"
-              : averageScore >= 60
-              ? "good responses with specific improvement areas"
-              : "responses need substantial development"
-          }`,
-          `Completed ${questionsAnswered} out of ${totalQuestions} questions with analysis`,
-        ],
+        overall_strengths: topStrengths as any,
+        overall_improvements: topImprovements as any,
+        pattern_insights: patternInsights as any,
         readiness_level: readinessLevel,
         readiness_score: Math.round(averageScore),
-        role_specific_feedback: `Analysis completed with ${analyses.length} question responses processed`,
-        next_steps: [
-          "Continue practicing with similar questions",
-          "Focus on identified improvement areas",
-          "Schedule follow-up interviews to track progress",
-        ],
-        recommended_practice_areas: topImprovements.slice(0, 3),
-        estimated_practice_time:
-          readinessLevel === "ready"
-            ? "1 week"
-            : readinessLevel === "needs_practice"
-            ? "2-3 weeks"
-            : "4-6 weeks",
+        role_specific_feedback: roleSpecificFeedback,
+        next_steps: nextSteps as any,
+        recommended_practice_areas: practiceAreas as any,
+        estimated_practice_time: estimatedPracticeTime,
         total_duration_seconds: sessionData.duration * 60, // Convert minutes to seconds
         average_time_per_question: (sessionData.duration * 60) / totalQuestions,
-        time_distribution: {}, // Simplified for now
+        time_distribution: {} as any, // Simplified for now
       };
 
       // Create the summary in database
@@ -796,6 +741,337 @@ class AIAnalysisService {
       console.error("Error creating client-side summary:", error);
       return this.createFallbackSummary(sessionId);
     }
+  }
+
+  // ---- Aggregation and helper utilities ----
+  private calculateReadinessLevel(averageScore: number): {
+    level: "ready" | "needs_practice" | "significant_improvement";
+    score: number;
+    description: string;
+  } {
+    if (averageScore >= 80) {
+      return {
+        level: "ready",
+        score: averageScore,
+        description:
+          "You are interview-ready! Your responses demonstrate strong competency. Focus on minor refinements and stay sharp with occasional practice.",
+      };
+    } else if (averageScore >= 60) {
+      return {
+        level: "needs_practice",
+        score: averageScore,
+        description:
+          "You have a solid foundation but need focused practice in specific areas. With 2-3 weeks of targeted improvement, you will be interview-ready.",
+      };
+    }
+    return {
+      level: "significant_improvement",
+      score: averageScore,
+      description:
+        "Your responses show potential but require substantial improvement. Focus on the fundamentals and practice regularly for 4-6 weeks before interviewing.",
+    };
+  }
+
+  private detectPerformanceTrend(
+    scores: number[]
+  ): "improving" | "consistent" | "declining" {
+    if (scores.length < 3) return "consistent";
+    const firstThird = scores.slice(0, Math.ceil(scores.length / 3));
+    const lastThird = scores.slice(-Math.ceil(scores.length / 3));
+    const firstAvg =
+      firstThird.reduce((a, b) => a + b, 0) / Math.max(1, firstThird.length);
+    const lastAvg =
+      lastThird.reduce((a, b) => a + b, 0) / Math.max(1, lastThird.length);
+    const change = lastAvg - firstAvg;
+    if (change > 8) return "improving";
+    if (change < -8) return "declining";
+    return "consistent";
+  }
+
+  private detectPatterns(analyses: InterviewAnalysis[]): string[] {
+    if (!analyses || analyses.length === 0) return [];
+    const patterns: string[] = [];
+    const scores = analyses.map((a) => a.overall_score);
+    const trend = this.detectScoreTrend(scores);
+    if (trend) patterns.push(trend);
+    const totalFillers = analyses.reduce(
+      (sum, a) => sum + ((a.filler_words as any)?.total || 0),
+      0
+    );
+    if (totalFillers > analyses.length * 3) {
+      patterns.push(
+        "Filler words increase when discussing complex topics - practice recording yourself"
+      );
+    }
+    if (analyses[0]?.star_scores) {
+      const star = this.analyzeStarConsistency(analyses as any);
+      if (star) patterns.push(star);
+    }
+    const avgConfidence =
+      analyses.reduce((s, a) => s + (a.confidence_score || 0), 0) /
+      analyses.length;
+    if (avgConfidence < 6) {
+      patterns.push(
+        "Confidence appears lower in later questions - practice managing interview stamina"
+      );
+    }
+    const paceIssues = analyses.filter(
+      (a) => a.speaking_pace && a.speaking_pace !== "appropriate"
+    ).length;
+    if (paceIssues > analyses.length / 2) {
+      patterns.push(
+        "Speaking pace inconsistent - focus on maintaining steady rhythm"
+      );
+    }
+    return patterns;
+  }
+
+  private detectScoreTrend(scores: number[]): string | null {
+    if (scores.length < 3) return null;
+    const firstHalf = scores.slice(0, Math.floor(scores.length / 2));
+    const secondHalf = scores.slice(Math.floor(scores.length / 2));
+    const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+    const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+    const improvement = secondAvg - firstAvg;
+    if (improvement > 10)
+      return "Performance improved significantly throughout interview - shows adaptability";
+    if (improvement < -10)
+      return "Performance declined in later questions - may indicate fatigue or pressure";
+    return "Maintained consistent performance throughout interview";
+  }
+
+  private analyzeStarConsistency(
+    analyses: Array<{ star_scores: any }>
+  ): string | null {
+    const resultScores = analyses.map((a) => a.star_scores?.result || 0);
+    const avgResult =
+      resultScores.reduce((a, b) => a + b, 0) /
+      Math.max(1, resultScores.length);
+    if (avgResult < 6) {
+      return "Consistently weak on quantifying results - focus on adding specific metrics";
+    }
+    const actionScores = analyses.map((a) => a.star_scores?.action || 0);
+    const avgAction =
+      actionScores.reduce((a, b) => a + b, 0) /
+      Math.max(1, actionScores.length);
+    if (avgAction < 6) {
+      return 'Need stronger emphasis on personal actions taken - use "I" more than "we"';
+    }
+    return null;
+  }
+
+  private generatePracticeAreas(analyses: InterviewAnalysis[]): string[] {
+    if (!analyses || analyses.length === 0) return [];
+    const practiceAreas = new Set<string>();
+    const avg: any = {
+      clarity: 0,
+      structure: 0,
+      conciseness: 0,
+      relevance: 0,
+      depth: 0,
+      specificity: 0,
+    };
+    analyses.forEach((a) => {
+      if (a.communication_scores) {
+        avg.clarity += a.communication_scores.clarity || 0;
+        avg.structure += a.communication_scores.structure || 0;
+        avg.conciseness += a.communication_scores.conciseness || 0;
+      }
+      if (a.content_scores) {
+        avg.relevance += a.content_scores.relevance || 0;
+        avg.depth += a.content_scores.depth || 0;
+        avg.specificity += a.content_scores.specificity || 0;
+      }
+    });
+    Object.keys(avg).forEach((k) => (avg[k] /= analyses.length));
+    if (avg.clarity < 7)
+      practiceAreas.add("Clear and articulate communication");
+    if (avg.structure < 7)
+      practiceAreas.add("Structured response organization");
+    if (avg.conciseness < 7) practiceAreas.add("Concise and focused answers");
+    if (avg.relevance < 7)
+      practiceAreas.add("Staying relevant to question asked");
+    if (avg.depth < 7) practiceAreas.add("Providing sufficient detail");
+    if (avg.specificity < 7)
+      practiceAreas.add("Using specific examples and metrics");
+    if (analyses[0]?.star_scores) {
+      const starAvg: any = { situation: 0, task: 0, action: 0, result: 0 };
+      analyses.forEach((a) => {
+        if (a.star_scores) {
+          Object.keys(starAvg).forEach(
+            (k) => (starAvg[k] += a.star_scores[k] || 0)
+          );
+        }
+      });
+      Object.keys(starAvg).forEach((k) => (starAvg[k] /= analyses.length));
+      Object.keys(starAvg).forEach((k) => {
+        if (starAvg[k] < 7) practiceAreas.add(`STAR method - ${k} component`);
+      });
+    }
+    const avgFillers =
+      analyses.reduce((s, a) => s + ((a.filler_words as any)?.total || 0), 0) /
+      analyses.length;
+    if (avgFillers > 3) practiceAreas.add("Reducing filler words");
+    return Array.from(practiceAreas).slice(0, 5);
+  }
+
+  private estimatePracticeTime(
+    readinessLevel: string,
+    improvementCount: number,
+    averageScore: number
+  ): string {
+    if (readinessLevel === "ready") {
+      return "1 week of light practice to stay sharp";
+    }
+    if (readinessLevel === "needs_practice") {
+      return averageScore >= 70
+        ? "2-3 weeks of focused practice"
+        : "3-4 weeks of focused practice";
+    }
+    if (averageScore >= 50) return "4-6 weeks of structured practice";
+    if (averageScore >= 40) return "6-8 weeks of intensive practice";
+    return "8-12 weeks of comprehensive interview preparation";
+  }
+
+  private async aggregateThemes(
+    analyses: InterviewAnalysis[],
+    sessionId: string,
+    interviewType: string
+  ): Promise<{ topStrengths: string[]; topImprovements: string[] }> {
+    const strengths = analyses
+      .map((a) => a.strengths as string[])
+      .filter((s) => Array.isArray(s))
+      .flat();
+    const improvements = analyses
+      .map((a) => a.improvements as string[])
+      .filter((s) => Array.isArray(s))
+      .flat();
+
+    const fallbackTop = (items: string[]) => {
+      const counts = this.countOccurrences(items);
+      return Object.entries(counts)
+        .sort(([, a], [, b]) => (b as number) - (a as number))
+        .slice(0, 5)
+        .map(([v]) => v);
+    };
+
+    try {
+      const topStrengths = await this.identifyCommonThemes(
+        strengths,
+        "strengths"
+      );
+      const topImprovements = await this.identifyCommonThemes(
+        improvements,
+        "improvements"
+      );
+      return {
+        topStrengths: topStrengths.slice(0, 5),
+        topImprovements: topImprovements.slice(0, 5),
+      };
+    } catch (e) {
+      console.warn("Theme identification failed, using counts fallback:", e);
+      return {
+        topStrengths: fallbackTop(strengths),
+        topImprovements: fallbackTop(improvements),
+      };
+    }
+  }
+
+  private async identifyCommonThemes(
+    items: string[],
+    type: "strengths" | "improvements"
+  ): Promise<string[]> {
+    if (!items || items.length === 0) return [];
+    const list = items.map((item, i) => `${i + 1}. ${item}`).join("\n");
+    const prompt = `Given these interview ${type} from multiple questions:\n\n${list}\n\nIdentify the top 5 overarching themes or patterns. Consolidate similar points. Return as JSON object: { "themes": string[] }`;
+    const response = await openRouterService.callOpenRouterWithRetry({
+      model: "openai/gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert at identifying patterns in interview feedback. Return only valid JSON.",
+        },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.5,
+      max_tokens: 500,
+      response_format: { type: "json_object" },
+    });
+    const content = response.choices[0].message.content;
+    const parsed: any = (openRouterService as any).instance?.[
+      "parseJsonLenient"
+    ]
+      ? (openRouterService as any).instance["parseJsonLenient"](content)
+      : JSON.parse(content);
+    return parsed.themes || parsed.patterns || parsed.items || [];
+  }
+
+  private async generateRoleSpecificFeedback(
+    sessionId: string,
+    interviewType: string,
+    customDomain: string | null,
+    overallStrengths: string[],
+    overallImprovements: string[]
+  ): Promise<string> {
+    const roleContext = customDomain || interviewType;
+    const prompt = `Generate role-specific interview feedback for a ${roleContext} candidate.\n\nOVERALL STRENGTHS:\n${overallStrengths
+      .map((s, i) => `${i + 1}. ${s}`)
+      .join("\n")}\n\nAREAS FOR IMPROVEMENT:\n${overallImprovements
+      .map((imp, i) => `${i + 1}. ${imp}`)
+      .join(
+        "\n"
+      )}\n\nProvide a comprehensive 4-5 sentence paragraph that: 1) Acknowledges strengths in context of the role, 2) Explains how improvements relate to competencies, 3) Offers specific, actionable guidance, 4) Ends encouragingly.`;
+    const resp = await openRouterService.callOpenRouterWithRetry({
+      model: "openai/gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert career coach specializing in interview preparation. Provide constructive, role-specific feedback.",
+        },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 300,
+    });
+    return resp.choices[0].message.content.trim();
+  }
+
+  private async generateNextSteps(
+    sessionId: string,
+    readinessLevel: string,
+    overallImprovements: string[],
+    patterns: string[]
+  ): Promise<string[]> {
+    const prompt = `Based on this interview assessment, provide specific next steps:\n\nREADINESS LEVEL: ${readinessLevel}\n\nMAIN AREAS TO IMPROVE:\n${overallImprovements
+      .map((imp, i) => `${i + 1}. ${imp}`)
+      .join("\n")}\n\nPATTERNS DETECTED:\n${patterns
+      .map((p, i) => `${i + 1}. ${p}`)
+      .join(
+        "\n"
+      )}\n\nGenerate 5-7 specific, actionable next steps ordered by priority. Return JSON object: { "steps": string[] }`;
+    const resp = await openRouterService.callOpenRouterWithRetry({
+      model: "openai/gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert interview coach. Generate specific, actionable recommendations. Return only valid JSON.",
+        },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+      response_format: { type: "json_object" },
+    });
+    const content = resp.choices[0].message.content;
+    const parsed: any = (openRouterService as any).instance?.[
+      "parseJsonLenient"
+    ]
+      ? (openRouterService as any).instance["parseJsonLenient"](content)
+      : JSON.parse(content);
+    return parsed.steps || parsed.next_steps || parsed.recommendations || [];
   }
 
   /**
@@ -815,26 +1091,25 @@ class AIAnalysisService {
         good: 1,
         fair: 0,
         needs_improvement: 0,
-        total: 1,
-      },
+      } as any,
       performance_trend: "consistent",
       model_breakdown: {},
       total_tokens: 0,
       total_input_tokens: 0,
       total_output_tokens: 0,
       total_cost_cents: 0,
-      overall_strengths: ["Good communication skills"],
-      overall_improvements: ["Continue practicing"],
-      pattern_insights: ["Consistent performance"],
+      overall_strengths: ["Good communication skills"] as any,
+      overall_improvements: ["Continue practicing"] as any,
+      pattern_insights: ["Consistent performance"] as any,
       readiness_level: "needs_practice",
       readiness_score: 75,
       role_specific_feedback: "Analysis completed with fallback data",
-      next_steps: ["Practice more interviews"],
-      recommended_practice_areas: ["Communication"],
+      next_steps: ["Practice more interviews"] as any,
+      recommended_practice_areas: ["Communication"] as any,
       estimated_practice_time: "1-2 weeks",
       total_duration_seconds: 0,
       average_time_per_question: 0,
-      time_distribution: {},
+      time_distribution: {} as any,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -870,14 +1145,12 @@ class AIAnalysisService {
     good: number;
     fair: number;
     needs_improvement: number;
-    total: number;
   } {
     const distribution = {
       excellent: 0,
       good: 0,
       fair: 0,
       needs_improvement: 0,
-      total: scores.length,
     };
 
     scores.forEach((score) => {
@@ -888,6 +1161,109 @@ class AIAnalysisService {
     });
 
     return distribution;
+  }
+
+  /**
+   * Get all analyses for a session
+   */
+  public async getSessionAnalyses(
+    sessionId: string
+  ): Promise<InterviewAnalysis[]> {
+    try {
+      const { data, error } = await supabase
+        .from("interview_analysis")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching session analyses:", error);
+        throw error;
+      }
+
+      // Parse JSON fields if they are strings
+      const parsedData = (data || []).map((analysis: any) => {
+          id: analysis.id,
+          interview_response_id: analysis.interview_response_id,
+          question_id: analysis.question_id,
+          rawStrengths: analysis.strengths,
+          rawImprovements: analysis.improvements,
+          strengthsType: typeof analysis.strengths,
+          improvementsType: typeof analysis.improvements,
+        });
+
+        const parsed = {
+          ...analysis,
+          strengths:
+            typeof analysis.strengths === "string"
+              ? JSON.parse(analysis.strengths)
+              : analysis.strengths,
+          improvements:
+            typeof analysis.improvements === "string"
+              ? JSON.parse(analysis.improvements)
+              : analysis.improvements,
+          communication_scores:
+            typeof analysis.communication_scores === "string"
+              ? JSON.parse(analysis.communication_scores)
+              : analysis.communication_scores,
+          content_scores:
+            typeof analysis.content_scores === "string"
+              ? JSON.parse(analysis.content_scores)
+              : analysis.content_scores,
+          star_scores:
+            typeof analysis.star_scores === "string"
+              ? JSON.parse(analysis.star_scores)
+              : analysis.star_scores,
+          technical_scores:
+            typeof analysis.technical_scores === "string"
+              ? JSON.parse(analysis.technical_scores)
+              : analysis.technical_scores,
+          filler_words:
+            typeof analysis.filler_words === "string"
+              ? JSON.parse(analysis.filler_words)
+              : analysis.filler_words,
+        };
+
+          id: parsed.id,
+          interview_response_id: parsed.interview_response_id,
+          question_id: parsed.question_id,
+          parsedStrengths: parsed.strengths,
+          parsedImprovements: parsed.improvements,
+        });
+
+        return parsed;
+      });
+
+      return parsedData;
+    } catch (error) {
+      console.error("Error getting session analyses:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get summary for a session
+   */
+  public async getSummaryBySession(
+    sessionId: string
+  ): Promise<InterviewSummary | null> {
+    try {
+      const { data, error } = await supabase
+        .from("interview_summary")
+        .select("*")
+        .eq("session_id", sessionId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching session summary:", error);
+        return null;
+      }
+
+      return data as unknown as InterviewSummary;
+    } catch (error) {
+      console.error("Error getting session summary:", error);
+      return null;
+    }
   }
 
   /**
@@ -908,7 +1284,6 @@ class AIAnalysisService {
     const startTime = Date.now();
 
     try {
-
       // Get session data and responses
       const { data: sessionData, error: sessionError } = await supabase
         .from("interview_sessions")
@@ -986,7 +1361,6 @@ class AIAnalysisService {
         (sum, analysis) => sum + (analysis.cost_cents || 0),
         0
       );
-
 
       return {
         analyses,

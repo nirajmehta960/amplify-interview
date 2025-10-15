@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Video,
@@ -40,6 +40,7 @@ interface InterviewSession {
 
 const Dashboard = () => {
   const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [sessions, setSessions] = useState<InterviewSession[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -222,6 +223,10 @@ const Dashboard = () => {
     if (score >= 60) return "bg-blue-500";
     if (score >= 40) return "bg-yellow-500";
     return "bg-red-500";
+  };
+
+  const handleViewDetails = (sessionId: string) => {
+    navigate(`/results/${sessionId}`);
   };
 
   return (
@@ -423,6 +428,7 @@ const Dashboard = () => {
                       variant="ghost"
                       size="sm"
                       className="w-full group-hover:bg-primary/10"
+                      onClick={() => handleViewDetails(session.id)}
                     >
                       View Details
                       <ChevronRight className="w-4 h-4 ml-2" />
