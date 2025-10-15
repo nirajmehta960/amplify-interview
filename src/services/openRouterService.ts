@@ -372,21 +372,8 @@ class OpenRouterService {
       const response = await this.callOpenRouterWithRetry(request);
       const content = response.choices[0].message.content;
 
-      // Sanitize the JSON content to remove control characters
-      const sanitizedContent = content
-        .replace(/[\x00-\x1F\x7F-\x9F]/g, "") // Remove control characters
-        .replace(/\r\n/g, "\n") // Normalize line endings
-        .replace(/\r/g, "\n") // Normalize line endings
-        .trim();
-
-
-      let analysis: AIAnalysisResult;
-      try {
-        analysis = JSON.parse(sanitizedContent);
-      } catch (parseError) {
-        console.error("JSON Parse Error:", parseError);
-        throw new Error(`JSON parsing failed: ${parseError.message}`);
-      }
+      // Try to parse JSON robustly
+      const analysis = this.parseJsonLenient<AIAnalysisResult>(content);
 
       const cost = this.calculateCost(
         model,
@@ -397,6 +384,9 @@ class OpenRouterService {
       // Validate the analysis result
       this.validateAnalysisResult(analysis);
 
+      // Normalize all scores to be out of 100 for consistency
+      this.normalizeAllScores(analysis);
+
       return {
         analysis,
         cost,
@@ -406,6 +396,44 @@ class OpenRouterService {
       console.error("Error analyzing response:", error);
       throw new Error(`Failed to analyze response: ${error.message}`);
     }
+  }
+
+  /**
+   * Lenient JSON parser to mitigate occasional malformed provider output
+   */
+  private parseJsonLenient<T = any>(raw: string): T {
+    // Remove control chars and potential trailing commas
+    let s = (raw || "")
+      .replace(/[\x00-\x1F\x7F-\x9F]/g, "")
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .trim();
+
+    // If wrapped in code fences, strip them
+    if (s.startsWith("```")) {
+      s = s.replace(/^```[a-zA-Z]*\n?/, "").replace(/```\s*$/, "");
+    }
+
+    // Attempt direct parse
+    try {
+      return JSON.parse(s);
+    } catch {}
+
+    // Try to extract the first JSON object substring
+    const start = s.indexOf("{");
+    const end = s.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && end > start) {
+      const candidate = s.slice(start, end + 1);
+      try {
+        return JSON.parse(candidate);
+      } catch (e) {
+        console.error("JSON parsing failed after sanitization:", e, candidate);
+      }
+    }
+
+    throw new Error(
+      "JSON parsing failed: Expected valid JSON object in model output"
+    );
   }
 
   /**
@@ -448,8 +476,8 @@ Please provide a detailed analysis including scoring, strengths, improvements, a
 Return your analysis as a JSON object with the following structure:
 {
   "overall_score": number (0-100),
-  "communication_scores": {"clarity": number, "structure": number, "conciseness": number},
-  "content_scores": {"relevance": number, "depth": number, "specificity": number},
+  "communication_scores": {"clarity": number (0-100), "structure": number (0-100), "conciseness": number (0-100)},
+  "content_scores": {"relevance": number (0-100), "depth": number (0-100), "specificity": number (0-100)},
   "strengths": ["strength1", "strength2", "strength3"],
   "improvements": ["improvement1", "improvement2", "improvement3"],
   "actionable_feedback": "Detailed paragraph of feedback",
@@ -466,7 +494,7 @@ Return your analysis as a JSON object with the following structure:
         `
 
 For behavioral/leadership questions, also include:
-"star_scores": {"situation": number, "task": number, "action": number, "result": number}
+"star_scores": {"situation": number (0-100), "task": number (0-100), "action": number (0-100), "result": number (0-100)}
 
 Focus on STAR method structure, leadership qualities, and behavioral examples.`
       );
@@ -478,13 +506,134 @@ Focus on STAR method structure, leadership qualities, and behavioral examples.`
         `
 
 For technical/custom questions, also include:
-"technical_scores": {"understanding": number, "approach": number, "depth": number, "clarity": number}
+"technical_scores": {"understanding": number (0-100), "approach": number (0-100), "depth": number (0-100), "clarity": number (0-100)}
 
 Focus on technical accuracy, problem-solving approach, and domain knowledge.`
       );
     }
 
     return basePrompt;
+  }
+
+  /**
+   * Normalize all scores to be out of 100 for consistency
+   */
+  private normalizeAllScores(analysis: AIAnalysisResult): void {
+    // Normalize overall_score (should already be out of 100, but ensure it is)
+    analysis.overall_score = this.normalizeScore(analysis.overall_score, 100);
+
+    // Normalize communication_scores
+    if (analysis.communication_scores) {
+      analysis.communication_scores.clarity = this.normalizeScore(
+        analysis.communication_scores.clarity,
+        100
+      );
+      analysis.communication_scores.structure = this.normalizeScore(
+        analysis.communication_scores.structure,
+        100
+      );
+      analysis.communication_scores.conciseness = this.normalizeScore(
+        analysis.communication_scores.conciseness,
+        100
+      );
+    }
+
+    // Normalize content_scores
+    if (analysis.content_scores) {
+      analysis.content_scores.relevance = this.normalizeScore(
+        analysis.content_scores.relevance,
+        100
+      );
+      analysis.content_scores.depth = this.normalizeScore(
+        analysis.content_scores.depth,
+        100
+      );
+      analysis.content_scores.specificity = this.normalizeScore(
+        analysis.content_scores.specificity,
+        100
+      );
+    }
+
+    // Normalize star_scores
+    if (analysis.star_scores) {
+      analysis.star_scores.situation = this.normalizeScore(
+        analysis.star_scores.situation,
+        100
+      );
+      analysis.star_scores.task = this.normalizeScore(
+        analysis.star_scores.task,
+        100
+      );
+      analysis.star_scores.action = this.normalizeScore(
+        analysis.star_scores.action,
+        100
+      );
+      analysis.star_scores.result = this.normalizeScore(
+        analysis.star_scores.result,
+        100
+      );
+    }
+
+    // Normalize technical_scores
+    if (analysis.technical_scores) {
+      analysis.technical_scores.understanding = this.normalizeScore(
+        analysis.technical_scores.understanding,
+        100
+      );
+      analysis.technical_scores.approach = this.normalizeScore(
+        analysis.technical_scores.approach,
+        100
+      );
+      analysis.technical_scores.depth = this.normalizeScore(
+        analysis.technical_scores.depth,
+        100
+      );
+      analysis.technical_scores.clarity = this.normalizeScore(
+        analysis.technical_scores.clarity,
+        100
+      );
+    }
+
+    // Normalize confidence_score (keep out of 10, then convert to 100 for display)
+    analysis.confidence_score = this.normalizeScore(
+      analysis.confidence_score,
+      10
+    );
+  }
+
+  /**
+   * Normalize a score to the target scale (default 100)
+   */
+  private normalizeScore(score: number, targetScale: number = 100): number {
+    let numScore = typeof score === "string" ? parseFloat(score) : score;
+    if (isNaN(numScore)) return 0;
+
+    // If score is already within target scale, return as is
+    if (numScore >= 0 && numScore <= targetScale) {
+      return Math.round(numScore);
+    }
+
+    // If score is out of 10 and target is 100, multiply by 10
+    if (numScore >= 0 && numScore <= 10 && targetScale === 100) {
+      return Math.round(numScore * 10);
+    }
+
+    // If score is out of 5 and target is 100, multiply by 20
+    if (numScore >= 0 && numScore <= 5 && targetScale === 100) {
+      return Math.round(numScore * 20);
+    }
+
+    // If score is > target scale, cap it
+    if (numScore > targetScale) {
+      return targetScale;
+    }
+
+    // For confidence_score (targetScale = 10), if score is > 10, cap it
+    if (targetScale === 10 && numScore > 10) {
+      return 10;
+    }
+
+    return Math.round(numScore);
   }
 
   /**
