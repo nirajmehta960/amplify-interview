@@ -698,7 +698,7 @@ const InterviewResults = () => {
         if (videoData) {
           // Create video URL for playback
           videoBlob = new Blob([videoData.videoBlob], {
-            type: videoData.metadata.format,
+            type: videoData?.metadata?.format || "video/mp4",
           });
           const videoObjectUrl = URL.createObjectURL(videoBlob);
           setVideoUrl(videoObjectUrl);
@@ -708,7 +708,7 @@ const InterviewResults = () => {
 
           // Check if video is already in MP4 format - no conversion needed!
           actualFormat = getActualVideoFormat(
-            videoData.metadata.format,
+            videoData?.metadata?.format || "video/mp4",
             videoBlob.type
           );
           isMP4 = isMP4Format(actualFormat);
@@ -730,7 +730,7 @@ const InterviewResults = () => {
           // Only attempt conversion for non-MP4 formats
           console.log(
             "Video is in",
-            videoData.metadata.format,
+            videoData?.metadata?.format || "unknown",
             "format - conversion may be needed for optimal playback"
           );
           // Note: We'll keep the original video for now and let users choose
@@ -761,7 +761,7 @@ const InterviewResults = () => {
             sessionData.videoMetadata?.duration ||
             videoData?.metadata.duration ||
             0,
-          completionTime: videoData?.metadata.timestamp
+          completionTime: videoData?.metadata?.timestamp
             ? new Date(videoData.metadata.timestamp).toISOString()
             : new Date().toISOString(),
           responses:
@@ -834,7 +834,7 @@ const InterviewResults = () => {
             ?.estimatedPracticeTime,
           videoMetadata: videoData
             ? {
-                duration: videoData.metadata.duration || 0,
+                duration: videoData?.metadata?.duration || 0,
                 format: actualFormat, // Use the actual detected format
                 size: videoBlob?.size || 0,
                 hasAudio: Boolean(videoData.audioBlob),
