@@ -549,6 +549,7 @@ class AIAnalysisService {
           // Get the created summary
           const summary = await this.getSummaryBySession(sessionId);
           if (summary) {
+            console.log(
               `Session summary created: ${summary.readiness_level} (${summary.readiness_score}%)`
             );
             return summary;
@@ -1183,6 +1184,7 @@ class AIAnalysisService {
 
       // Parse JSON fields if they are strings
       const parsedData = (data || []).map((analysis: any) => {
+        console.log("Parsing analysis data:", {
           id: analysis.id,
           interview_response_id: analysis.interview_response_id,
           question_id: analysis.question_id,
@@ -1224,6 +1226,7 @@ class AIAnalysisService {
               : analysis.filler_words,
         };
 
+        console.log("Parsed analysis:", {
           id: parsed.id,
           interview_response_id: parsed.interview_response_id,
           question_id: parsed.question_id,

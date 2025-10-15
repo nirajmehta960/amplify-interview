@@ -135,6 +135,7 @@ const InterviewResults = () => {
 
   // Debug: Track isConverting state changes (disabled)
   // useEffect(() => {
+  //   console.log("isConverting state changed to:", isConverting);
   // }, [isConverting]);
   const [seekableVideoUrl, setSeekableVideoUrl] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -173,6 +174,7 @@ const InterviewResults = () => {
 
           // If we have a sessionId from URL params, try to fetch from database first
           if (sessionIdFromParams) {
+            console.log(
               "Attempting to fetch session data from database for:",
               sessionIdFromParams
             );
@@ -210,6 +212,7 @@ const InterviewResults = () => {
                     }
                   ),
                 };
+                console.log(
                   "Successfully loaded session data from database:",
                   sessionData
                 );
@@ -227,6 +230,7 @@ const InterviewResults = () => {
                   );
 
                   if (analyses.length > 0 || summary) {
+                    console.log(
                       "Found AI analysis data for database session:",
                       {
                         analyses: analyses.length,
@@ -239,6 +243,8 @@ const InterviewResults = () => {
 
                     // Update individual question responses with analysis scores
                     if (analyses.length > 0) {
+                      console.log(
+                        "🔧 STARTING ANALYSIS MAPPING - analyses.length:",
                         analyses.length
                       );
 
@@ -247,6 +253,7 @@ const InterviewResults = () => {
                       const byQuestionId = new Map<number, any>();
 
                       analyses.forEach((a: any) => {
+                        console.log("Indexing analysis:", {
                           interview_response_id: a?.interview_response_id,
                           question_id: a?.question_id,
                           strengths: a?.strengths,
@@ -260,6 +267,7 @@ const InterviewResults = () => {
                         }
                       });
 
+                      console.log("Analysis maps created:", {
                         byResponseIdSize: byResponseId.size,
                         byQuestionIdSize: byQuestionId.size,
                         responseIdKeys: Array.from(byResponseId.keys()),
@@ -282,24 +290,29 @@ const InterviewResults = () => {
                             let analysis = null;
                             if (rid && byResponseId.has(rid)) {
                               analysis = byResponseId.get(rid);
+                              console.log(
                                 `Found analysis by response ID: ${rid}`
                               );
                             } else if (byQuestionId.has(qid)) {
                               analysis = byQuestionId.get(qid);
+                              console.log(
                                 `Found analysis by question ID: ${qid}`
                               );
                             } else {
                               // Fallback: try to match by index if we have the same number of analyses and responses
                               if (idx < analyses.length) {
                                 analysis = analyses[idx];
+                                console.log(
                                   `Fallback: using analysis by index ${idx}`
                                 );
                               } else {
+                                console.log(
                                   `No analysis found for response ID: ${rid}, question ID: ${qid}`
                                 );
                               }
                             }
 
+                            console.log(`Mapping response ${idx}:`, {
                               responseId: rid,
                               questionId: qid,
                               foundAnalysis: !!analysis,
@@ -332,6 +345,8 @@ const InterviewResults = () => {
                           }
                         );
 
+                      console.log(
+                        "Final mapped responses:",
                         sessionData.questionResponses.map((r: any) => ({
                           questionId: r.questionId,
                           responseId: r.responseId,
@@ -376,6 +391,7 @@ const InterviewResults = () => {
                     localInterviewStorageService.createSessionData(
                       fallbackSessionId
                     );
+                  console.log(
                     "Using session data from local storage:",
                     sessionData
                   );
@@ -410,6 +426,9 @@ const InterviewResults = () => {
         // Use the sessionId we determined earlier
         const finalSessionId = sessionId || sessionData.sessionId;
 
+        console.log("Loading interview data for session:", finalSessionId);
+        console.log("Session data:", sessionData);
+        console.log("Question responses:", sessionData.questionResponses);
 
         // If session is stored in database, fetch additional data (only if not already fetched above)
         if (sessionData.storageType === "database" && !sessionIdFromParams) {
@@ -436,6 +455,7 @@ const InterviewResults = () => {
                       ""
                   );
 
+                  console.log("Database response mapping:", {
                     question_id: response.question_id,
                     response_id: responseId,
                     response_object: response,
@@ -456,6 +476,7 @@ const InterviewResults = () => {
                   };
                 }
               );
+              console.log(
                 "Enhanced session data with database responses:",
                 sessionData.questionResponses
               );
@@ -471,6 +492,7 @@ const InterviewResults = () => {
                 ) {
                   analyses = (sessionData as any)._analyses;
                   summary = (sessionData as any)._summary;
+                  console.log("Using pre-fetched AI analysis data");
                 } else {
                   const { aiAnalysisService } = await import(
                     "../services/aiAnalysisService"
@@ -484,6 +506,7 @@ const InterviewResults = () => {
                 }
 
                 if (analyses.length > 0 || summary) {
+                  console.log("Found AI analysis data:", {
                     analyses: analyses.length,
                     summary: !!summary,
                     firstAnalysis: analyses[0]
@@ -534,6 +557,7 @@ const InterviewResults = () => {
                     const byResponseId = new Map<string, any>();
                     const byQuestionId = new Map<number, any>();
                     analyses.forEach((a: any) => {
+                      console.log("Indexing analysis:", {
                         interview_response_id: a?.interview_response_id,
                         question_id: a?.question_id,
                         strengths: a?.strengths,
@@ -547,6 +571,7 @@ const InterviewResults = () => {
                       }
                     });
 
+                    console.log("Analysis maps created:", {
                       byResponseIdSize: byResponseId.size,
                       byQuestionIdSize: byQuestionId.size,
                       responseIdKeys: Array.from(byResponseId.keys()),
@@ -567,24 +592,29 @@ const InterviewResults = () => {
                           let analysis = null;
                           if (rid && byResponseId.has(rid)) {
                             analysis = byResponseId.get(rid);
+                            console.log(
                               `Found analysis by response ID: ${rid}`
                             );
                           } else if (byQuestionId.has(qid)) {
                             analysis = byQuestionId.get(qid);
+                            console.log(
                               `Found analysis by question ID: ${qid}`
                             );
                           } else {
                             // Fallback: try to match by index if we have the same number of analyses and responses
                             if (idx < analyses.length) {
                               analysis = analyses[idx];
+                              console.log(
                                 `Fallback: using analysis by index ${idx}`
                               );
                             } else {
+                              console.log(
                                 `No analysis found for response ID: ${rid}, question ID: ${qid}`
                               );
                             }
                           }
 
+                          console.log(`Mapping response ${idx}:`, {
                             responseId: rid,
                             questionId: qid,
                             foundAnalysis: !!analysis,
@@ -616,6 +646,8 @@ const InterviewResults = () => {
                         }
                       );
 
+                    console.log(
+                      "Final mapped responses:",
                       sessionData.questionResponses.map((r: any) => ({
                         questionId: r.questionId,
                         responseId: r.responseId,
@@ -650,12 +682,14 @@ const InterviewResults = () => {
           console.error("No video data found for session:", finalSessionId);
           // If no video data but we have sessionId from params, continue without video
           if (sessionIdFromParams) {
+            console.log("Continuing without video data for database session");
           } else {
             setIsLoading(false);
             return;
           }
         }
 
+        console.log("Video data loaded:", videoData);
 
         let videoBlob: Blob | null = null;
         let actualFormat = "video/webm";
@@ -681,6 +715,7 @@ const InterviewResults = () => {
         }
 
         // Debug: Video format detection (disabled)
+        // console.log("Video format detection:", {
         //   metadataFormat: videoData.metadata.format,
         //   blobType: videoBlob.type,
         //   actualFormat: actualFormat,
@@ -689,9 +724,11 @@ const InterviewResults = () => {
         // });
 
         if (isMP4) {
+          console.log("Video is already in MP4 format - no conversion needed!");
           // Video is already MP4, so we can use it directly
         } else {
           // Only attempt conversion for non-MP4 formats
+          console.log(
             "Video is in",
             videoData.metadata.format,
             "format - conversion may be needed for optimal playback"
@@ -1293,6 +1330,7 @@ const InterviewResults = () => {
                     const fileExtension = getFileExtension(videoFormat);
 
                     // Debug: Download button logic (disabled)
+                    // console.log("Download button logic:", {
                     //   videoFormat,
                     //   isMP4,
                     //   formatName,
@@ -1343,6 +1381,7 @@ const InterviewResults = () => {
                             onClick={async () => {
                               if (!videoUrl) return;
 
+                              // console.log("MP4 conversion button clicked - starting conversion");
                               try {
                                 setIsConverting(true);
                                 toast({
