@@ -179,10 +179,15 @@ const InterviewResults = () => {
               sessionIdFromParams
             );
             try {
+              console.log(
+                "🔍 Attempting to fetch database session:",
+                sessionIdFromParams
+              );
               const dbSessionData =
                 await interviewSessionService.fetchInterviewSession(
                   sessionIdFromParams
                 );
+              console.log("🔍 Database session fetch result:", dbSessionData);
               if (dbSessionData) {
                 // Create session data structure from database response
                 sessionData = {
@@ -219,15 +224,22 @@ const InterviewResults = () => {
 
                 // Try to fetch AI analysis data for database session
                 try {
+                  console.log(
+                    "🔍 Attempting to fetch AI analysis data for session:",
+                    sessionIdFromParams
+                  );
                   const { aiAnalysisService } = await import(
                     "../services/aiAnalysisService"
                   );
+                  console.log("🔍 aiAnalysisService imported successfully");
                   const analyses = await aiAnalysisService.getSessionAnalyses(
                     sessionIdFromParams
                   );
+                  console.log("🔍 getSessionAnalyses result:", analyses);
                   const summary = await aiAnalysisService.getSummaryBySession(
                     sessionIdFromParams
                   );
+                  console.log("🔍 getSummaryBySession result:", summary);
 
                   if (analyses.length > 0 || summary) {
                     console.log(
@@ -327,6 +339,10 @@ const InterviewResults = () => {
                                   rid ||
                                   (analysis.interview_response_id &&
                                     String(analysis.interview_response_id)),
+                                questionId:
+                                  response.questionId ||
+                                  response.question_id ||
+                                  qid.toString(),
                                 score: analysis.overall_score,
                                 strengths: analysis.strengths || [],
                                 improvements: analysis.improvements || [],
@@ -341,7 +357,13 @@ const InterviewResults = () => {
                                 },
                               };
                             }
-                            return response;
+                            return {
+                              ...response,
+                              questionId:
+                                response.questionId ||
+                                response.question_id ||
+                                qid.toString(),
+                            };
                           }
                         );
 
@@ -357,10 +379,15 @@ const InterviewResults = () => {
                     }
                   }
                 } catch (analysisError) {
-                  console.warn(
-                    "Could not fetch AI analysis data:",
+                  console.error(
+                    "❌ Could not fetch AI analysis data:",
                     analysisError
                   );
+                  console.error("❌ Analysis error details:", {
+                    message: analysisError.message,
+                    stack: analysisError.stack,
+                    sessionId: sessionIdFromParams,
+                  });
                   // Continue without analysis data
                 }
               } else {
@@ -430,8 +457,170 @@ const InterviewResults = () => {
         console.log("Session data:", sessionData);
         console.log("Question responses:", sessionData.questionResponses);
 
-        // If session is stored in database, fetch additional data (only if not already fetched above)
-        if (sessionData.storageType === "database" && !sessionIdFromParams) {
+        // Always fetch analysis data if we have a session ID
+        if (finalSessionId) {
+          try {
+            console.log(
+              "🔍 Attempting to fetch AI analysis data for session:",
+              finalSessionId
+            );
+            const { aiAnalysisService } = await import(
+              "../services/aiAnalysisService"
+            );
+            console.log("🔍 aiAnalysisService imported successfully");
+            const analyses = await aiAnalysisService.getSessionAnalyses(
+              finalSessionId
+            );
+            console.log("🔍 getSessionAnalyses result:", analyses);
+            const summary = await aiAnalysisService.getSummaryBySession(
+              finalSessionId
+            );
+            console.log("🔍 getSummaryBySession result:", summary);
+
+            if (analyses.length > 0 || summary) {
+              console.log("Found AI analysis data for session:", {
+                analyses: analyses.length,
+                summary: !!summary,
+              });
+              // Store analysis data for later use
+              (sessionData as any)._analyses = analyses;
+              (sessionData as any)._summary = summary;
+
+              // Update individual question responses with analysis scores
+              if (analyses.length > 0) {
+                console.log(
+                  "🔧 STARTING ANALYSIS MAPPING - analyses.length:",
+                  analyses.length
+                );
+
+                // Prefer mapping by interview_response_id, then fallback to question_id
+                const byResponseId = new Map<string, any>();
+                const byQuestionId = new Map<number, any>();
+
+                analyses.forEach((a: any) => {
+                  console.log("Indexing analysis:", {
+                    interview_response_id: a?.interview_response_id,
+                    question_id: a?.question_id,
+                    strengths: a?.strengths,
+                    improvements: a?.improvements,
+                  });
+                  if (a?.interview_response_id) {
+                    byResponseId.set(String(a.interview_response_id), a);
+                  }
+                  if (typeof a?.question_id === "number") {
+                    byQuestionId.set(a.question_id, a);
+                  }
+                });
+
+                console.log("Analysis maps created:", {
+                  byResponseIdSize: byResponseId.size,
+                  byQuestionIdSize: byQuestionId.size,
+                  responseIdKeys: Array.from(byResponseId.keys()),
+                  questionIdKeys: Array.from(byQuestionId.keys()),
+                });
+
+                sessionData.questionResponses =
+                  sessionData.questionResponses.map(
+                    (response: any, idx: number) => {
+                      const rid = String(
+                        (response as any).responseId ||
+                          (response as any).id ||
+                          ""
+                      );
+                      const qid =
+                        Number(response.questionId) || response.question_id;
+
+                      // Try to match by response ID first, then by question ID
+                      let analysis = null;
+                      if (rid && byResponseId.has(rid)) {
+                        analysis = byResponseId.get(rid);
+                        console.log(`Found analysis by response ID: ${rid}`);
+                      } else if (byQuestionId.has(qid)) {
+                        analysis = byQuestionId.get(qid);
+                        console.log(`Found analysis by question ID: ${qid}`);
+                      } else {
+                        // Fallback: try to match by index if we have the same number of analyses and responses
+                        if (idx < analyses.length) {
+                          analysis = analyses[idx];
+                          console.log(
+                            `Fallback: using analysis by index ${idx}`
+                          );
+                        } else {
+                          console.log(
+                            `No analysis found for response ID: ${rid}, question ID: ${qid}`
+                          );
+                        }
+                      }
+
+                      console.log(`Mapping response ${idx}:`, {
+                        responseId: rid,
+                        questionId: qid,
+                        foundAnalysis: !!analysis,
+                        analysisStrengths: analysis?.strengths,
+                        analysisImprovements: analysis?.improvements,
+                      });
+
+                      if (analysis) {
+                        return {
+                          ...response,
+                          responseId:
+                            rid ||
+                            (analysis.interview_response_id &&
+                              String(analysis.interview_response_id)),
+                          questionId:
+                            response.questionId ||
+                            response.question_id ||
+                            qid.toString(),
+                          score: analysis.overall_score,
+                          strengths: analysis.strengths || [],
+                          improvements: analysis.improvements || [],
+                          communication_scores:
+                            analysis.communication_scores || null,
+                          content_scores: analysis.content_scores || null,
+                          analysis: {
+                            confidence: analysis.confidence_score || 0.8,
+                            speakingRate: 150,
+                            fillerWords: analysis.filler_words?.total || 0,
+                          },
+                        };
+                      }
+                      return {
+                        ...response,
+                        questionId:
+                          response.questionId ||
+                          response.question_id ||
+                          qid.toString(),
+                      };
+                    }
+                  );
+
+                console.log(
+                  "Final mapped responses:",
+                  sessionData.questionResponses.map((r: any) => ({
+                    questionId: r.questionId,
+                    responseId: r.responseId,
+                    strengths: r.strengths,
+                    improvements: r.improvements,
+                  }))
+                );
+              }
+            }
+          } catch (analysisError) {
+            console.error(
+              "❌ Could not fetch AI analysis data:",
+              analysisError
+            );
+            console.error("❌ Analysis error details:", {
+              message: analysisError.message,
+              stack: analysisError.stack,
+              sessionId: finalSessionId,
+            });
+            // Continue without analysis data
+          }
+        }
+
+        // Always fetch analysis data if we have a session ID (regardless of storage type)
+        if (finalSessionId) {
           try {
             const dbSessionData =
               await interviewSessionService.fetchInterviewSession(
