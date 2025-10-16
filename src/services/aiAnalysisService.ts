@@ -1184,15 +1184,7 @@ class AIAnalysisService {
 
       // Parse JSON fields if they are strings
       const parsedData = (data || []).map((analysis: any) => {
-        console.log("Parsing analysis data:", {
-          id: analysis.id,
-          interview_response_id: analysis.interview_response_id,
-          question_id: analysis.question_id,
-          rawStrengths: analysis.strengths,
-          rawImprovements: analysis.improvements,
-          strengthsType: typeof analysis.strengths,
-          improvementsType: typeof analysis.improvements,
-        });
+        // Debug logs removed - issue fixed
 
         const parsed = {
           ...analysis,
@@ -1224,6 +1216,9 @@ class AIAnalysisService {
             typeof analysis.filler_words === "string"
               ? JSON.parse(analysis.filler_words)
               : analysis.filler_words,
+          // Parse actionable_feedback and improved_example (they should be strings, not JSON)
+          actionable_feedback: analysis.actionable_feedback || "",
+          improved_example: analysis.improved_example || "",
         };
 
         console.log("Parsed analysis:", {
@@ -1232,6 +1227,8 @@ class AIAnalysisService {
           question_id: parsed.question_id,
           parsedStrengths: parsed.strengths,
           parsedImprovements: parsed.improvements,
+          parsedActionableFeedback: parsed.actionable_feedback,
+          parsedImprovedExample: parsed.improved_example,
         });
 
         return parsed;
