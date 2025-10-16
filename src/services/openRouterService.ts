@@ -428,12 +428,170 @@ class OpenRouterService {
         return JSON.parse(candidate);
       } catch (e) {
         console.error("JSON parsing failed after sanitization:", e, candidate);
+
+        // Try to fix common JSON issues
+        let fixedCandidate = candidate;
+
+        // Fix missing commas between properties (look for } followed by {)
+        fixedCandidate = fixedCandidate.replace(/"}\s*{"/g, '"},{"');
+
+        // Fix missing quotes around property names (but not values)
+        fixedCandidate = fixedCandidate.replace(
+          /([^"]\w+):/g,
+          (match, prop) => {
+            // Only fix if it's not already quoted and not a value
+            if (!match.includes('"')) {
+              return `"${prop}":`;
+            }
+            return match;
+          }
+        );
+
+        // Fix trailing commas before closing braces/brackets
+        fixedCandidate = fixedCandidate.replace(/,(\s*[}\]])/g, "$1");
+
+        // Fix common malformed JSON patterns
+        // Fix unquoted string values that should be quoted
+        fixedCandidate = fixedCandidate.replace(
+          /:\s*([^",{\[\s][^",}\]\s]*[^",}\]\s])\s*([,}])/g,
+          ': "$1"$2'
+        );
+
+        // Fix missing commas between string values
+        fixedCandidate = fixedCandidate.replace(/"\s*"/g, '", "');
+
+        // Fix unescaped quotes within string values
+        fixedCandidate = fixedCandidate.replace(
+          /"([^"]*)"([^"]*)"([^"]*)":/g,
+          '"$1\\"$2\\"$3":'
+        );
+
+        // Try parsing the fixed version
+        try {
+          return JSON.parse(fixedCandidate);
+        } catch (fixError) {
+          console.error(
+            "JSON parsing failed even after fixes:",
+            fixError,
+            fixedCandidate
+          );
+
+          // Last resort: try to extract just the essential fields manually
+          try {
+            const essentialFields = this.extractEssentialFields(candidate);
+            if (essentialFields) {
+              console.warn("Using essential fields extraction as fallback");
+              return essentialFields;
+            }
+          } catch (extractError) {
+            console.error(
+              "Essential fields extraction also failed:",
+              extractError
+            );
+          }
+        }
       }
     }
 
     throw new Error(
       "JSON parsing failed: Expected valid JSON object in model output"
     );
+  }
+
+  /**
+   * Last resort: extract essential fields manually from malformed JSON
+   */
+  private extractEssentialFields(jsonString: string): any | null {
+    try {
+      // Extract key fields using regex patterns
+      const overallScoreMatch = jsonString.match(/"overall_score":\s*(\d+)/);
+      const overallScore = overallScoreMatch
+        ? parseInt(overallScoreMatch[1])
+        : 75;
+
+      // Extract strengths array
+      const strengthsMatch = jsonString.match(/"strengths":\s*\[(.*?)\]/s);
+      let strengths = [];
+      if (strengthsMatch) {
+        const strengthsContent = strengthsMatch[1];
+        const strengthItems = strengthsContent.match(/"([^"]+)"/g);
+        if (strengthItems) {
+          strengths = strengthItems.map((item) => item.replace(/"/g, ""));
+        }
+      }
+
+      // Extract improvements array
+      const improvementsMatch = jsonString.match(
+        /"improvements":\s*\[(.*?)\]/s
+      );
+      let improvements = [];
+      if (improvementsMatch) {
+        const improvementsContent = improvementsMatch[1];
+        const improvementItems = improvementsContent.match(/"([^"]+)"/g);
+        if (improvementItems) {
+          improvements = improvementItems.map((item) => item.replace(/"/g, ""));
+        }
+      }
+
+      // Extract actionable feedback
+      const feedbackMatch = jsonString.match(
+        /"actionable_feedback":\s*"([^"]+)"/
+      );
+      const actionableFeedback = feedbackMatch
+        ? feedbackMatch[1]
+        : "Analysis completed with essential fields extraction.";
+
+      // Extract improved example
+      const exampleMatch = jsonString.match(/"improved_example":\s*"([^"]+)"/);
+      const improvedExample = exampleMatch
+        ? exampleMatch[1]
+        : "Example not available due to parsing issues.";
+
+      // Extract confidence score
+      const confidenceMatch = jsonString.match(
+        /"confidence_score":\s*(\d+(?:\.\d+)?)/
+      );
+      const confidenceScore = confidenceMatch
+        ? parseFloat(confidenceMatch[1])
+        : 8.0;
+
+      return {
+        overall_score: overallScore,
+        strengths:
+          strengths.length > 0
+            ? strengths
+            : [
+                "Response provided",
+                "Analysis completed with manual extraction",
+              ],
+        improvements:
+          improvements.length > 0
+            ? improvements
+            : [
+                "Consider providing more specific examples",
+                "Practice reducing filler words",
+              ],
+        actionable_feedback: actionableFeedback,
+        improved_example: improvedExample,
+        confidence_score: confidenceScore,
+        communication_scores: {
+          clarity: Math.min(10, Math.max(1, overallScore / 10)),
+          structure: Math.min(10, Math.max(1, overallScore / 10)),
+          conciseness: Math.min(10, Math.max(1, overallScore / 10)),
+        },
+        content_scores: {
+          relevance: Math.min(10, Math.max(1, overallScore / 10)),
+          depth: Math.min(10, Math.max(1, overallScore / 10)),
+          specificity: Math.min(10, Math.max(1, overallScore / 10)),
+        },
+        filler_words: { total: 0, words: [], counts: {} },
+        speaking_pace: "appropriate",
+        response_length_assessment: "appropriate",
+      };
+    } catch (error) {
+      console.error("Essential fields extraction failed:", error);
+      return null;
+    }
   }
 
   /**

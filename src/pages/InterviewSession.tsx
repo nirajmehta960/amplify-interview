@@ -819,7 +819,7 @@ const InterviewSession = () => {
 
       // Navigate to results
       setTimeout(() => {
-        navigate("/results/1", {
+        navigate(`/results/${sessionData.sessionId}`, {
           state: sessionData,
         });
       }, 2000);
