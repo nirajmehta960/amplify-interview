@@ -117,6 +117,8 @@ interface QuestionResponse {
     depth: number;
     specificity: number;
   };
+  actionable_feedback?: string;
+  improved_example?: string;
 }
 
 const InterviewResults = () => {
@@ -244,13 +246,7 @@ const InterviewResults = () => {
                 }
               }
 
-              console.log(`🔍 UNIFIED: Mapping response ${idx}:`, {
-                responseId: rid,
-                questionId: qid,
-                foundAnalysis: !!analysis,
-                analysisStrengths: analysis?.strengths,
-                analysisImprovements: analysis?.improvements,
-              });
+              // Debug logs removed - issue fixed
 
               if (analysis) {
                 return {
@@ -290,6 +286,8 @@ const InterviewResults = () => {
               responseId: r.responseId,
               strengths: r.strengths,
               improvements: r.improvements,
+              actionable_feedback: r.actionable_feedback,
+              improved_example: r.improved_example,
             }))
           );
         }
@@ -900,6 +898,9 @@ const InterviewResults = () => {
                             foundAnalysis: !!analysis,
                             analysisStrengths: analysis?.strengths,
                             analysisImprovements: analysis?.improvements,
+                            analysisActionableFeedback:
+                              analysis?.actionable_feedback,
+                            analysisImprovedExample: analysis?.improved_example,
                           });
 
                           if (analysis) {
@@ -915,6 +916,9 @@ const InterviewResults = () => {
                               communication_scores:
                                 analysis.communication_scores || null,
                               content_scores: analysis.content_scores || null,
+                              actionable_feedback:
+                                analysis.actionable_feedback || "",
+                              improved_example: analysis.improved_example || "",
                               analysis: {
                                 confidence: analysis.confidence_score || 0.8,
                                 speakingRate: 150,
@@ -1074,6 +1078,8 @@ const InterviewResults = () => {
                       : [],
                     communication_scores: response.communication_scores || null,
                     content_scores: response.content_scores || null,
+                    actionable_feedback: response.actionable_feedback || "",
+                    improved_example: response.improved_example || "",
                   })
                 )
               : [
@@ -2084,20 +2090,28 @@ const InterviewResults = () => {
                             AI Coach Feedback
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {result.insights?.[0] ||
+                            {response.actionable_feedback ||
                               "Keep refining structure and metrics for stronger impact."}
                           </p>
                         </div>
                         <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
                           <div className="font-semibold mb-2">
-                            See It Done Better
+                            💡 Your Next Response
                           </div>
                           <p className="text-sm text-muted-foreground mb-3">
-                            For example: Emphasize actions and measurable
-                            outcomes using the STAR method to tighten your
-                            narrative.
+                            {response.improved_example ||
+                              "For example: Emphasize actions and measurable outcomes using the STAR method to tighten your narrative."}
                           </p>
-                          <Button variant="outline" size="sm">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                response.improved_example || ""
+                              );
+                              // You could add a toast notification here
+                            }}
+                          >
                             Copy Example
                           </Button>
                         </div>
