@@ -254,7 +254,7 @@ const Dashboard = () => {
                   >
                     <Avatar>
                       <AvatarImage src={profile?.avatar_url} />
-                      <AvatarFallback className="bg-primary text-primary-foreground">
+                      <AvatarFallback className="bg-primary-blue text-white">
                         {profile?.full_name?.charAt(0)?.toUpperCase() ||
                           user?.email?.charAt(0)?.toUpperCase() ||
                           "U"}
@@ -307,7 +307,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Button
             size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground h-20"
+            className="bg-primary-blue hover:bg-primary-blue/90 text-white h-20 rounded-professional shadow-professional"
             onClick={() => (window.location.href = "/interview/setup")}
           >
             <Mic className="w-6 h-6 mr-2" />
@@ -321,6 +321,26 @@ const Dashboard = () => {
           >
             <BarChart3 className="w-6 h-6 mr-2" />
             View Progress
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="glass h-20"
+            onClick={() =>
+              (window.location.href = "/dashboard/analytics/modern")
+            }
+          >
+            <BarChart3 className="w-6 h-6 mr-2" />
+            Modern Analytics
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="glass h-20"
+            onClick={() => (window.location.href = "/demo/analytics")}
+          >
+            <BarChart3 className="w-6 h-6 mr-2" />
+            Analytics Demo
           </Button>
           <Button variant="outline" size="lg" className="glass h-20">
             <MessageCircle className="w-6 h-6 mr-2" />
@@ -427,7 +447,7 @@ const Dashboard = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="w-full group-hover:bg-primary/10"
+                      className="w-full group-hover:bg-primary-blue/10"
                       onClick={() => handleViewDetails(session.id)}
                     >
                       View Details

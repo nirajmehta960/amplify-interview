@@ -8,97 +8,103 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 240 20% 99%;
-    --foreground: 240 10% 4%;
+    /* Big Interview Inspired Color Palette */
+    --background: 0 0% 100%; /* White #FFFFFF */
+    --foreground: 220 25% 11%; /* Dark Navy #1C1F2A */
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 4%;
+    --card: 220 25% 97%; /* Light Gray #F5F7FA */
+    --card-foreground: 220 25% 11%; /* Dark Navy #1C1F2A */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 4%;
+    --popover: 0 0% 100%; /* White #FFFFFF */
+    --popover-foreground: 220 25% 11%; /* Dark Navy #1C1F2A */
 
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 214 60% 50%; /* Primary Blue #3871C2 */
+    --primary-foreground: 0 0% 100%; /* White #FFFFFF */
 
-    --secondary: 217 91% 60%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 25% 11%; /* Dark Navy #1C1F2A */
+    --secondary-foreground: 0 0% 100%; /* White #FFFFFF */
 
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
+    --muted: 220 25% 97%; /* Light Gray #F5F7FA */
+    --muted-foreground: 220 15% 45%; /* Medium Gray */
 
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 142 76% 36%; /* Accent Green #3AB54A */
+    --accent-foreground: 0 0% 100%; /* White #FFFFFF */
 
-    --destructive: 0 84% 60%;
+    /* Additional Accent Colors */
+    --accent-orange: 35 100% 65%; /* Accent Orange #FFA94D */
+    --accent-orange-foreground: 0 0% 100%; /* White #FFFFFF */
+
+    --destructive: 0 84% 60%; /* Keep existing red for errors */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 262 83% 58%;
+    --border: 220 25% 97%; /* Light Gray #F5F7FA */
+    --input: 220 25% 97%; /* Light Gray #F5F7FA */
+    --ring: 214 60% 50%; /* Primary Blue #3871C2 */
 
-    --radius: 0.75rem;
+    --radius: 1rem; /* 16px rounded corners */
 
-    /* Gradients */
+    /* Big Interview Professional Gradients */
     --gradient-primary: linear-gradient(
       135deg,
-      hsl(262 83% 58%),
-      hsl(217 91% 60%)
+      hsl(214 60% 50%),
+      /* Primary Blue */ hsl(214 60% 45%) /* Slightly darker blue */
     );
     --gradient-hero: linear-gradient(
       180deg,
-      hsl(262 83% 58% / 0.1),
-      hsl(217 91% 60% / 0.05)
+      hsl(220 25% 97% / 0.8),
+      /* Light Gray */ hsl(0 0% 100% / 0.9) /* White */
     );
     --gradient-card: linear-gradient(
       135deg,
-      hsl(0 0% 100% / 0.7),
-      hsl(0 0% 100% / 0.3)
+      hsl(0 0% 100% / 0.9),
+      /* White */ hsl(220 25% 97% / 0.7) /* Light Gray */
     );
 
-    /* Glass effects */
-    --glass-bg: hsl(0 0% 100% / 0.7);
-    --glass-border: hsl(240 6% 90% / 0.5);
+    /* Professional Glass effects */
+    --glass-bg: hsl(0 0% 100% / 0.8);
+    --glass-border: hsl(220 25% 97% / 0.5);
 
-    /* Shadows */
-    --shadow-sm: 0 2px 8px hsl(262 83% 58% / 0.1);
-    --shadow-md: 0 8px 24px hsl(262 83% 58% / 0.15);
-    --shadow-lg: 0 16px 48px hsl(262 83% 58% / 0.2);
+    /* Professional Shadows */
+    --shadow-sm: 0 2px 8px hsl(220 25% 11% / 0.06);
+    --shadow-md: 0 8px 24px hsl(220 25% 11% / 0.08);
+    --shadow-lg: 0 16px 48px hsl(220 25% 11% / 0.12);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
+    /* Dark mode with Big Interview colors */
+    --background: 220 25% 11%; /* Dark Navy #1C1F2A */
+    --foreground: 0 0% 98%; /* White */
 
-    --card: 240 10% 6%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 25% 15%; /* Slightly lighter navy */
+    --card-foreground: 0 0% 98%; /* White */
 
-    --popover: 240 10% 6%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 25% 15%; /* Slightly lighter navy */
+    --popover-foreground: 0 0% 98%; /* White */
 
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 214 60% 50%; /* Primary Blue #3871C2 */
+    --primary-foreground: 0 0% 100%; /* White */
 
-    --secondary: 217 91% 60%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 25% 15%; /* Slightly lighter navy */
+    --secondary-foreground: 0 0% 98%; /* White */
 
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 220 15% 20%; /* Darker gray */
+    --muted-foreground: 220 15% 65%; /* Lighter gray */
 
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 142 76% 36%; /* Accent Green #3AB54A */
+    --accent-foreground: 0 0% 100%; /* White */
 
-    --destructive: 0 63% 31%;
+    --destructive: 0 63% 31%; /* Keep existing red for errors */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
-    --ring: 262 83% 58%;
+    --border: 220 15% 20%; /* Darker gray */
+    --input: 220 15% 20%; /* Darker gray */
+    --ring: 214 60% 50%; /* Primary Blue #3871C2 */
 
-    --glass-bg: hsl(240 10% 6% / 0.7);
-    --glass-border: hsl(240 4% 16% / 0.5);
+    --glass-bg: hsl(220 25% 15% / 0.8);
+    --glass-border: hsl(220 15% 20% / 0.5);
   }
 }
 
@@ -134,6 +140,59 @@ All colors MUST be HSL.
   .animate-gradient {
     background-size: 200% 200%;
     animation: gradient 8s ease infinite;
+  }
+
+  /* Big Interview Professional Utility Classes */
+  .bg-primary-blue {
+    background-color: hsl(214 60% 50%); /* #3871C2 */
+  }
+
+  .bg-accent-green {
+    background-color: hsl(142 76% 36%); /* #3AB54A */
+  }
+
+  .bg-accent-orange {
+    background-color: hsl(35 100% 65%); /* #FFA94D */
+  }
+
+  .bg-dark-navy {
+    background-color: hsl(220 25% 11%); /* #1C1F2A */
+  }
+
+  .bg-light-gray {
+    background-color: hsl(220 25% 97%); /* #F5F7FA */
+  }
+
+  .text-primary-blue {
+    color: hsl(214 60% 50%); /* #3871C2 */
+  }
+
+  .text-accent-green {
+    color: hsl(142 76% 36%); /* #3AB54A */
+  }
+
+  .text-accent-orange {
+    color: hsl(35 100% 65%); /* #FFA94D */
+  }
+
+  .text-dark-navy {
+    color: hsl(220 25% 11%); /* #1C1F2A */
+  }
+
+  .shadow-professional {
+    box-shadow: 0 4px 12px hsl(220 25% 11% / 0.08);
+  }
+
+  .shadow-professional-lg {
+    box-shadow: 0 8px 24px hsl(220 25% 11% / 0.12);
+  }
+
+  .rounded-professional {
+    border-radius: 1rem; /* 16px */
+  }
+
+  .rounded-professional-lg {
+    border-radius: 1.5rem; /* 24px */
   }
 
   @keyframes gradient {

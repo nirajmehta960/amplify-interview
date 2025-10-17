@@ -20,6 +20,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Inter", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -65,6 +66,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Big Interview Color Palette
+        "primary-blue": "#3871C2",
+        "accent-green": "#3AB54A",
+        "accent-orange": "#FFA94D",
+        "dark-navy": "#1C1F2A",
+        "light-gray": "#F5F7FA",
       },
       borderRadius: {
         lg: "var(--radius)",

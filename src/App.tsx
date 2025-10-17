@@ -15,6 +15,8 @@ import InterviewSetup from "./pages/InterviewSetup";
 import InterviewSession from "./pages/InterviewSession";
 import InterviewResults from "./pages/InterviewResults";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import ModernAnalyticsDashboard from "./pages/ModernAnalyticsDashboard";
+import AnalyticsDemo from "./pages/AnalyticsDemo";
 import SessionReview from "./pages/SessionReview";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +43,11 @@ const App = () => (
               path="/dashboard/analytics"
               element={<AnalyticsDashboard />}
             />
+            <Route
+              path="/dashboard/analytics/modern"
+              element={<ModernAnalyticsDashboard />}
+            />
+            <Route path="/demo/analytics" element={<AnalyticsDemo />} />
             <Route path="/interview/setup" element={<InterviewSetup />} />
             <Route path="/interview/session" element={<InterviewSession />} />
             <Route path="/results/:sessionId" element={<InterviewResults />} />
