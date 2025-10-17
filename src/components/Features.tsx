@@ -8,19 +8,34 @@ const Features = () => {
       icon: Brain,
       title: "AI-Powered Analysis",
       description:
-        "Advanced AI algorithms analyze your responses, body language, and communication skills to provide comprehensive feedback.",
+        "Our AI analyzes your interview responses to provide detailed feedback on your communication style, content quality, and areas for improvement.",
+      benefits: [
+        "Response analysis",
+        "Communication feedback",
+        "Improvement suggestions",
+      ],
     },
     {
       icon: MessageSquare,
-      title: "Real-time Feedback",
+      title: "Practice Sessions",
       description:
-        "Get instant feedback on your answers, with suggestions for improvement and best practices from top industry experts.",
+        "Practice with a variety of interview questions tailored to different industries and roles, helping you prepare for real interview scenarios.",
+      benefits: [
+        "Industry-specific questions",
+        "Multiple interview types",
+        "Realistic practice environment",
+      ],
     },
     {
       icon: TrendingUp,
       title: "Progress Tracking",
       description:
-        "Monitor your improvement over time with detailed analytics, performance metrics, and personalized insights.",
+        "Track your interview practice sessions and see how your responses improve over time with detailed performance insights.",
+      benefits: [
+        "Session history",
+        "Performance metrics",
+        "Improvement tracking",
+      ],
     },
   ];
 
@@ -35,12 +50,12 @@ const Features = () => {
           className="text-center mb-20"
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-6 text-dark-navy font-display">
-            Powerful Features for{" "}
-            <span className="text-primary-blue">Interview Success</span>
+            Practice with{" "}
+            <span className="text-primary-blue">AI-Powered Feedback</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Everything you need to ace your next interview, powered by
-            cutting-edge AI technology
+            Improve your interview skills with personalized practice sessions
+            and detailed feedback
           </p>
         </motion.div>
 
@@ -52,22 +67,28 @@ const Features = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              whileHover={{ scale: 1.05, y: -10 }}
             >
-              <Card className="bg-white p-10 h-full hover:shadow-professional-lg transition-all duration-300 border border-light-gray rounded-professional">
-                <motion.div
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.6 }}
-                  className="w-16 h-16 rounded-professional bg-primary-blue flex items-center justify-center mb-8 shadow-professional"
-                >
+              <Card className="bg-white p-8 h-full hover:shadow-professional-lg transition-all duration-300 border border-light-gray rounded-professional">
+                <div className="w-16 h-16 rounded-professional bg-primary-blue flex items-center justify-center mb-6 shadow-professional">
                   <feature.icon className="w-8 h-8 text-white" />
-                </motion.div>
-                <h3 className="text-2xl font-bold mb-6 text-dark-navy font-display">
+                </div>
+                <h3 className="text-2xl font-bold mb-4 text-dark-navy font-display">
                   {feature.title}
                 </h3>
-                <p className="text-muted-foreground leading-relaxed text-lg">
+                <p className="text-muted-foreground leading-relaxed mb-6">
                   {feature.description}
                 </p>
+                <ul className="space-y-2">
+                  {feature.benefits.map((benefit, benefitIndex) => (
+                    <li
+                      key={benefitIndex}
+                      className="flex items-center gap-2 text-sm text-dark-navy"
+                    >
+                      <div className="w-1.5 h-1.5 bg-accent-green rounded-full flex-shrink-0"></div>
+                      {benefit}
+                    </li>
+                  ))}
+                </ul>
               </Card>
             </motion.div>
           ))}

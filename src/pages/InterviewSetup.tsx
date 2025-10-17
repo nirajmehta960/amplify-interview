@@ -429,68 +429,92 @@ const InterviewSetup = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-6 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-light-gray via-white to-light-gray/50">
+      <div className="container mx-auto px-6 py-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="max-w-6xl mx-auto"
         >
           {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Set Up Your <span className="gradient-text">Interview</span>
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Choose your interview type and customize the experience to match
-              your goals
-            </p>
+          <div className="text-center mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mb-6"
+            >
+              <div className="w-16 h-16 bg-primary-blue/10 rounded-professional flex items-center justify-center mx-auto mb-4">
+                <Target className="w-8 h-8 text-primary-blue" />
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold text-dark-navy font-display mb-3">
+                Set Up Your Interview
+              </h1>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                Choose your interview type and customize the experience to match
+                your goals
+              </p>
+            </motion.div>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid lg:grid-cols-2 gap-6">
             {/* Interview Type Selection */}
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <Target className="w-6 h-6 text-primary" />
-                Interview Type
-              </h2>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="space-y-4"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-primary-blue/10 rounded-professional">
+                  <Target className="w-5 h-5 text-primary-blue" />
+                </div>
+                <h2 className="text-xl font-bold text-dark-navy font-display">
+                  Interview Type
+                </h2>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {interviewTypes.map((type) => (
+                {interviewTypes.map((type, index) => (
                   <motion.div
                     key={type.id}
-                    whileHover={{ scale: 1.02 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 + index * 0.1 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <Card
-                      className={`cursor-pointer transition-all duration-300 p-6 ${
+                      className={`cursor-pointer transition-all duration-300 p-4 bg-white/90 backdrop-blur-sm border border-light-gray/50 rounded-professional group ${
                         selectedType === type.id
-                          ? "ring-2 ring-primary bg-primary/5 border-primary"
-                          : "hover:shadow-lg hover:border-primary/50"
+                          ? "ring-2 ring-primary-blue bg-primary-blue/5 shadow-professional-lg"
+                          : "hover:shadow-professional hover:border-primary-blue/30"
                       }`}
                       onClick={() => handleTypeSelect(type.id)}
                     >
-                      <div className="flex items-start gap-4">
+                      <div className="flex items-start gap-3">
                         <div
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          className={`w-10 h-10 rounded-professional flex items-center justify-center transition-all duration-300 ${
                             selectedType === type.id
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground"
+                              ? "bg-primary-blue text-white shadow-professional"
+                              : "bg-light-gray text-muted-foreground group-hover:bg-primary-blue/10 group-hover:text-primary-blue"
                           }`}
                         >
-                          <type.icon className="w-6 h-6" />
+                          <type.icon className="w-5 h-5" />
                         </div>
 
                         <div className="flex-1">
-                          <h3 className="font-bold text-lg mb-2">
+                          <h3 className="font-bold text-base mb-1 text-dark-navy">
                             {type.name}
                           </h3>
-                          <p className="text-sm text-muted-foreground mb-2">
+                          <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
                             {type.description}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
-                            {type.estimatedDuration}
+                            <span className="font-medium">
+                              {type.estimatedDuration}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -502,23 +526,31 @@ const InterviewSetup = () => {
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
                             transition={{ duration: 0.3 }}
-                            className="mt-4 pt-4 border-t"
+                            className="mt-3 pt-3 border-t border-light-gray/50"
                           >
-                            <p className="text-sm text-muted-foreground mb-2">
+                            <p className="text-xs text-muted-foreground mb-2 leading-relaxed">
                               {type.details}
                             </p>
-                            <Badge variant="secondary" className="text-xs">
-                              {type.id === "custom"
-                                ? "Multiple domains available"
-                                : `${
-                                    questionCounts[
-                                      type.id as
-                                        | "behavioral"
-                                        | "technical"
-                                        | "leadership"
-                                    ] || 0
-                                  } questions`}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-accent-green/10 text-accent-green border-accent-green/20"
+                              >
+                                {type.id === "custom"
+                                  ? "Multiple domains available"
+                                  : `${
+                                      questionCounts[
+                                        type.id as
+                                          | "behavioral"
+                                          | "technical"
+                                          | "leadership"
+                                      ] || 0
+                                    } questions`}
+                              </Badge>
+                              {selectedType === type.id && (
+                                <div className="w-2 h-2 bg-accent-green rounded-full animate-pulse"></div>
+                              )}
+                            </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -526,19 +558,30 @@ const InterviewSetup = () => {
                   </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Configuration Panel */}
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <Sliders className="w-6 h-6 text-primary" />
-                Configuration
-              </h2>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="space-y-4"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-accent-green/10 rounded-professional">
+                  <Sliders className="w-5 h-5 text-accent-green" />
+                </div>
+                <h2 className="text-xl font-bold text-dark-navy font-display">
+                  Configuration
+                </h2>
+              </div>
 
-              <Card className="p-6 space-y-6">
+              <Card className="p-4 space-y-4 bg-white/90 backdrop-blur-sm border border-light-gray/50 rounded-professional shadow-professional">
                 {/* Question Source Selection */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Question Source</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-dark-navy">
+                    Question Source
+                  </Label>
                   <div className="flex gap-4">
                     <Button
                       variant={
@@ -551,7 +594,11 @@ const InterviewSetup = () => {
                           useCustomQuestions: false,
                         }))
                       }
-                      className="flex-1"
+                      className={`flex-1 transition-all duration-300 ${
+                        !config.useCustomQuestions
+                          ? "bg-primary-blue hover:bg-primary-blue/90 text-white shadow-professional"
+                          : "bg-white/50 border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30"
+                      }`}
                     >
                       Use App Default Questions
                     </Button>
@@ -566,7 +613,11 @@ const InterviewSetup = () => {
                           useCustomQuestions: true,
                         }))
                       }
-                      className="flex-1"
+                      className={`flex-1 transition-all duration-300 ${
+                        config.useCustomQuestions
+                          ? "bg-primary-blue hover:bg-primary-blue/90 text-white shadow-professional"
+                          : "bg-white/50 border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30"
+                      }`}
                     >
                       Use My Custom Questions
                     </Button>
@@ -575,8 +626,13 @@ const InterviewSetup = () => {
 
                 {/* Field Selection for Custom Interview Type */}
                 {selectedType === "custom" && !config.useCustomQuestions && (
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium">
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-3"
+                  >
+                    <Label className="text-sm font-medium text-dark-navy">
                       Select Your Field
                     </Label>
                     <div className="grid grid-cols-2 gap-2">
@@ -595,23 +651,34 @@ const InterviewSetup = () => {
                               selectedField: field.id,
                             }))
                           }
+                          className={`transition-all duration-300 ${
+                            config.selectedField === field.id
+                              ? "bg-accent-green hover:bg-accent-green/90 text-white shadow-professional"
+                              : "bg-white/50 border-light-gray/50 hover:bg-accent-green/5 hover:border-accent-green/30"
+                          }`}
                         >
                           {field.name}
                         </Button>
                       ))}
                     </div>
                     {config.selectedField && (
-                      <p className="text-xs text-muted-foreground">
-                        {questionCounts.custom[config.selectedField] || 0}{" "}
-                        questions available for{" "}
-                        {
-                          availableFields.find(
-                            (f) => f.id === config.selectedField
-                          )?.name
-                        }
-                      </p>
+                      <div className="p-3 bg-accent-green/5 border border-accent-green/20 rounded-professional">
+                        <p className="text-xs text-accent-green font-medium">
+                          <span className="font-bold">
+                            {questionCounts.custom[config.selectedField] || 0}
+                          </span>{" "}
+                          questions available for{" "}
+                          <span className="font-bold">
+                            {
+                              availableFields.find(
+                                (f) => f.id === config.selectedField
+                              )?.name
+                            }
+                          </span>
+                        </p>
+                      </div>
                     )}
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Custom Questions Input */}
@@ -711,8 +778,10 @@ const InterviewSetup = () => {
                 )}
 
                 {/* Duration Selector */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Duration</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-dark-navy">
+                    Duration
+                  </Label>
                   <div className="grid grid-cols-4 gap-2">
                     {durations.map((duration) => (
                       <Button
@@ -724,6 +793,11 @@ const InterviewSetup = () => {
                         onClick={() =>
                           setConfig((prev) => ({ ...prev, duration }))
                         }
+                        className={`transition-all duration-300 ${
+                          config.duration === duration
+                            ? "bg-accent-orange hover:bg-accent-orange/90 text-white shadow-professional"
+                            : "bg-white/50 border-light-gray/50 hover:bg-accent-orange/5 hover:border-accent-orange/30"
+                        }`}
                       >
                         {duration}m
                       </Button>
@@ -732,8 +806,8 @@ const InterviewSetup = () => {
                 </div>
 
                 {/* Question Count */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-dark-navy">
                     Number of Questions
                   </Label>
                   <div className="flex items-center gap-4">
@@ -752,45 +826,63 @@ const InterviewSetup = () => {
                     />
                     <Badge
                       variant="outline"
-                      className="min-w-[3rem] justify-center"
+                      className="min-w-[3rem] justify-center bg-primary-blue/10 text-primary-blue border-primary-blue/20 font-bold"
                     >
                       {config.questionCount}
                     </Badge>
                   </div>
                 </div>
               </Card>
-            </div>
+            </motion.div>
           </div>
 
           {/* Start Button */}
-          <div className="mt-12 text-center">
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="mt-8 text-center"
+          >
+            <motion.div
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="inline-block"
+            >
               <Button
                 size="lg"
                 onClick={handleStartInterview}
                 disabled={!selectedType || !isCustomQuestionsValid()}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-12 py-6 h-auto"
+                className="bg-primary-blue hover:bg-primary-blue/90 text-white px-10 py-4 h-auto rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Play className="w-6 h-6 mr-3" />
+                <Play className="w-5 h-5 mr-2" />
                 Start Interview
               </Button>
             </motion.div>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
 
       {/* Pre-interview Checklist Modal */}
       <Dialog open={showChecklist} onOpenChange={setShowChecklist}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-white/95 backdrop-blur-sm border border-light-gray/50 rounded-professional shadow-professional-lg">
           <DialogHeader>
-            <DialogTitle>Pre-Interview Checklist</DialogTitle>
-            <DialogDescription>
-              Make sure everything is ready for your interview
-            </DialogDescription>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-accent-green/10 rounded-professional">
+                <Check className="w-5 h-5 text-accent-green" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-dark-navy font-display">
+                  Pre-Interview Checklist
+                </DialogTitle>
+                <DialogDescription className="text-muted-foreground">
+                  Make sure everything is ready for your interview
+                </DialogDescription>
+              </div>
+            </div>
             <div className="flex items-center gap-2 mt-2">
-              <div className="flex-1 bg-muted rounded-full h-2">
+              <div className="flex-1 bg-light-gray rounded-full h-3">
                 <div
-                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-accent-green to-accent-green/80 h-3 rounded-full transition-all duration-500"
                   style={{
                     width: `${
                       (Object.values(checklistItems).filter(Boolean).length /
@@ -800,7 +892,7 @@ const InterviewSetup = () => {
                   }}
                 />
               </div>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground font-medium">
                 {Object.values(checklistItems).filter(Boolean).length}/
                 {Object.keys(checklistItems).length}
               </span>
@@ -831,48 +923,57 @@ const InterviewSetup = () => {
                   checked: checklistItems.materials,
                 },
               ].map((item, index) => (
-                <div
+                <motion.div
                   key={index}
-                  className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex items-center gap-3 cursor-pointer hover:bg-primary-blue/5 p-3 rounded-professional transition-all duration-300 group"
                   onClick={() => handleChecklistToggle(item.key)}
                 >
                   <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                    className={`w-6 h-6 rounded-professional border-2 flex items-center justify-center transition-all duration-300 ${
                       item.checked
-                        ? "bg-primary border-primary text-primary-foreground"
-                        : "border-muted-foreground hover:border-primary"
+                        ? "bg-accent-green border-accent-green text-white shadow-professional"
+                        : "border-primary-blue/30 bg-white hover:border-accent-green group-hover:bg-accent-green/10 group-hover:border-accent-green"
                     }`}
                   >
-                    {item.checked && <Check className="w-3 h-3" />}
+                    {item.checked && <Check className="w-4 h-4" />}
                   </div>
-                  <span className="text-sm select-none">{item.label}</span>
-                </div>
+                  <span className="text-sm select-none text-dark-navy font-medium">
+                    {item.label}
+                  </span>
+                </motion.div>
               ))}
             </div>
 
             {!isAllChecklistItemsCompleted() && (
-              <div className="bg-muted/50 border border-muted rounded-lg p-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-50 border border-red-200 rounded-professional p-4"
+              >
+                <div className="flex items-center gap-2 text-sm text-red-700">
                   <AlertTriangle className="w-4 h-4" />
-                  <span>
+                  <span className="font-medium">
                     Please complete all checklist items to begin your interview.
                   </span>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             <div className="flex gap-3 pt-4">
               <Button
                 variant="outline"
                 onClick={() => setShowChecklist(false)}
-                className="flex-1"
+                className="flex-1 bg-white/50 border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30 rounded-professional"
               >
                 Go Back
               </Button>
               <Button
                 onClick={handleBeginInterview}
                 disabled={isStarting || !isAllChecklistItemsCompleted()}
-                className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-primary-blue hover:bg-primary-blue/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-professional shadow-professional"
               >
                 {isStarting ? (
                   <>
