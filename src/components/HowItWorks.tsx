@@ -65,15 +65,7 @@ const HowItWorks = () => {
                 } flex-col`}
               >
                 {/* Content */}
-                <motion.div
-                  className="flex-1 bg-white p-10 rounded-professional cursor-pointer shadow-professional border border-light-gray"
-                  whileHover={{
-                    scale: 1.05,
-                    y: -5,
-                    transition: { duration: 0.2 },
-                  }}
-                  transition={{ duration: 0.2 }}
-                >
+                <motion.div className="flex-1 bg-white p-10 rounded-professional cursor-pointer shadow-professional border border-light-gray hover:shadow-professional-lg transition-all duration-300">
                   <h3 className="text-2xl font-bold mb-4 text-dark-navy font-display">
                     {step.title}
                   </h3>
@@ -83,11 +75,7 @@ const HowItWorks = () => {
                 </motion.div>
 
                 {/* Icon */}
-                <motion.div
-                  whileHover={{ scale: 1.1, rotate: 360 }}
-                  transition={{ duration: 0.6 }}
-                  className="w-24 h-24 rounded-professional bg-primary-blue flex items-center justify-center shadow-professional relative z-10"
-                >
+                <motion.div className="w-24 h-24 rounded-professional bg-primary-blue flex items-center justify-center shadow-professional relative z-10">
                   <step.icon className="w-12 h-12 text-white" />
                 </motion.div>
 
