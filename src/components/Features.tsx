@@ -25,20 +25,20 @@ const Features = () => {
   ];
 
   return (
-    <section id="features" className="py-24 relative">
+    <section id="features" className="py-24 relative bg-white">
       <div className="container mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-20"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-dark-navy font-display">
             Powerful Features for{" "}
-            <span className="gradient-text">Interview Success</span>
+            <span className="text-primary-blue">Interview Success</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             Everything you need to ace your next interview, powered by
             cutting-edge AI technology
           </p>
@@ -54,16 +54,18 @@ const Features = () => {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               whileHover={{ scale: 1.05, y: -10 }}
             >
-              <Card className="glass p-8 h-full hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-primary/20">
+              <Card className="bg-white p-10 h-full hover:shadow-professional-lg transition-all duration-300 border border-light-gray rounded-professional">
                 <motion.div
                   whileHover={{ rotate: 360 }}
                   transition={{ duration: 0.6 }}
-                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center mb-6 shadow-lg"
+                  className="w-16 h-16 rounded-professional bg-primary-blue flex items-center justify-center mb-8 shadow-professional"
                 >
-                  <feature.icon className="w-7 h-7 text-white" />
+                  <feature.icon className="w-8 h-8 text-white" />
                 </motion.div>
-                <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <h3 className="text-2xl font-bold mb-6 text-dark-navy font-display">
+                  {feature.title}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed text-lg">
                   {feature.description}
                 </p>
               </Card>

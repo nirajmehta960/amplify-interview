@@ -91,6 +91,7 @@ interface InterviewResult {
   nextSteps?: string[];
   estimatedPracticeTime?: string;
   videoMetadata?: VideoMetadataInfo;
+  sessionData?: any; // Store session data for interview type access
 }
 
 interface QuestionResponse {
@@ -143,6 +144,63 @@ const InterviewResults = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [chartType, setChartType] = useState<"line" | "bar">("line");
+
+  // Helper function to get interview type display name
+  const getInterviewTypeDisplay = (sessionData: any): string => {
+    // Try to get interview type from session data
+    const interviewType =
+      sessionData?.interviewType ||
+      sessionData?.interview_type ||
+      sessionData?.type;
+    const customField =
+      sessionData?.customField ||
+      sessionData?.custom_field ||
+      sessionData?.field;
+
+    if (interviewType) {
+      switch (interviewType.toLowerCase()) {
+        case "behavioral":
+          return "Behavioral Mock Interview";
+        case "technical":
+          return "Technical Mock Interview";
+        case "leadership":
+          return "Leadership Mock Interview";
+        case "custom":
+          return customField
+            ? `${customField} Mock Interview`
+            : "Custom Mock Interview";
+        default:
+          return `${interviewType} Mock Interview`;
+      }
+    }
+
+    if (customField) {
+      return `${customField} Mock Interview`;
+    }
+
+    // Default fallback
+    return "Mock Interview";
+  };
+
+  // Helper function to format date and time
+  const formatInterviewDateTime = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      const options: Intl.DateTimeFormatOptions = {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      };
+      return date.toLocaleDateString("en-US", options);
+    } catch (error) {
+      return dateString; // Fallback to original string if parsing fails
+    }
+  };
 
   // Reset conversion state when component loads
   useEffect(() => {
@@ -1023,6 +1081,7 @@ const InterviewResults = () => {
         // Create result from real data
         const realResult: InterviewResult = {
           id: finalSessionId,
+          sessionData: sessionData, // Store session data for interview type access
           overallScore:
             sessionData.aiFeedback?.overallScore ||
             videoData?.metadata.aiFeedback?.overallScore ||
@@ -1229,33 +1288,37 @@ const InterviewResults = () => {
     if (score >= 90)
       return {
         label: "Exceptional 🏆",
-        classes: "bg-gradient-to-r from-yellow-400 to-amber-500 text-white",
+        classes:
+          "bg-gradient-to-r from-accent-green to-accent-green/80 text-white",
       };
     if (score >= 80)
       return {
         label: "Excellent ⭐",
-        classes: "bg-gradient-to-r from-blue-500 to-indigo-500 text-white",
+        classes:
+          "bg-gradient-to-r from-primary-blue to-primary-blue/80 text-white",
       };
     if (score >= 70)
       return {
         label: "Strong 💪",
-        classes: "bg-gradient-to-r from-green-500 to-emerald-500 text-white",
+        classes:
+          "bg-gradient-to-r from-accent-green to-accent-green/80 text-white",
       };
     if (score >= 60)
       return {
         label: "Developing 📈",
-        classes: "bg-gradient-to-r from-yellow-400 to-orange-400 text-white",
+        classes:
+          "bg-gradient-to-r from-accent-orange to-accent-orange/80 text-white",
       };
     return {
       label: "Building 🎯",
-      classes: "bg-gradient-to-r from-orange-500 to-red-500 text-white",
+      classes: "bg-gradient-to-r from-accent-orange to-red-500 text-white",
     };
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-500";
-    if (score >= 60) return "text-blue-500";
-    if (score >= 40) return "text-orange-500";
+    if (score >= 80) return "text-accent-green";
+    if (score >= 60) return "text-primary-blue";
+    if (score >= 40) return "text-accent-orange";
     return "text-red-500";
   };
 
@@ -1283,7 +1346,7 @@ const InterviewResults = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center space-y-6"
         >
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-16 h-16 border-4 border-primary-blue border-t-transparent rounded-full animate-spin mx-auto" />
           <div>
             <h2 className="text-2xl font-bold mb-2">
               Analyzing Your Interview
@@ -1316,7 +1379,7 @@ const InterviewResults = () => {
             <p className="text-muted-foreground mb-4">{error}</p>
             <Button
               onClick={() => window.location.reload()}
-              className="bg-primary hover:bg-primary/90"
+              className="bg-primary-blue hover:bg-primary-blue/90 text-white rounded-professional"
             >
               Refresh Page
             </Button>
@@ -1371,177 +1434,246 @@ const InterviewResults = () => {
   if (!result) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Quota Alert - Show if using mock transcriptions */}
-      <div className="container mx-auto px-6 py-8">
-        {/* Summary Header - Redesigned Hero */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <Card className="p-8 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/20">
-            <div className="flex flex-col lg:flex-row items-center gap-8 w-full">
-              {/* Animated Score Ring */}
-              <div className="relative w-40 h-40">
-                <svg
-                  className="w-40 h-40 transform -rotate-90"
-                  viewBox="0 0 100 100"
-                >
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    fill="none"
-                    className="text-muted"
-                  />
-                  <motion.circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeDasharray={`${2 * Math.PI * 40}`}
-                    strokeDashoffset={`${
-                      2 * Math.PI * 40 * (1 - result.overallScore / 100)
-                    }`}
-                    className="text-primary drop-shadow-sm"
-                    initial={{ strokeDashoffset: 2 * Math.PI * 40 }}
-                    animate={{
-                      strokeDashoffset:
-                        2 * Math.PI * 40 * (1 - result.overallScore / 100),
-                    }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <motion.div
-                      className="text-4xl font-bold text-primary"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 1, type: "spring" }}
-                    >
-                      {displayedScore}
-                    </motion.div>
-                    <div className="text-sm text-muted-foreground">/100</div>
-                  </div>
-                </div>
-              </div>
+    <div className="min-h-screen bg-light-gray">
+      {/* Header */}
+      <div className="bg-white border-b border-light-gray">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-dark-navy font-display">
+                Interview Analytics
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {getInterviewTypeDisplay(result.sessionData || {})} •{" "}
+                {formatInterviewDateTime(result.completionTime)}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                className="rounded-professional"
+                onClick={() => setShowShareDialog(true)}
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share Results
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-professional"
+                onClick={handleDownloadReport}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Report
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-              {/* Performance Details */}
-              <div className="flex-1 space-y-4">
-                <div>
+      <div className="container mx-auto px-6 py-8">
+        {/* Score Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Overall Score */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-primary-blue/10 rounded-professional">
+                  <Target className="w-6 h-6 text-primary-blue" />
+                </div>
+                <Badge
+                  className={`${
+                    getTierBadge(result.overallScore).classes.includes(
+                      "accent-green"
+                    )
+                      ? "bg-accent-green"
+                      : getTierBadge(result.overallScore).classes.includes(
+                          "primary-blue"
+                        )
+                      ? "bg-primary-blue"
+                      : "bg-accent-orange"
+                  } text-white`}
+                >
+                  {getTierBadge(result.overallScore).label.split(" ")[0]}
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Overall Score
+                </h3>
+                <div className="flex items-baseline gap-2">
                   <span
-                    className={`inline-block rounded-full px-4 py-2 text-sm font-semibold ${
-                      getTierBadge(result.overallScore).classes
-                    }`}
+                    className={`text-3xl font-bold ${getScoreColor(
+                      result.overallScore
+                    )}`}
                   >
-                    {getTierBadge(result.overallScore).label}
+                    {displayedScore}
+                  </span>
+                  <span className="text-muted-foreground">/100</span>
+                </div>
+                <div className="flex items-center gap-1 text-sm">
+                  <TrendingUp className="w-4 h-4 text-accent-green" />
+                  <span className="text-accent-green font-medium">
+                    Great performance!
                   </span>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Duration</p>
-                      <p className="font-semibold">
-                        {result.duration > 0 && isFinite(result.duration)
-                          ? `${Math.floor(result.duration / 60)}m ${Math.round(
-                              result.duration % 60
-                            )}s`
-                          : "0m 0s"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Questions</p>
-                      <p className="font-semibold">{result.responses.length}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Completion
-                      </p>
-                      <p className="font-semibold">100%</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 col-span-2 md:col-span-1">
-                    <Award className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Readiness</p>
-                      <p className="font-semibold">
-                        {result.readinessLevel || "—"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
+            </Card>
+          </motion.div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-3">
-                <Button
-                  onClick={() => setShowShareDialog(true)}
-                  variant="outline"
-                  className="glass"
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Share Results
-                </Button>
-                <Button
-                  onClick={handleDownloadReport}
-                  variant="outline"
-                  className="glass"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Report
-                </Button>
+          {/* Duration */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-accent-orange/10 rounded-professional">
+                  <Clock className="w-6 h-6 text-accent-orange" />
+                </div>
+                <Badge className="bg-accent-orange text-white">Complete</Badge>
               </div>
-            </div>
-          </Card>
-        </motion.div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Duration
+                </h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-dark-navy">
+                    {result.duration > 0 && isFinite(result.duration)
+                      ? `${Math.floor(result.duration / 60)}m ${Math.round(
+                          result.duration % 60
+                        )}s`
+                      : "0m 0s"}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Interview length
+                </p>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Questions */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-accent-green/10 rounded-professional">
+                  <MessageSquare className="w-6 h-6 text-accent-green" />
+                </div>
+                <Badge className="bg-accent-green text-white">Complete</Badge>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Questions
+                </h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-dark-navy">
+                    {result.responses.length}
+                  </span>
+                </div>
+                <Progress value={100} className="h-2" />
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Readiness */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-500/10 rounded-professional">
+                  <Award className="w-6 h-6 text-purple-500" />
+                </div>
+                <Badge className="bg-primary-blue text-white">Ready</Badge>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  Readiness Level
+                </h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-dark-navy">
+                    {result.readinessLevel || "Ready"}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Interview readiness
+                </p>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
 
         {/* Quick Insights Row */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
+          transition={{ delay: 0.5 }}
           className="mb-8"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 overflow-x-auto">
-            <Card className="p-4 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/10">
-              <div className="text-sm font-semibold mb-1">
-                Your Superpower 🌟
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-accent-green/10 rounded-professional">
+                  <Sparkles className="w-5 h-5 text-accent-green" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-dark-navy">
+                    Your Superpower
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Top Strength</p>
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">Top Strength</div>
-              <div className="mt-2 font-medium">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {result.strengths?.[0] || "Clear communication"}
-              </div>
+              </p>
             </Card>
-            <Card className="p-4 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/10">
-              <div className="text-sm font-semibold mb-1">Focus On 🎯</div>
-              <div className="text-sm text-muted-foreground">
-                Improvement Area
+
+            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-accent-orange/10 rounded-professional">
+                  <Target className="w-5 h-5 text-accent-orange" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-dark-navy">
+                    Focus On
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Improvement Area
+                  </p>
+                </div>
               </div>
-              <div className="mt-2 font-medium">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {result.improvements?.[0] || "Tighter structure"}
-              </div>
+              </p>
             </Card>
-            <Card className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/10">
-              <div className="text-sm font-semibold mb-1">
-                Your Next Move 🚀
+
+            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-primary-blue/10 rounded-professional">
+                  <ArrowRight className="w-5 h-5 text-primary-blue" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-dark-navy">
+                    Your Next Move
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Action Step</p>
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">Action Step</div>
-              <div className="mt-2 font-medium">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {result.nextSteps?.[0] ||
                   "Practice STAR examples for recent projects"}
-              </div>
+              </p>
             </Card>
           </div>
         </motion.div>
@@ -1551,20 +1683,39 @@ const InterviewResults = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.6 }}
             className="mb-8"
           >
-            <Card className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Play className="h-5 w-5" />
-                  <h2 className="text-xl font-semibold">
-                    Your Interview Recording
-                  </h2>
+            <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary-blue/10 rounded-professional">
+                      <Play className="w-5 h-5 text-primary-blue" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-dark-navy font-display">
+                        Your Interview Recording
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Watch your interview performance and review your
+                        responses
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-accent-green text-white">
+                      Complete
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {totalDuration > 0 && isFinite(totalDuration)
+                        ? `${Math.floor(totalDuration / 60)}m ${Math.round(
+                            totalDuration % 60
+                          )}s`
+                        : "0m 0s"}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Watch your interview performance and review your responses
-                </p>
                 <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
                   {isConverting &&
                     (() => {
@@ -1587,6 +1738,30 @@ const InterviewResults = () => {
                       }
                       return null;
                     })()}
+
+                  {/* Black overlay with play button when video is not playing */}
+                  {!videoPlaying && !isConverting && (
+                    <div
+                      className="absolute inset-0 bg-black flex items-center justify-center cursor-pointer z-20"
+                      onClick={() => {
+                        if (videoRef.current) {
+                          videoRef.current.play();
+                          setVideoPlaying(true);
+                        }
+                      }}
+                    >
+                      <div className="text-center text-white">
+                        <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+                          <Play className="w-8 h-8 text-white ml-1" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2">
+                          Interview Recording
+                        </h3>
+                        <p className="text-white/70">Click to play</p>
+                      </div>
+                    </div>
+                  )}
+
                   <video
                     controls
                     className="w-full h-full"
@@ -1602,6 +1777,9 @@ const InterviewResults = () => {
                         (e.target as HTMLVideoElement).playbackRate
                       )
                     }
+                    onPlay={() => setVideoPlaying(true)}
+                    onPause={() => setVideoPlaying(false)}
+                    style={{ display: videoPlaying ? "block" : "none" }}
                   >
                     Your browser does not support the video tag.
                   </video>
@@ -1815,50 +1993,99 @@ const InterviewResults = () => {
           </motion.div>
         )}
 
-        {/* Performance at a Glance - Full Width */}
+        {/* Performance Chart - Full Width */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
+          transition={{ delay: 0.7 }}
           className="mb-8"
         >
-          <Card className="p-6">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-primary" /> 📈 Your Performance
-              Trend
-            </h3>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={result.responses.map((r, i) => ({
-                    name: `Q${i + 1}`,
-                    score: r.score,
-                  }))}
-                  margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
+          <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary-blue/10 rounded-professional">
+                  <BarChart3 className="w-5 h-5 text-primary-blue" />
+                </div>
+                <h3 className="text-xl font-bold text-dark-navy font-display">
+                  Performance Trend
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setChartType("bar")}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    chartType === "bar"
+                      ? "bg-primary-blue text-white"
+                      : "bg-light-gray text-muted-foreground hover:bg-light-gray/80"
+                  }`}
                 >
-                  <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                  <XAxis dataKey="name" tick={{ fontSize: 14 }} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 14 }} />
-                  <ReTooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="score"
-                    stroke="#8B5CF6"
-                    strokeWidth={3}
-                    dot={{ r: 5 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={() =>
-                      result.responses.reduce((s, r) => s + (r.score || 0), 0) /
-                      Math.max(1, result.responses.length)
-                    }
-                    stroke="#9CA3AF"
-                    strokeDasharray="5 5"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
+                  <BarChart3 className="w-4 h-4" />
+                  Bar
+                </button>
+                <button
+                  onClick={() => setChartType("line")}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    chartType === "line"
+                      ? "bg-primary-blue text-white"
+                      : "bg-light-gray text-muted-foreground hover:bg-light-gray/80"
+                  }`}
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  Line
+                </button>
+              </div>
+            </div>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                {chartType === "line" ? (
+                  <LineChart
+                    data={result.responses.map((r, i) => ({
+                      name: `Q${i + 1}`,
+                      score: r.score,
+                    }))}
+                    margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F5F7FA" />
+                    <XAxis dataKey="name" stroke="#64748B" />
+                    <YAxis domain={[0, 100]} stroke="#64748B" />
+                    <ReTooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #F5F7FA",
+                        borderRadius: "12px",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="#3871C2"
+                      strokeWidth={3}
+                      dot={{ r: 5, fill: "#3871C2" }}
+                    />
+                  </LineChart>
+                ) : (
+                  <BarChart
+                    data={result.responses.map((r, i) => ({
+                      name: `Q${i + 1}`,
+                      score: r.score,
+                    }))}
+                    margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F5F7FA" />
+                    <XAxis dataKey="name" stroke="#64748B" />
+                    <YAxis domain={[0, 100]} stroke="#64748B" />
+                    <ReTooltip
+                      contentStyle={{
+                        backgroundColor: "white",
+                        border: "1px solid #F5F7FA",
+                        borderRadius: "12px",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
+                    />
+                    <Bar dataKey="score" fill="#3871C2" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                )}
               </ResponsiveContainer>
             </div>
           </Card>
@@ -1867,21 +2094,33 @@ const InterviewResults = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.9 }}
           className="mb-8"
         >
-          <Card className="p-6">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-primary" />
-              Response Transcriptions
-            </h3>
+          <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-accent-orange/10 rounded-professional">
+                <MessageSquare className="w-5 h-5 text-accent-orange" />
+              </div>
+              <h3 className="text-xl font-bold text-dark-navy font-display">
+                Response Transcriptions
+              </h3>
+            </div>
             <Accordion type="single" collapsible className="space-y-4">
               {result.responses.map((response, index) => (
                 <AccordionItem key={response.id} value={`item-${index}`}>
                   <AccordionTrigger className="text-left hover:no-underline">
                     <div className="flex items-center justify-between w-full pr-4">
                       <div className="flex items-center gap-3">
-                        <div className={badgeVariants({ variant: "outline" })}>
+                        <div
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            index === 0
+                              ? "bg-primary-blue text-white"
+                              : index === 1
+                              ? "bg-accent-green text-white"
+                              : "bg-accent-orange text-white"
+                          }`}
+                        >
                           Q{index + 1}
                         </div>
                         <span className="font-medium line-clamp-1">
@@ -1890,7 +2129,7 @@ const InterviewResults = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <span
-                          className={`font-bold ${getScoreColor(
+                          className={`font-bold text-lg ${getScoreColor(
                             response.score
                           )}`}
                         >
@@ -1899,23 +2138,51 @@ const InterviewResults = () => {
                       </div>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-4">
-                    <Tabs defaultValue="response">
-                      <TabsList className="mb-6">
-                        <TabsTrigger value="response">
+                  <AccordionContent className="space-y-6 pt-6">
+                    <Tabs defaultValue="response" className="w-full">
+                      {/* Modern Tab Design */}
+                      <TabsList className="grid w-full grid-cols-4 mb-6 bg-light-gray p-1 rounded-professional">
+                        <TabsTrigger
+                          value="response"
+                          className="flex items-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-primary-blue data-[state=active]:shadow-professional transition-all duration-200 hover:text-primary-blue/80 rounded-professional"
+                        >
+                          <MessageSquare className="w-4 h-4" />
                           Your Response
                         </TabsTrigger>
-                        <TabsTrigger value="analysis">
+                        <TabsTrigger
+                          value="analysis"
+                          className="flex items-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-primary-blue data-[state=active]:shadow-professional transition-all duration-200 hover:text-primary-blue/80 rounded-professional"
+                        >
+                          <BarChart3 className="w-4 h-4" />
                           Detailed Analysis
                         </TabsTrigger>
-                        <TabsTrigger value="feedback">Feedback</TabsTrigger>
-                        <TabsTrigger value="coach">AI Coach</TabsTrigger>
+                        <TabsTrigger
+                          value="feedback"
+                          className="flex items-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-primary-blue data-[state=active]:shadow-professional transition-all duration-200 hover:text-primary-blue/80 rounded-professional"
+                        >
+                          <Lightbulb className="w-4 h-4" />
+                          Feedback
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="coach"
+                          className="flex items-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-primary-blue data-[state=active]:shadow-professional transition-all duration-200 hover:text-primary-blue/80 rounded-professional"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                          AI Coach
+                        </TabsTrigger>
                       </TabsList>
 
                       <TabsContent value="response" className="space-y-6">
-                        <div className="flex items-center gap-2 text-sm">
+                        {/* Response Quality Badge */}
+                        <div className="flex items-center gap-3">
                           <div
-                            className={badgeVariants({ variant: "secondary" })}
+                            className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              response.duration < 45
+                                ? "bg-red-100 text-red-700"
+                                : response.duration > 180
+                                ? "bg-orange-100 text-orange-700"
+                                : "bg-green-100 text-green-700"
+                            }`}
                           >
                             {response.duration < 45
                               ? "Too Short"
@@ -1923,197 +2190,484 @@ const InterviewResults = () => {
                               ? "Too Long"
                               : "Appropriate"}
                           </div>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Clock className="w-4 h-4" />
+                            <span>{response.duration}s duration</span>
+                          </div>
                         </div>
-                        <div className="bg-muted p-4 rounded-lg">
-                          <p className="text-sm text-muted-foreground leading-relaxed">
+
+                        {/* Response Text */}
+                        <div className="bg-gradient-to-br from-light-gray/30 to-white p-6 rounded-professional border border-light-gray/50">
+                          <div className="flex items-start gap-3 mb-4">
+                            <div className="p-2 bg-primary-blue/10 rounded-professional">
+                              <MessageSquare className="w-4 h-4 text-primary-blue" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-dark-navy mb-1">
+                                Your Response
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                Transcribed from your interview
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-sm text-dark-navy leading-relaxed bg-white p-4 rounded-lg border border-light-gray/30">
                             {response.answer}
                           </p>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Timer className="w-4 h-4 text-muted-foreground" />
-                            <span>{response.duration}s</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Mic className="w-4 h-4 text-muted-foreground" />
-                            <span>{response.fillerWords} fillers</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                            <span>{response.speakingPace} wpm</span>
-                          </div>
-                          {response.eyeContact && (
-                            <div className="flex items-center gap-2">
-                              <Eye className="w-4 h-4 text-muted-foreground" />
-                              <span>{response.eyeContact}%</span>
+
+                        {/* Performance Metrics Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="bg-white p-4 rounded-professional border border-light-gray/50 hover:shadow-professional transition-shadow">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="p-2 bg-blue-100 rounded-lg">
+                                <Timer className="w-4 h-4 text-blue-600" />
+                              </div>
+                              <span className="text-sm font-medium text-dark-navy">
+                                Duration
+                              </span>
                             </div>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit Transcription
-                          </Button>
+                            <p className="text-2xl font-bold text-primary-blue">
+                              {response.duration}s
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Response length
+                            </p>
+                          </div>
+
+                          <div className="bg-white p-4 rounded-professional border border-light-gray/50 hover:shadow-professional transition-shadow">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="p-2 bg-orange-100 rounded-lg">
+                                <Mic className="w-4 h-4 text-orange-600" />
+                              </div>
+                              <span className="text-sm font-medium text-dark-navy">
+                                Fillers
+                              </span>
+                            </div>
+                            <p className="text-2xl font-bold text-accent-orange">
+                              {response.fillerWords}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Filler words used
+                            </p>
+                          </div>
+
+                          <div className="bg-white p-4 rounded-professional border border-light-gray/50 hover:shadow-professional transition-shadow">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="p-2 bg-green-100 rounded-lg">
+                                <TrendingUp className="w-4 h-4 text-green-600" />
+                              </div>
+                              <span className="text-sm font-medium text-dark-navy">
+                                Speaking Pace
+                              </span>
+                            </div>
+                            <p className="text-2xl font-bold text-accent-green">
+                              {response.speakingPace}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Words per minute
+                            </p>
+                          </div>
                         </div>
                       </TabsContent>
 
                       <TabsContent value="analysis" className="space-y-6">
-                        <div className="grid md:grid-cols-2 gap-8">
+                        {/* Skill Breakdown Header */}
+                        <div className="flex items-center gap-3 mb-6">
+                          <div className="p-2 bg-primary-blue/10 rounded-professional">
+                            <BarChart3 className="w-5 h-5 text-primary-blue" />
+                          </div>
                           <div>
-                            <div className="text-lg font-semibold mb-4">
-                              Communication
+                            <h4 className="text-lg font-bold text-dark-navy">
+                              Skill Breakdown
+                            </h4>
+                            <p className="text-sm text-muted-foreground">
+                              Detailed performance analysis
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-8">
+                          {/* Communication Skills */}
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-4">
+                              <div className="p-1 bg-blue-100 rounded">
+                                <MessageSquare className="w-4 h-4 text-blue-600" />
+                              </div>
+                              <h5 className="text-lg font-semibold text-dark-navy">
+                                Communication
+                              </h5>
                             </div>
+
                             <div className="space-y-4">
-                              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                <span>Clarity</span>
-                                <span className="font-semibold">
-                                  {response.communication_scores?.clarity
-                                    ? Math.round(
-                                        response.communication_scores.clarity
-                                      )
-                                    : Math.round(
-                                        (response.confidence || 0.8) * 100
-                                      )}
-                                  /100
-                                </span>
+                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-dark-navy">
+                                    Clarity
+                                  </span>
+                                  <span className="font-bold text-primary-blue">
+                                    {response.communication_scores?.clarity
+                                      ? Math.round(
+                                          response.communication_scores.clarity
+                                        )
+                                      : Math.round(
+                                          (response.confidence || 0.8) * 100
+                                        )}
+                                    %
+                                  </span>
+                                </div>
+                                <div className="w-full bg-light-gray rounded-full h-2">
+                                  <div
+                                    className="bg-primary-blue h-2 rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${
+                                        response.communication_scores?.clarity
+                                          ? Math.round(
+                                              response.communication_scores
+                                                .clarity
+                                            )
+                                          : Math.round(
+                                              (response.confidence || 0.8) * 100
+                                            )
+                                      }%`,
+                                    }}
+                                  ></div>
+                                </div>
                               </div>
-                              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                <span>Structure</span>
-                                <span className="font-semibold">
-                                  {response.communication_scores?.structure
-                                    ? Math.round(
-                                        response.communication_scores.structure
-                                      )
-                                    : Math.round((response.score / 12) * 100)}
-                                  /100
-                                </span>
+
+                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-dark-navy">
+                                    Structure
+                                  </span>
+                                  <span className="font-bold text-accent-green">
+                                    {response.communication_scores?.structure
+                                      ? Math.round(
+                                          response.communication_scores
+                                            .structure
+                                        )
+                                      : Math.round((response.score / 12) * 100)}
+                                    %
+                                  </span>
+                                </div>
+                                <div className="w-full bg-light-gray rounded-full h-2">
+                                  <div
+                                    className="bg-accent-green h-2 rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${
+                                        response.communication_scores?.structure
+                                          ? Math.round(
+                                              response.communication_scores
+                                                .structure
+                                            )
+                                          : Math.round(
+                                              (response.score / 12) * 100
+                                            )
+                                      }%`,
+                                    }}
+                                  ></div>
+                                </div>
                               </div>
-                              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                <span>Conciseness</span>
-                                <span className="font-semibold">
-                                  {response.communication_scores?.conciseness
-                                    ? Math.round(
+
+                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-dark-navy">
+                                    Conciseness
+                                  </span>
+                                  <span className="font-bold text-accent-orange">
+                                    {response.communication_scores?.conciseness
+                                      ? Math.round(
+                                          response.communication_scores
+                                            .conciseness
+                                        )
+                                      : Math.round(7 * 10)}
+                                    %
+                                  </span>
+                                </div>
+                                <div className="w-full bg-light-gray rounded-full h-2">
+                                  <div
+                                    className="bg-accent-orange h-2 rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${
                                         response.communication_scores
-                                          .conciseness
-                                      )
-                                    : Math.round(7 * 10)}
-                                  /100
-                                </span>
+                                          ?.conciseness
+                                          ? Math.round(
+                                              response.communication_scores
+                                                .conciseness
+                                            )
+                                          : Math.round(7 * 10)
+                                      }%`,
+                                    }}
+                                  ></div>
+                                </div>
                               </div>
                             </div>
                           </div>
-                          <div>
-                            <div className="text-lg font-semibold mb-4">
-                              Content
+
+                          {/* Content Skills */}
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-4">
+                              <div className="p-1 bg-green-100 rounded">
+                                <Target className="w-4 h-4 text-green-600" />
+                              </div>
+                              <h5 className="text-lg font-semibold text-dark-navy">
+                                Content
+                              </h5>
                             </div>
+
                             <div className="space-y-4">
-                              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                <span>Relevance</span>
-                                <span className="font-semibold">
-                                  {response.content_scores?.relevance
-                                    ? Math.round(
-                                        response.content_scores.relevance
-                                      )
-                                    : Math.round(response.score)}
-                                  /100
-                                </span>
+                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-dark-navy">
+                                    Relevance
+                                  </span>
+                                  <span className="font-bold text-primary-blue">
+                                    {response.content_scores?.relevance
+                                      ? Math.round(
+                                          response.content_scores.relevance
+                                        )
+                                      : Math.round(response.score)}
+                                    %
+                                  </span>
+                                </div>
+                                <div className="w-full bg-light-gray rounded-full h-2">
+                                  <div
+                                    className="bg-primary-blue h-2 rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${
+                                        response.content_scores?.relevance
+                                          ? Math.round(
+                                              response.content_scores.relevance
+                                            )
+                                          : Math.round(response.score)
+                                      }%`,
+                                    }}
+                                  ></div>
+                                </div>
                               </div>
-                              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                <span>Depth</span>
-                                <span className="font-semibold">
-                                  {response.content_scores?.depth
-                                    ? Math.round(response.content_scores.depth)
-                                    : Math.round(7 * 10)}
-                                  /100
-                                </span>
+
+                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-dark-navy">
+                                    Depth
+                                  </span>
+                                  <span className="font-bold text-accent-green">
+                                    {response.content_scores?.depth
+                                      ? Math.round(
+                                          response.content_scores.depth
+                                        )
+                                      : Math.round(7 * 10)}
+                                    %
+                                  </span>
+                                </div>
+                                <div className="w-full bg-light-gray rounded-full h-2">
+                                  <div
+                                    className="bg-accent-green h-2 rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${
+                                        response.content_scores?.depth
+                                          ? Math.round(
+                                              response.content_scores.depth
+                                            )
+                                          : Math.round(7 * 10)
+                                      }%`,
+                                    }}
+                                  ></div>
+                                </div>
                               </div>
-                              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                <span>Specificity</span>
-                                <span className="font-semibold">
-                                  {response.content_scores?.specificity
-                                    ? Math.round(
-                                        response.content_scores.specificity
-                                      )
-                                    : Math.round(7 * 10)}
-                                  /100
-                                </span>
+
+                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-dark-navy">
+                                    Specificity
+                                  </span>
+                                  <span className="font-bold text-accent-orange">
+                                    {response.content_scores?.specificity
+                                      ? Math.round(
+                                          response.content_scores.specificity
+                                        )
+                                      : Math.round(7 * 10)}
+                                    %
+                                  </span>
+                                </div>
+                                <div className="w-full bg-light-gray rounded-full h-2">
+                                  <div
+                                    className="bg-accent-orange h-2 rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${
+                                        response.content_scores?.specificity
+                                          ? Math.round(
+                                              response.content_scores
+                                                .specificity
+                                            )
+                                          : Math.round(7 * 10)
+                                      }%`,
+                                    }}
+                                  ></div>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="feedback">
+                      <TabsContent value="feedback" className="space-y-6">
                         <div className="grid lg:grid-cols-2 gap-6">
-                          <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/10">
-                            <div className="font-semibold mb-3 text-green-700 dark:text-green-300">
-                              What Worked ✅
+                          {/* What Worked */}
+                          <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-professional border border-green-200/50">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="p-2 bg-green-100 rounded-professional">
+                                <CheckCircle className="w-5 h-5 text-green-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-green-700">
+                                  What Worked
+                                </h4>
+                                <p className="text-sm text-green-600">
+                                  Your strengths in this response
+                                </p>
+                              </div>
                             </div>
-                            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-2">
+                            <div className="space-y-3">
                               {response.strengths &&
                               response.strengths.length > 0 ? (
                                 response.strengths
                                   .slice(0, 3)
-                                  .map((s, i) => <li key={i}>{s}</li>)
+                                  .map((strength, i) => (
+                                    <div
+                                      key={i}
+                                      className="flex items-start gap-3 p-3 bg-white/70 rounded-lg border border-green-200/30"
+                                    >
+                                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                                      <p className="text-sm text-green-800 leading-relaxed">
+                                        {strength}
+                                      </p>
+                                    </div>
+                                  ))
                               ) : (
-                                <li className="text-gray-500 italic">
-                                  No specific strengths identified for this
-                                  question.
-                                </li>
+                                <div className="p-4 bg-white/70 rounded-lg border border-green-200/30">
+                                  <p className="text-sm text-green-700 italic text-center">
+                                    No specific strengths identified for this
+                                    question.
+                                  </p>
+                                </div>
                               )}
-                            </ul>
-                          </div>
-                          <div className="p-4 rounded-lg bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/10">
-                            <div className="font-semibold mb-3 text-orange-700 dark:text-orange-300">
-                              Growth Opportunities 💡
                             </div>
-                            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-2">
+                          </div>
+
+                          {/* Growth Opportunities */}
+                          <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-professional border border-orange-200/50">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="p-2 bg-orange-100 rounded-professional">
+                                <Lightbulb className="w-5 h-5 text-orange-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-orange-700">
+                                  Growth Opportunities
+                                </h4>
+                                <p className="text-sm text-orange-600">
+                                  Areas for improvement
+                                </p>
+                              </div>
+                            </div>
+                            <div className="space-y-3">
                               {response.improvements &&
                               response.improvements.length > 0 ? (
                                 response.improvements
                                   .slice(0, 3)
-                                  .map((s, i) => <li key={i}>{s}</li>)
+                                  .map((improvement, i) => (
+                                    <div
+                                      key={i}
+                                      className="flex items-start gap-3 p-3 bg-white/70 rounded-lg border border-orange-200/30"
+                                    >
+                                      <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
+                                      <p className="text-sm text-orange-800 leading-relaxed">
+                                        {improvement}
+                                      </p>
+                                    </div>
+                                  ))
                               ) : (
-                                <li className="text-gray-500 italic">
-                                  No specific improvements identified for this
-                                  question.
-                                </li>
+                                <div className="p-4 bg-white/70 rounded-lg border border-orange-200/30">
+                                  <p className="text-sm text-orange-700 italic text-center">
+                                    No specific improvements identified for this
+                                    question.
+                                  </p>
+                                </div>
                               )}
-                            </ul>
+                            </div>
                           </div>
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="coach" className="space-y-4">
-                        <div className="p-4 bg-primary/5 rounded-lg border-l-4 border-primary">
-                          <div className="font-semibold mb-2">
-                            AI Coach Feedback
+                      <TabsContent value="coach" className="space-y-6">
+                        {/* AI Coach Feedback */}
+                        <div className="bg-gradient-to-br from-primary-blue/5 to-primary-blue/10 p-6 rounded-professional border-l-4 border-primary-blue">
+                          <div className="flex items-start gap-3 mb-4">
+                            <div className="p-2 bg-primary-blue/20 rounded-professional">
+                              <Sparkles className="w-5 h-5 text-primary-blue" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-dark-navy mb-2">
+                                AI Coach Feedback
+                              </h4>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                {response.actionable_feedback ||
+                                  "Keep refining structure and metrics for stronger impact."}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {response.actionable_feedback ||
-                              "Keep refining structure and metrics for stronger impact."}
-                          </p>
                         </div>
-                        <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                          <div className="font-semibold mb-2">
-                            💡 Your Next Response
+
+                        {/* Your Next Response */}
+                        <div className="bg-gradient-to-br from-accent-green/5 to-accent-green/10 p-6 rounded-professional border border-accent-green/20">
+                          <div className="flex items-start gap-3 mb-4">
+                            <div className="p-2 bg-accent-green/20 rounded-professional">
+                              <Lightbulb className="w-5 h-5 text-accent-green" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-dark-navy mb-2">
+                                Your Next Response
+                              </h4>
+                              <p className="text-sm text-muted-foreground mb-1">
+                                Here's an improved version:
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            {response.improved_example ||
-                              "For example: Emphasize actions and measurable outcomes using the STAR method to tighten your narrative."}
-                          </p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              navigator.clipboard.writeText(
-                                response.improved_example || ""
-                              );
-                              // You could add a toast notification here
-                            }}
-                          >
-                            Copy Example
-                          </Button>
+
+                          <div className="bg-white p-4 rounded-lg border border-accent-green/20 mb-4">
+                            <p className="text-sm text-dark-navy leading-relaxed">
+                              {response.improved_example ||
+                                "For example: Emphasize actions and measurable outcomes using the STAR method to tighten your narrative."}
+                            </p>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-professional"
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  response.improved_example || ""
+                                );
+                                // You could add a toast notification here
+                              }}
+                            >
+                              <Edit className="w-4 h-4 mr-2" />
+                              Copy Example
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-professional"
+                              onClick={() => {
+                                // Add functionality to save as template
+                              }}
+                            >
+                              <Target className="w-4 h-4 mr-2" />
+                              Save as Template
+                            </Button>
+                          </div>
                         </div>
                       </TabsContent>
                     </Tabs>
@@ -2131,30 +2685,48 @@ const InterviewResults = () => {
           transition={{ delay: 0.35 }}
           className="mt-8 grid lg:grid-cols-2 gap-8"
         >
-          <Card className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/10">
-            <h3 className="text-xl font-bold mb-4">
-              Your Readiness Assessment 🎯
-            </h3>
-            <div className="flex items-center gap-4">
-              <div
-                className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                  getTierBadge(result.overallScore).classes
-                }`}
+          <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-accent-green/10 rounded-professional">
+                <Target className="w-5 h-5 text-accent-green" />
+              </div>
+              <h3 className="text-xl font-bold text-dark-navy font-display">
+                Your Readiness Assessment
+              </h3>
+            </div>
+            <div className="flex items-center gap-4 mb-4">
+              <Badge
+                className={`${
+                  getTierBadge(result.overallScore).classes.includes(
+                    "accent-green"
+                  )
+                    ? "bg-accent-green"
+                    : getTierBadge(result.overallScore).classes.includes(
+                        "primary-blue"
+                      )
+                    ? "bg-primary-blue"
+                    : "bg-accent-orange"
+                } text-white`}
               >
                 {result.readinessLevel || "Assessment Ready"}
-              </div>
+              </Badge>
             </div>
-            <p className="text-sm text-muted-foreground mt-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               {result.insights?.[0] ||
                 "Consistent structure and relevant examples. Keep refining metrics and conciseness for even stronger impact."}
             </p>
           </Card>
 
-          <Card className="p-6">
-            <h3 className="text-xl font-bold mb-4">
-              Your Personalized Improvement Roadmap 🚀
-            </h3>
-            <div className="space-y-3">
+          <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-primary-blue/10 rounded-professional">
+                <Lightbulb className="w-5 h-5 text-primary-blue" />
+              </div>
+              <h3 className="text-xl font-bold text-dark-navy font-display">
+                Your Improvement Roadmap
+              </h3>
+            </div>
+            <div className="space-y-4">
               {(result.nextSteps && result.nextSteps.length > 0
                 ? result.nextSteps
                 : [
@@ -2163,24 +2735,32 @@ const InterviewResults = () => {
                     "Collect metrics for 2 recent projects",
                   ]
               ).map((step, i) => (
-                <label
+                <div
                   key={i}
-                  className="flex items-start gap-3 p-3 rounded border bg-card/50 cursor-pointer"
+                  className="flex items-start gap-3 p-4 bg-light-gray rounded-professional hover:bg-light-gray/80 transition-colors"
                 >
-                  <input type="checkbox" className="mt-1" />
-                  <span className="text-sm">
-                    {i + 1}. {step}
-                  </span>
-                </label>
+                  <div className="w-6 h-6 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-0.5">
+                    {i + 1}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-dark-navy">{step}</p>
+                  </div>
+                </div>
               ))}
             </div>
-            <div className="text-xs text-muted-foreground mt-3">
-              Estimated practice time:{" "}
-              {result.estimatedPracticeTime || "~30–45 minutes"}
+            <div className="mt-6 p-4 bg-light-gray rounded-professional">
+              <p className="text-sm text-muted-foreground">
+                <strong>Estimated practice time:</strong>{" "}
+                {result.estimatedPracticeTime || "~30–45 minutes"}
+              </p>
             </div>
             <div className="mt-4 flex gap-2">
-              <Button variant="outline">Export Action Plan</Button>
-              <Button variant="outline">Copy to Clipboard</Button>
+              <Button variant="outline" className="rounded-professional">
+                Export Action Plan
+              </Button>
+              <Button variant="outline" className="rounded-professional">
+                Copy to Clipboard
+              </Button>
             </div>
           </Card>
         </motion.div>
@@ -2192,11 +2772,15 @@ const InterviewResults = () => {
           transition={{ delay: 0.4 }}
           className="mt-8"
         >
-          <Card className="p-6">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-primary" />
-              Question-by-Question Breakdown
-            </h3>
+          <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-primary-blue/10 rounded-professional">
+                <BarChart3 className="w-5 h-5 text-primary-blue" />
+              </div>
+              <h3 className="text-xl font-bold text-dark-navy font-display">
+                Question-by-Question Breakdown
+              </h3>
+            </div>
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -2211,7 +2795,7 @@ const InterviewResults = () => {
                   <XAxis type="number" domain={[0, 100]} />
                   <YAxis dataKey="name" type="category" />
                   <ReTooltip />
-                  <Bar dataKey="score" fill="#8B5CF6"></Bar>
+                  <Bar dataKey="score" fill="#3871C2"></Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -2222,36 +2806,44 @@ const InterviewResults = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 1.1 }}
           className="mt-8"
         >
-          <div className="text-center">
-            <div className="text-lg font-semibold mb-3">
-              Ready to level up? 🚀
+          <Card className="p-8 bg-white rounded-professional shadow-professional border-0 text-center">
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold text-dark-navy font-display mb-2">
+                  Ready to level up?
+                </h3>
+                <p className="text-muted-foreground">
+                  Continue your interview preparation journey
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-4 flex-wrap">
+                <Button
+                  onClick={handleScheduleAnother}
+                  className="bg-primary-blue hover:bg-primary-blue/90 text-white rounded-professional px-8 py-3"
+                >
+                  <Calendar className="w-4 h-4 mr-2" /> Schedule Another
+                  Interview
+                </Button>
+                <Button
+                  onClick={handleViewRecommendations}
+                  variant="outline"
+                  className="rounded-professional px-6 py-3"
+                >
+                  View All My Interviews
+                </Button>
+                <Button
+                  onClick={() => setShowShareDialog(true)}
+                  variant="outline"
+                  className="rounded-professional px-6 py-3"
+                >
+                  Share Results
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center justify-center gap-3 flex-wrap">
-              <Button
-                onClick={handleScheduleAnother}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <Calendar className="w-4 h-4 mr-2" /> Schedule Another Interview
-              </Button>
-              <Button
-                onClick={handleViewRecommendations}
-                variant="outline"
-                className="glass"
-              >
-                View All My Interviews
-              </Button>
-              <Button
-                onClick={() => setShowShareDialog(true)}
-                variant="outline"
-                className="glass"
-              >
-                Share Results
-              </Button>
-            </div>
-          </div>
+          </Card>
         </motion.div>
       </div>
 
@@ -2267,7 +2859,7 @@ const InterviewResults = () => {
 
           <div className="space-y-4">
             <div className="text-center py-4">
-              <div className="text-3xl font-bold text-primary mb-2">
+              <div className="text-3xl font-bold text-primary-blue mb-2">
                 {result.overallScore}%
               </div>
               <div
