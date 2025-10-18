@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import Logo from "@/components/Logo";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -36,9 +37,14 @@ const Navbar = () => {
           {/* Logo */}
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="text-2xl font-bold text-dark-navy font-display"
+            className="flex items-center"
           >
-            Amplify Interview
+            <Logo
+              variant="main"
+              size="md"
+              showText={true}
+              className="text-dark-navy"
+            />
           </motion.div>
 
           {/* Desktop Menu */}

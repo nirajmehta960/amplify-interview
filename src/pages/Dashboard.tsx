@@ -36,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import Logo from "@/components/Logo";
 // Removed EnvironmentTest and TranscriptionProviderSelector - no longer needed
 
 interface InterviewSession {
@@ -348,7 +349,18 @@ const Dashboard = () => {
       <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b border-light-gray/50 shadow-professional">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
+            {/* Logo - Moved to far left, smaller size */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="cursor-pointer"
+              onClick={() => navigate("/")}
+            >
+              <Logo variant="main" size="sm" showText={true} />
+            </motion.div>
+
+            {/* Welcome Message - Centered */}
+            <div className="flex-1 text-center">
               <h1 className="text-2xl font-bold text-dark-navy font-display">
                 Welcome back,{" "}
                 {profile?.full_name || user?.email?.split("@")[0] || "User"}!
@@ -357,6 +369,9 @@ const Dashboard = () => {
                 {getMotivationalMessage()}
               </p>
             </div>
+
+            {/* Spacer for right alignment */}
+            <div className="w-24"></div>
 
             <div className="flex items-center gap-4">
               <DropdownMenu>

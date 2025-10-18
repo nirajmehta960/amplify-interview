@@ -34,6 +34,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge, badgeVariants } from "@/components/ui/badge";
+import Logo from "@/components/Logo";
 import { Progress } from "@/components/ui/progress";
 import {
   ResponsiveContainer,
@@ -1513,7 +1514,18 @@ const InterviewResults = () => {
       <div className="bg-white border-b border-light-gray">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <div>
+            {/* Logo - Moved to far left, smaller size */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="cursor-pointer"
+              onClick={() => navigate("/")}
+            >
+              <Logo variant="main" size="sm" showText={true} />
+            </motion.div>
+
+            {/* Title - Centered */}
+            <div className="flex-1 text-center">
               <h1 className="text-3xl font-bold text-dark-navy font-display">
                 Interview Analytics
               </h1>
@@ -1522,6 +1534,9 @@ const InterviewResults = () => {
                 {formatInterviewDateTime(result.completionTime)}
               </p>
             </div>
+
+            {/* Spacer for right alignment */}
+            <div className="w-32"></div>
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"

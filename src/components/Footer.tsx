@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { Github, Linkedin, Twitter } from "lucide-react";
 
 const Footer = () => {
   const footerLinks = [
@@ -17,16 +16,10 @@ const Footer = () => {
     },
   ];
 
-  const socialLinks = [
-    { icon: Github, href: "#", label: "GitHub" },
-    { icon: Linkedin, href: "#", label: "LinkedIn" },
-    { icon: Twitter, href: "#", label: "Twitter" },
-  ];
-
   return (
-    <footer className="relative bg-gradient-to-br from-dark-navy to-dark-navy/95 text-white py-20">
+    <footer className="relative bg-gradient-to-br from-dark-navy to-dark-navy/95 text-white py-12">
       <div className="container mx-auto px-6">
-        <div className="grid md:grid-cols-5 gap-12 mb-12">
+        <div className="grid md:grid-cols-5 gap-8 mb-8">
           {/* Brand */}
           <div className="md:col-span-2">
             <motion.div
@@ -37,23 +30,10 @@ const Footer = () => {
             >
               Amplify Interview
             </motion.div>
-            <p className="text-white/70 mb-6 leading-relaxed text-lg">
+            <p className="text-white/70 mb-4 leading-relaxed">
               Amplify your interview performance with AI-powered practice
               sessions, personalized feedback, and real-time coaching.
             </p>
-            <div className="flex gap-4">
-              {socialLinks.map((social, index) => (
-                <motion.a
-                  key={index}
-                  href={social.href}
-                  whileHover={{ scale: 1.1, y: -2 }}
-                  className="w-12 h-12 rounded-professional bg-white/10 hover:bg-primary-blue/20 flex items-center justify-center transition-colors"
-                  aria-label={social.label}
-                >
-                  <social.icon className="w-5 h-5 text-white" />
-                </motion.a>
-              ))}
-            </div>
           </div>
 
           {/* Links */}
@@ -85,8 +65,11 @@ const Footer = () => {
         </div>
 
         {/* Copyright */}
-        <div className="border-t border-white/20 pt-8 text-center text-white/70 text-sm">
-          <p>© 2024 AI Interview Master. All rights reserved.</p>
+        <div className="border-t border-white/20 pt-6 text-center text-white/70 text-sm">
+          <p>© 2025 Amplify Interview. All rights reserved.</p>
+          <p className="mt-1 text-white/50 text-xs">
+            Powered by OpenAI GPT and Anthropic Claude models
+          </p>
         </div>
       </div>
     </footer>

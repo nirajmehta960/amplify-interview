@@ -1,31 +1,31 @@
 import { motion } from "framer-motion";
-import { UserPlus, Video, Mic, Award } from "lucide-react";
+import { Settings, BookOpen, Video, BarChart3 } from "lucide-react";
 
 const HowItWorks = () => {
   const steps = [
     {
-      icon: UserPlus,
-      title: "Sign Up",
+      icon: Settings,
+      title: "Set Up Interview",
       description:
-        "Create your free account in seconds and set up your profile with your career goals.",
+        "Choose your interview type (Behavioral, Technical, Leadership, or Custom), select questions from our database or your personal bank, and configure duration.",
+    },
+    {
+      icon: BookOpen,
+      title: "Create Questions",
+      description:
+        "Build your personal question bank with custom questions, categorize them by domain (PM, Engineer, Data Scientist, etc.), and manage your practice library.",
     },
     {
       icon: Video,
-      title: "Choose Interview",
+      title: "Record & Practice",
       description:
-        "Select from various interview types tailored to your industry and experience level.",
+        "Record your interview responses with video, get real-time transcription, and practice with industry-specific questions tailored to your role.",
     },
     {
-      icon: Mic,
-      title: "Practice & Record",
+      icon: BarChart3,
+      title: "Analyze & Improve",
       description:
-        "Answer questions naturally while our AI analyzes your responses in real-time.",
-    },
-    {
-      icon: Award,
-      title: "Get Feedback",
-      description:
-        "Receive detailed insights and personalized recommendations to improve your skills.",
+        "Get detailed AI analysis with scores, feedback, and improvement suggestions. Track your progress with comprehensive analytics and performance insights.",
     },
   ];
 
@@ -43,7 +43,8 @@ const HowItWorks = () => {
             How It <span className="text-primary-blue">Works</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Get started with your AI interview coach in four simple steps
+            From setup to analysis, master your interview skills with our
+            comprehensive platform
           </p>
         </motion.div>
 

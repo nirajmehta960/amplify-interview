@@ -8,33 +8,36 @@ const Features = () => {
       icon: Brain,
       title: "AI-Powered Analysis",
       description:
-        "Our AI analyzes your interview responses to provide detailed feedback on your communication style, content quality, and areas for improvement.",
+        "Get detailed AI feedback on your interview responses using advanced language models. Our system analyzes your communication style, content quality, and provides specific improvement recommendations.",
       benefits: [
-        "Response analysis",
-        "Communication feedback",
-        "Improvement suggestions",
+        "Real-time response analysis",
+        "Detailed communication feedback",
+        "Personalized improvement suggestions",
+        "Score-based performance evaluation",
       ],
     },
     {
       icon: MessageSquare,
-      title: "Practice Sessions",
+      title: "Custom Question Bank",
       description:
-        "Practice with a variety of interview questions tailored to different industries and roles, helping you prepare for real interview scenarios.",
+        "Create and manage your own practice questions or choose from our curated database. Practice with behavioral, technical, leadership, and custom domain-specific questions tailored to your career goals.",
       benefits: [
-        "Industry-specific questions",
-        "Multiple interview types",
-        "Realistic practice environment",
+        "Personal question bank creation",
+        "Behavioral, technical & leadership questions",
+        "Custom domain selection (PM, Engineer, etc.)",
+        "Question categorization & management",
       ],
     },
     {
       icon: TrendingUp,
-      title: "Progress Tracking",
+      title: "Comprehensive Analytics",
       description:
-        "Track your interview practice sessions and see how your responses improve over time with detailed performance insights.",
+        "Track your interview performance with detailed analytics, session history, and progress insights. View your improvement over time with visual charts and performance metrics.",
       benefits: [
-        "Session history",
-        "Performance metrics",
-        "Improvement tracking",
+        "Session history & performance tracking",
+        "Visual progress charts & analytics",
+        "Score trends & improvement metrics",
+        "Interview readiness assessment",
       ],
     },
   ];
@@ -50,12 +53,12 @@ const Features = () => {
           className="text-center mb-20"
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-6 text-dark-navy font-display">
-            Practice with{" "}
-            <span className="text-primary-blue">AI-Powered Feedback</span>
+            Everything You Need to{" "}
+            <span className="text-primary-blue">Ace Your Interview</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Improve your interview skills with personalized practice sessions
-            and detailed feedback
+            From custom question banks to AI-powered analysis, get comprehensive
+            interview preparation tools designed for real success
           </p>
         </motion.div>
 

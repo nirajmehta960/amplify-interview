@@ -46,7 +46,7 @@ const Hero = () => {
           >
             <Sparkles className="w-4 h-4 text-primary-blue" />
             <span className="text-sm font-medium text-dark-navy">
-              AI-Powered Interview Preparation
+              Advanced AI Interview Coaching
             </span>
           </motion.div>
 
@@ -56,8 +56,8 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-dark-navy font-display"
           >
-            Ace Your Next Interview with{" "}
-            <span className="text-primary-blue">AI-Powered Practice</span>
+            Master Interviews with{" "}
+            <span className="text-primary-blue">AI-Powered Coaching</span>
           </motion.h1>
 
           <motion.p
@@ -66,9 +66,9 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-xl md:text-2xl text-muted-foreground mb-12 leading-relaxed max-w-3xl mx-auto"
           >
-            Practice your interview skills with our AI-powered coach. Get
-            personalized feedback, work with real interview questions, and build
-            your confidence for your next opportunity.
+            Create custom question banks, practice with video recording, and get
+            detailed AI analysis. Track your progress with comprehensive
+            analytics and master any interview type.
           </motion.p>
 
           {/* Key Benefits */}
@@ -79,9 +79,9 @@ const Hero = () => {
             className="grid md:grid-cols-3 gap-4 mb-12 max-w-4xl mx-auto"
           >
             {[
-              "Real-time AI feedback",
-              "Industry-specific questions",
-              "Progress tracking & analytics",
+              "Custom question banks",
+              "Video recording & analysis",
+              "AI-powered feedback & scoring",
             ].map((benefit, index) => (
               <div
                 key={index}

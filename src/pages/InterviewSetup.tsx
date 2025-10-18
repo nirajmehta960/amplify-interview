@@ -42,6 +42,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import Logo from "@/components/Logo";
 import { Label } from "@/components/ui/label";
 import {
   Collapsible,
@@ -649,6 +650,18 @@ const InterviewSetup = () => {
         >
           {/* Header */}
           <div className="text-center mb-8">
+            {/* Logo */}
+            <motion.div {...createMotionVariant("slideDown")} className="mb-6">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="cursor-pointer inline-block"
+                onClick={() => navigate("/")}
+              >
+                <Logo variant="main" size="lg" showText={true} />
+              </motion.div>
+            </motion.div>
+
             <motion.div
               {...createMotionVariant("slideDown")}
               transition={{ delay: 0.1 }}
