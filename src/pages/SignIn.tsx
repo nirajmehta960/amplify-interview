@@ -1,23 +1,23 @@
-import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, Github } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { z } from 'zod';
+import { useState } from "react";
+import { Link, Navigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
 
 const signInSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const SignIn = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +30,7 @@ const SignIn = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const validated = signInSchema.parse({ email, password });
       setIsLoading(true);
@@ -39,17 +39,17 @@ const SignIn = () => {
 
       if (error) {
         toast({
-          title: 'Sign in failed',
+          title: "Sign in failed",
           description: error.message,
-          variant: 'destructive',
+          variant: "destructive",
         });
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
-          title: 'Validation error',
+          title: "Validation error",
           description: error.errors[0].message,
-          variant: 'destructive',
+          variant: "destructive",
         });
       }
     } finally {
@@ -68,7 +68,9 @@ const SignIn = () => {
         <div className="glass p-8 rounded-2xl">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">Sign in to continue your interview practice</p>
+            <p className="text-muted-foreground">
+              Sign in to continue your interview practice
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -94,7 +96,7 @@ const SignIn = () => {
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                 <Input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -106,7 +108,11 @@ const SignIn = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
                 </button>
               </div>
             </div>
@@ -116,7 +122,9 @@ const SignIn = () => {
                 <Checkbox
                   id="remember"
                   checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    setRememberMe(checked as boolean)
+                  }
                 />
                 <label
                   htmlFor="remember"
@@ -127,7 +135,7 @@ const SignIn = () => {
               </div>
               <Link
                 to="/auth/forgot-password"
-                className="text-sm text-primary hover:underline"
+                className="text-sm text-primary hover:underline font-medium"
               >
                 Forgot password?
               </Link>
@@ -139,7 +147,7 @@ const SignIn = () => {
               size="lg"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
 
@@ -149,12 +157,14 @@ const SignIn = () => {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or continue with
+                </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <Button variant="outline" className="glass">
+            <div className="mt-4">
+              <Button variant="outline" className="glass w-full">
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                   <path
                     fill="currentColor"
@@ -173,18 +183,17 @@ const SignIn = () => {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Google
-              </Button>
-              <Button variant="outline" className="glass">
-                <Github className="w-5 h-5 mr-2" />
-                GitHub
+                Continue with Google
               </Button>
             </div>
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
-            Don't have an account?{' '}
-            <Link to="/auth/signup" className="text-primary hover:underline font-medium">
+            Don't have an account?{" "}
+            <Link
+              to="/auth/signup"
+              className="text-primary hover:underline font-medium"
+            >
               Sign up
             </Link>
           </p>

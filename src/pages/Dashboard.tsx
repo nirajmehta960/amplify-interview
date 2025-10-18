@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Video,
@@ -176,17 +176,7 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/auth/signin" replace />;
-  }
+  // Authentication is now handled by ProtectedRoute component
 
   // Calculate improvement based on recent summaries
   const calculateImprovement = () => {
