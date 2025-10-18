@@ -348,10 +348,6 @@ The application can be deployed to any platform that supports Node.js applicatio
 - **Industry Partnerships**: Integration with hiring platforms
 - **Global Expansion**: Multi-language support and localization
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🙏 Acknowledgments
 
 - **OpenAI** for GPT models and AI capabilities
