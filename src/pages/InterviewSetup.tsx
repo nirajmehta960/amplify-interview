@@ -63,7 +63,7 @@ import {
   getQuestionCountByType,
   getQuestionCountByCustomDomain,
   type Field,
-} from "@/services/questionBankService";
+} from "@/services/questionDatabaseService";
 import {
   userQuestionBankService,
   CustomQuestion,

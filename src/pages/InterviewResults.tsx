@@ -252,20 +252,12 @@ const InterviewResults = () => {
       const { aiAnalysisService } = await import(
         "../services/aiAnalysisService"
       );
-      console.log("🔍 UNIFIED: aiAnalysisService imported successfully");
 
       const analyses = await aiAnalysisService.getSessionAnalyses(sessionId);
-      console.log("🔍 UNIFIED: getSessionAnalyses result:", analyses);
 
       const summary = await aiAnalysisService.getSummaryBySession(sessionId);
-      console.log("🔍 UNIFIED: getSummaryBySession result:", summary);
 
       if (analyses.length > 0 || summary) {
-        console.log("🔍 UNIFIED: Found AI analysis data:", {
-          analyses: analyses.length,
-          summary: !!summary,
-        });
-
         // Store analysis data for later use
         (sessionData as any)._analyses = analyses;
         (sessionData as any)._summary = summary;
@@ -282,25 +274,12 @@ const InterviewResults = () => {
           const byQuestionId = new Map<number, any>();
 
           analyses.forEach((a: any) => {
-            console.log("🔍 UNIFIED: Indexing analysis:", {
-              interview_response_id: a?.interview_response_id,
-              question_id: a?.question_id,
-              strengths: a?.strengths,
-              improvements: a?.improvements,
-            });
             if (a?.interview_response_id) {
               byResponseId.set(String(a.interview_response_id), a);
             }
             if (typeof a?.question_id === "number") {
               byQuestionId.set(a.question_id, a);
             }
-          });
-
-          console.log("🔍 UNIFIED: Analysis maps created:", {
-            byResponseIdSize: byResponseId.size,
-            byQuestionIdSize: byQuestionId.size,
-            responseIdKeys: Array.from(byResponseId.keys()),
-            questionIdKeys: Array.from(byQuestionId.keys()),
           });
 
           sessionData.questionResponses = sessionData.questionResponses.map(
@@ -452,7 +431,6 @@ const InterviewResults = () => {
                 await interviewSessionService.fetchInterviewSession(
                   finalSessionId
                 );
-              console.log("🔍 Database session fetch result:", dbSessionData);
               if (dbSessionData) {
                 // Create session data structure from database response
                 sessionData = {
@@ -521,7 +499,6 @@ const InterviewResults = () => {
                 await interviewSessionService.fetchInterviewSession(
                   finalSessionId
                 );
-              console.log("🔍 Database session fetch result:", dbSessionData);
               if (dbSessionData) {
                 // Create session data structure from database response
                 sessionData = {
@@ -584,9 +561,7 @@ const InterviewResults = () => {
           if (fallbackSessionId) {
             try {
               const storedData =
-                localInterviewStorageService.getInterviewResult(
-                  fallbackSessionId
-                );
+                localInterviewStorageService.getSession(fallbackSessionId);
               if (storedData) {
                 sessionData = storedData;
                 finalSessionId = fallbackSessionId;
@@ -646,15 +621,12 @@ const InterviewResults = () => {
             const { aiAnalysisService } = await import(
               "../services/aiAnalysisService"
             );
-            console.log("🔍 aiAnalysisService imported successfully");
             const analyses = await aiAnalysisService.getSessionAnalyses(
               finalSessionId
             );
-            console.log("🔍 getSessionAnalyses result:", analyses);
             const summary = await aiAnalysisService.getSummaryBySession(
               finalSessionId
             );
-            console.log("🔍 getSummaryBySession result:", summary);
 
             if (analyses.length > 0 || summary) {
               console.log("Found AI analysis data for session:", {
@@ -2818,7 +2790,7 @@ const InterviewResults = () => {
           transition={{ delay: 0.35 }}
           className="mt-8 grid lg:grid-cols-2 gap-8"
         >
-          <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+          <Card className="p-6 bg-white rounded-professional shadow-professional border-0 h-full flex flex-col">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-accent-green/10 rounded-professional">
                 <Target className="w-5 h-5 text-accent-green" />
@@ -2850,7 +2822,7 @@ const InterviewResults = () => {
             </p>
           </Card>
 
-          <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+          <Card className="p-6 bg-white rounded-professional shadow-professional border-0 h-full flex flex-col">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-primary-blue/10 rounded-professional">
                 <Lightbulb className="w-5 h-5 text-primary-blue" />
@@ -2859,41 +2831,44 @@ const InterviewResults = () => {
                 Your Improvement Roadmap
               </h3>
             </div>
-            <div className="space-y-4">
-              {(result.nextSteps && result.nextSteps.length > 0
-                ? result.nextSteps
-                : [
-                    "Draft 2 STAR stories with quantifiable results",
-                    "Practice concise openings under 30 seconds",
-                    "Collect metrics for 2 recent projects",
-                  ]
-              ).map((step, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 p-4 bg-light-gray rounded-professional hover:bg-light-gray/80 transition-colors"
-                >
-                  <div className="w-6 h-6 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-0.5">
-                    {i + 1}
+            <div className="flex-1 flex flex-col">
+              <div className="space-y-4 flex-1">
+                {(result.nextSteps && result.nextSteps.length > 0
+                  ? result.nextSteps
+                  : [
+                      "Draft 2 STAR stories with quantifiable results",
+                      "Practice concise openings under 30 seconds",
+                      "Collect metrics for 2 recent projects",
+                    ]
+                ).map((step, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 p-4 bg-light-gray rounded-professional hover:bg-light-gray/80 transition-colors"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-0.5">
+                      {i + 1}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-dark-navy">
+                        {step}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-dark-navy">{step}</p>
-                  </div>
+                ))}
+              </div>
+              <div className="mt-6 p-4 bg-gradient-to-r from-primary-blue/10 to-accent-green/10 border border-primary-blue/20 rounded-professional">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary-blue" />
+                  <p className="text-sm font-medium text-dark-navy">
+                    <span className="text-primary-blue font-semibold">
+                      Estimated practice time:
+                    </span>{" "}
+                    <span className="text-accent-green font-bold">
+                      {result.estimatedPracticeTime || "~30–45 minutes"}
+                    </span>
+                  </p>
                 </div>
-              ))}
-            </div>
-            <div className="mt-6 p-4 bg-light-gray rounded-professional">
-              <p className="text-sm text-muted-foreground">
-                <strong>Estimated practice time:</strong>{" "}
-                {result.estimatedPracticeTime || "~30–45 minutes"}
-              </p>
-            </div>
-            <div className="mt-4 flex gap-2">
-              <Button variant="outline" className="rounded-professional">
-                Export Action Plan
-              </Button>
-              <Button variant="outline" className="rounded-professional">
-                Copy to Clipboard
-              </Button>
+              </div>
             </div>
           </Card>
         </motion.div>

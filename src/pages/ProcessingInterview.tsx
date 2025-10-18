@@ -39,19 +39,11 @@ const ProcessingInterview = () => {
 
   const [steps, setSteps] = useState<ProcessingStep[]>([
     {
-      id: "stopping-recording",
-      title: "Stopping Recording",
-      description: "Finalizing your interview recording...",
-      icon: <Video className="w-5 h-5" />,
-      status: "processing",
-      progress: 0,
-    },
-    {
       id: "saving-responses",
       title: "Saving Responses",
       description: "Storing your answers in the database...",
       icon: <Database className="w-5 h-5" />,
-      status: "pending",
+      status: "processing",
       progress: 0,
     },
     {
@@ -118,16 +110,7 @@ const ProcessingInterview = () => {
         throw new Error("No video blob provided");
       }
 
-      // Step 1: Stop recording and get video blob
-      updateStep("stopping-recording", { status: "processing", progress: 0 });
-
-      // Simulate stopping recording
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      updateStep("stopping-recording", { status: "completed", progress: 100 });
-      setCurrentStep(1);
-      setOverallProgress(16.67);
-
-      // Step 2: Save responses to database
+      // Step 1: Save responses to database
       updateStep("saving-responses", { status: "processing", progress: 0 });
 
       // Import services
@@ -192,8 +175,8 @@ const ProcessingInterview = () => {
       let transcriptionResult;
 
       updateStep("saving-responses", { status: "completed", progress: 100 });
-      setCurrentStep(2);
-      setOverallProgress(33.33);
+      setCurrentStep(1);
+      setOverallProgress(20);
 
       // Step 3: Transcription
       updateStep("transcription", { status: "processing", progress: 0 });
@@ -242,7 +225,7 @@ const ProcessingInterview = () => {
       if (data.sessionId && questionResponses.length > 0) {
         for (const response of questionResponses) {
           await interviewSessionService.saveQuestionResponse(data.sessionId, {
-            questionId: Number(response.questionId),
+            questionId: response.questionId, // Keep as string for user questions (UUID)
             questionText: response.questionText,
             responseText: response.answerText,
             duration: response.duration,
@@ -251,8 +234,8 @@ const ProcessingInterview = () => {
       }
 
       updateStep("transcription", { status: "completed", progress: 100 });
-      setCurrentStep(3);
-      setOverallProgress(50);
+      setCurrentStep(2);
+      setOverallProgress(40);
 
       // Step 4: AI Analysis
       updateStep("ai-analysis", { status: "processing", progress: 0 });
@@ -302,8 +285,8 @@ const ProcessingInterview = () => {
       }
 
       updateStep("ai-analysis", { status: "completed", progress: 100 });
-      setCurrentStep(4);
-      setOverallProgress(66.67);
+      setCurrentStep(3);
+      setOverallProgress(60);
 
       // Step 5: Complete session and store video
       updateStep("generating-report", { status: "processing", progress: 0 });
@@ -346,8 +329,8 @@ const ProcessingInterview = () => {
       });
 
       updateStep("generating-report", { status: "completed", progress: 100 });
-      setCurrentStep(5);
-      setOverallProgress(83.33);
+      setCurrentStep(4);
+      setOverallProgress(80);
 
       // Step 6: Finalizing
       updateStep("finalizing", { status: "processing", progress: 0 });

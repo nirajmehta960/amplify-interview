@@ -435,7 +435,6 @@ export class InterviewSessionService {
           questions = [];
         } else {
           questions = questionsData || [];
-          console.log("🔍 Questions fetched by ID:", questions);
 
           // Check if any of these are user questions
           const hasUserQuestions = questions.some(
@@ -445,7 +444,6 @@ export class InterviewSessionService {
           );
 
           if (hasUserQuestions) {
-            console.log("🔍 Detected user questions in session");
           }
         }
       }
@@ -501,7 +499,6 @@ export class InterviewSessionService {
               }
             } else {
               questions = questionsData || [];
-              console.log("🔍 User questions fetched:", questions);
             }
           } else {
             // Fallback: fetch all user questions if no responses found

@@ -52,10 +52,9 @@ export function getSupabaseUrl(): string {
 }
 
 export function getSupabaseAnonKey(): string {
-  return getEnvVar("VITE_SUPABASE_PUBLISHABLE_KEY") || "";
+  return getEnvVar("VITE_SUPABASE_ANON_KEY") || "";
 }
 
 export function getDeepgramApiKey(): string {
   return getEnvVar("VITE_DEEPGRAM_API_KEY") || "";
 }
-

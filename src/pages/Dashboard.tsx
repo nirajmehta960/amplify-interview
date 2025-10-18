@@ -415,7 +415,7 @@ const Dashboard = () => {
                 className={cn(
                   DESIGN_SYSTEM.card.base,
                   DESIGN_SYSTEM.card.hover,
-                  "p-6 group"
+                  "p-6 group h-full flex flex-col"
                 )}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -441,23 +441,27 @@ const Dashboard = () => {
                       </div>
                     )}
                 </div>
-                <p className="text-sm text-muted-foreground mb-1 font-medium">
-                  {stat.label}
-                </p>
-                <p
-                  className={`text-3xl font-bold font-display ${
-                    stat.label === "Average Score"
-                      ? getScoreColor(calculateAverageScore())
-                      : "text-dark-navy"
-                  }`}
-                >
-                  {typeof stat.value === "number" ? stat.value : stat.value}
-                </p>
-                {stat.label === "Improvement" && stat.value !== "0%" && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    vs previous interviews
-                  </p>
-                )}
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1 font-medium">
+                      {stat.label}
+                    </p>
+                    <p
+                      className={`text-3xl font-bold font-display ${
+                        stat.label === "Average Score"
+                          ? getScoreColor(calculateAverageScore())
+                          : "text-dark-navy"
+                      }`}
+                    >
+                      {typeof stat.value === "number" ? stat.value : stat.value}
+                    </p>
+                  </div>
+                  {stat.label === "Improvement" && stat.value !== "0%" && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      vs previous interviews
+                    </p>
+                  )}
+                </div>
               </Card>
             </motion.div>
           ))}

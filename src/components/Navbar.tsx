@@ -1,12 +1,26 @@
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import Logo from "@/components/Logo";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,10 +30,53 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Fetch user profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user?.id) return;
+
+      try {
+        // First try to get from profiles table
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (profileData) {
+          setProfile(profileData);
+        } else {
+          // Fallback to user metadata if no profile exists
+          setProfile({
+            full_name: user.user_metadata?.full_name || null,
+            avatar_url: user.user_metadata?.avatar_url || null,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        // Fallback to user metadata
+        setProfile({
+          full_name: user.user_metadata?.full_name || null,
+          avatar_url: user.user_metadata?.avatar_url || null,
+        });
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   const menuItems = [
     { label: "Features", href: "#features" },
     { label: "How It Works", href: "#how-it-works" },
-    { label: "Sign In", href: "/auth/signin" },
   ];
 
   return (
@@ -65,12 +122,75 @@ const Navbar = () => {
                 {item.label}
               </motion.a>
             ))}
-            <Button
-              onClick={() => (window.location.href = "/auth/signup")}
-              className="bg-primary-blue hover:bg-primary-blue/90 text-white shadow-professional rounded-professional px-6 py-2 font-medium"
-            >
-              Get Started
-            </Button>
+
+            {user ? (
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={() => navigate("/dashboard")}
+                  className="bg-primary-blue hover:bg-primary-blue/90 text-white shadow-professional rounded-professional px-6 py-2 font-medium"
+                >
+                  Dashboard
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="relative h-10 w-10 rounded-full hover:bg-primary-blue/10"
+                    >
+                      <Avatar>
+                        <AvatarImage src={profile?.avatar_url} />
+                        <AvatarFallback className="bg-primary-blue text-white">
+                          {profile?.full_name?.charAt(0)?.toUpperCase() ||
+                            user?.email?.charAt(0)?.toUpperCase() ||
+                            "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-3 py-2">
+                      <p className="text-sm font-medium text-gray-900">
+                        {profile?.full_name ||
+                          user?.email?.split("@")[0] ||
+                          "User"}
+                      </p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => navigate("/dashboard")}
+                      className="cursor-pointer"
+                    >
+                      <BarChart3 className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleSignOut}
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/auth/signin")}
+                  className="text-dark-navy/80 hover:text-primary-blue transition-colors font-medium"
+                >
+                  Sign In
+                </Button>
+                <Button
+                  onClick={() => navigate("/auth/signup")}
+                  className="bg-primary-blue hover:bg-primary-blue/90 text-white shadow-professional rounded-professional px-6 py-2 font-medium"
+                >
+                  Get Started
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -110,12 +230,73 @@ const Navbar = () => {
                   {item.label}
                 </motion.a>
               ))}
-              <Button
-                onClick={() => (window.location.href = "/auth/signup")}
-                className="w-full mt-4 bg-primary-blue hover:bg-primary-blue/90 text-white rounded-professional"
-              >
-                Get Started
-              </Button>
+
+              {user ? (
+                <div className="mt-4 space-y-3">
+                  <Button
+                    onClick={() => {
+                      navigate("/dashboard");
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white rounded-professional"
+                  >
+                    Dashboard
+                  </Button>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={profile?.avatar_url} />
+                        <AvatarFallback className="bg-primary-blue text-white text-sm">
+                          {profile?.full_name?.charAt(0)?.toUpperCase() ||
+                            user?.email?.charAt(0)?.toUpperCase() ||
+                            "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {profile?.full_name ||
+                            user?.email?.split("@")[0] ||
+                            "User"}
+                        </p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        handleSignOut();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <LogOut className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      navigate("/auth/signin");
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full text-dark-navy/80 hover:text-primary-blue"
+                  >
+                    Sign In
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      navigate("/auth/signup");
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white rounded-professional"
+                  >
+                    Get Started
+                  </Button>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

@@ -114,7 +114,8 @@ class OpenRouterService {
     // Don't set headers in constructor - will be set dynamically
     this.defaultHeaders = {
       Authorization: "",
-      "HTTP-Referer": "https://amplifyinterview.com",
+      "HTTP-Referer":
+        import.meta.env.VITE_SITE_URL || "https://amplifyinterview.com",
       "X-Title": "Amplify Interview",
       "Content-Type": "application/json",
     };
