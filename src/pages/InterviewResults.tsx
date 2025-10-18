@@ -149,17 +149,11 @@ const InterviewResults = () => {
   const getInterviewTypeDisplay = (sessionData: any): string => {
     // First try to get interview type from analysis data (most accurate)
     const analyses = (sessionData as any)?._analyses;
-    console.log("🔍 getInterviewTypeDisplay - sessionData:", sessionData);
-    console.log("🔍 getInterviewTypeDisplay - analyses:", analyses);
 
     if (analyses && analyses.length > 0) {
       const firstAnalysis = analyses[0];
       const interviewType = firstAnalysis.interview_type;
       const customDomain = firstAnalysis.custom_domain;
-
-      console.log("🔍 getInterviewTypeDisplay - firstAnalysis:", firstAnalysis);
-      console.log("🔍 getInterviewTypeDisplay - interviewType:", interviewType);
-      console.log("🔍 getInterviewTypeDisplay - customDomain:", customDomain);
 
       if (interviewType) {
         switch (interviewType.toLowerCase()) {
@@ -1487,17 +1481,7 @@ const InterviewResults = () => {
       return sum + (response.duration || 0);
     }, 0);
 
-    // Debug logging
-    console.log("🔍 Duration Debug:", {
-      responseDurationSum,
-      resultDuration: result?.duration,
-      responsesForCalcs: responsesForCalcs.map((r) => ({
-        id: r.id,
-        duration: r.duration,
-      })),
-      finalDuration:
-        responseDurationSum > 0 ? responseDurationSum : result?.duration || 0,
-    });
+    // Debug logging removed to prevent infinite loop
 
     // Use response duration sum if available, otherwise fall back to result duration
     return responseDurationSum > 0

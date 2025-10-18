@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
+  DESIGN_SYSTEM,
+  cn,
+  createMotionVariant,
+  createInteractiveState,
+} from "@/lib/design-system";
+import {
   Video,
   Target,
   TrendingUp,
@@ -387,14 +393,25 @@ const Dashboard = () => {
           {stats.map((stat, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              {...createMotionVariant("slideUp")}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="bg-white/90 backdrop-blur-sm p-6 hover:shadow-professional-lg transition-all duration-300 border border-light-gray/50 rounded-professional group">
+              <Card
+                className={cn(
+                  DESIGN_SYSTEM.card.base,
+                  DESIGN_SYSTEM.card.hover,
+                  "p-6 group"
+                )}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div
-                    className={`w-12 h-12 rounded-professional bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-professional group-hover:scale-110 transition-transform duration-300`}
+                    className={cn(
+                      "w-12 h-12 rounded-professional bg-gradient-to-br flex items-center justify-center shadow-professional",
+                      stat.color,
+                      DESIGN_SYSTEM.hover.scaleUp,
+                      DESIGN_SYSTEM.transitions.transform,
+                      DESIGN_SYSTEM.durations.normal
+                    )}
                   >
                     <stat.icon className="w-6 h-6 text-white" />
                   </div>
@@ -433,45 +450,82 @@ const Dashboard = () => {
 
         {/* Quick Actions */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          {...createMotionVariant("slideUp")}
           transition={{ delay: 0.4 }}
           className="flex flex-col md:flex-row gap-4 mb-8"
         >
           <Button
             size="lg"
-            className="bg-primary-blue hover:bg-primary-blue/90 text-white h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group flex-1"
+            className={cn(
+              DESIGN_SYSTEM.button.primary,
+              "h-20 rounded-professional group flex-1"
+            )}
             onClick={() => (window.location.href = "/interview/setup")}
           >
-            <Mic className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
+            <Mic
+              className={cn(
+                "w-6 h-6 mr-2",
+                DESIGN_SYSTEM.hover.scaleUp,
+                DESIGN_SYSTEM.transitions.transform
+              )}
+            />
             Start New Interview
           </Button>
           <div className="flex flex-col md:flex-row gap-4 flex-1">
             <Button
               variant="outline"
               size="lg"
-              className="bg-white/90 backdrop-blur-sm border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30 hover:text-primary-blue h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group flex-1"
+              className={cn(
+                DESIGN_SYSTEM.button.secondary,
+                "h-20 rounded-professional group flex-1"
+              )}
               onClick={() => (window.location.href = "/dashboard/progress")}
             >
-              <TrendingUp className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
+              <TrendingUp
+                className={cn(
+                  "w-6 h-6 mr-2",
+                  DESIGN_SYSTEM.hover.scaleUp,
+                  DESIGN_SYSTEM.transitions.transform
+                )}
+              />
               Progress
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="bg-white/90 backdrop-blur-sm border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30 hover:text-primary-blue h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group flex-1"
-              onClick={() => (window.location.href = "/dashboard/practice-questions")}
+              className={cn(
+                DESIGN_SYSTEM.button.secondary,
+                "h-20 rounded-professional group flex-1"
+              )}
+              onClick={() =>
+                (window.location.href = "/dashboard/practice-questions")
+              }
             >
-              <BookOpen className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
+              <BookOpen
+                className={cn(
+                  "w-6 h-6 mr-2",
+                  DESIGN_SYSTEM.hover.scaleUp,
+                  DESIGN_SYSTEM.transitions.transform
+                )}
+              />
               Practice Questions
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="bg-white/90 backdrop-blur-sm border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30 hover:text-primary-blue h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group flex-1"
+              className={cn(
+                DESIGN_SYSTEM.button.secondary,
+                "h-20 rounded-professional group flex-1"
+              )}
               onClick={() => (window.location.href = "/dashboard/insights")}
             >
-              <Brain className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
+              <Brain
+                className={cn(
+                  "w-6 h-6 mr-2",
+                  DESIGN_SYSTEM.hover.scaleUp,
+                  DESIGN_SYSTEM.transitions.transform
+                )}
+              />
               Insights
             </Button>
           </div>
@@ -561,11 +615,17 @@ const Dashboard = () => {
                 return (
                   <motion.div
                     key={session.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    {...createMotionVariant("slideUp")}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <Card className="bg-white/80 backdrop-blur-sm p-4 hover:shadow-professional-lg transition-all duration-300 group cursor-pointer border border-light-gray/50 rounded-professional">
+                    <Card
+                      className={cn(
+                        DESIGN_SYSTEM.card.base,
+                        DESIGN_SYSTEM.card.hover,
+                        DESIGN_SYSTEM.card.interactive,
+                        "p-4 bg-white/80 group"
+                      )}
+                    >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-start gap-3">
                           <div className="p-2 bg-primary-blue/10 rounded-professional">

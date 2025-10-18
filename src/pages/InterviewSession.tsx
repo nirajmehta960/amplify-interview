@@ -13,6 +13,7 @@ import { localInterviewStorageService } from "@/services/localInterviewStorageSe
 import { interviewSessionService } from "@/services/interviewSessionService";
 import { useAuth } from "@/contexts/AuthContext";
 import { ClassifiedQuestion } from "@/services/questionClassificationService";
+import { supabase } from "@/integrations/supabase/client";
 import {
   getQuestionsForInterview,
   Question,
@@ -167,15 +168,87 @@ const InterviewSession = () => {
     const loadQuestions = async () => {
       if (config && interviewType) {
         try {
-          const allQuestions = await getQuestionsForInterview(
-            interviewType.id,
-            config.useCustomQuestions,
-            config.customQuestions,
-            config.selectedField,
-            config.useUserQuestions,
-            config.selectedUserQuestions,
+          let allQuestions: Question[] = [];
+
+          // Handle app questions (selectedAppQuestions)
+          if (
+            config.selectedAppQuestions &&
+            config.selectedAppQuestions.length > 0
+          ) {
+            console.log(
+              "Loading selected app questions:",
+              config.selectedAppQuestions
+            );
+
+            // Fetch the selected app questions from database
+            const { data: appQuestions, error } = await supabase
+              .from("interview_questions")
+              .select("*")
+              .in(
+                "question_id",
+                config.selectedAppQuestions.map((id) => parseInt(id))
+              )
+              .eq("is_active", true);
+
+            if (error) {
+              console.error("Error fetching app questions:", error);
+            } else {
+              allQuestions = appQuestions.map((q) => ({
+                id: q.question_id.toString(),
+                text: q.question_text,
+                category: q.category || "General",
+                difficulty:
+                  q.difficulty === "Easy"
+                    ? 1
+                    : q.difficulty === "Medium"
+                    ? 2
+                    : 3,
+                thinkingTime: 45,
+              }));
+            }
+          }
+          // Handle practice questions (selectedUserQuestions)
+          else if (
+            config.useUserQuestions &&
+            config.selectedUserQuestions &&
+            config.selectedUserQuestions.length > 0 &&
             user?.id
-          );
+          ) {
+            console.log(
+              "Loading selected practice questions:",
+              config.selectedUserQuestions
+            );
+
+            const { userQuestionBankService } = await import(
+              "../services/userQuestionBankService"
+            );
+            const userQuestions =
+              await userQuestionBankService.getQuestionsForInterview(
+                user.id,
+                config.selectedUserQuestions
+              );
+
+            allQuestions = userQuestions.map((q) => ({
+              id: q.id,
+              text: q.text,
+              category: q.category,
+              difficulty: 2, // Default to medium
+              thinkingTime: 45,
+            }));
+          }
+          // Fallback to general question loading
+          else {
+            console.log("Loading questions using fallback method");
+            allQuestions = await getQuestionsForInterview(
+              interviewType.id,
+              config.useCustomQuestions,
+              config.customQuestions,
+              config.selectedField,
+              config.useUserQuestions,
+              config.selectedUserQuestions,
+              user?.id
+            );
+          }
 
           // Limit questions to the configured count
           const limitedQuestions = allQuestions.slice(0, config.questionCount);
@@ -242,11 +315,13 @@ const InterviewSession = () => {
                 config.selectedUserQuestions.length > 0
               ) {
                 try {
-                  console.log("Processing user questions for classification...");
-                  
+                  console.log(
+                    "Processing user questions for classification..."
+                  );
+
                   // Get the actual question texts from the loaded questions
-                  const userQuestionTexts = limitedQuestions.map(q => q.text);
-                  
+                  const userQuestionTexts = limitedQuestions.map((q) => q.text);
+
                   const classified =
                     await interviewSessionService.processCustomQuestions(
                       userQuestionTexts,
@@ -258,10 +333,7 @@ const InterviewSession = () => {
                       }
                     );
                   setClassifiedQuestions(classified);
-                  console.log(
-                    "User questions classified:",
-                    classified.length
-                  );
+                  console.log("User questions classified:", classified.length);
                 } catch (error) {
                   console.error("Error classifying user questions:", error);
                 }
@@ -702,7 +774,7 @@ const InterviewSession = () => {
               await interviewSessionService.saveQuestionResponse(
                 currentSessionId,
                 {
-                  questionId: Number(response.questionId), // Convert to number for database int8
+                  questionId: response.questionId, // Keep as string for user questions (UUID)
                   questionText: response.questionText,
                   responseText: response.answerText,
                   duration: response.duration,

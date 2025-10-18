@@ -29,7 +29,7 @@ export interface CreateSessionData {
 }
 
 export interface QuestionResponse {
-  questionId: number; // Changed from string to number to match database int8
+  questionId: string | number; // Can be string (UUID for user questions) or number (for app questions)
   responseText: string;
   duration: number;
   questionText?: string;
@@ -252,9 +252,29 @@ export class InterviewSessionService {
     response: QuestionResponse
   ): Promise<string> {
     try {
+      // Check if this is a user question (UUID) or app question (number)
+      const isUserQuestion =
+        typeof response.questionId === "string" &&
+        response.questionId.includes("-"); // UUIDs contain hyphens
+
+      let questionId: number;
+
+      if (isUserQuestion) {
+        // For user questions, we need to create a temporary entry in interview_questions
+        // or use a special mapping approach
+        questionId = await this.getOrCreateQuestionIdForUserQuestion(
+          sessionId,
+          response.questionId,
+          response.questionText
+        );
+      } else {
+        // For app questions, convert to number as before
+        questionId = Number(response.questionId);
+      }
+
       const responseData = {
         session_id: sessionId,
-        question_id: Number(response.questionId), // Ensure question_id is a number (int8)
+        question_id: questionId,
         response_text: response.responseText,
         duration: Math.round(response.duration), // Convert to integer
       };
@@ -277,6 +297,53 @@ export class InterviewSessionService {
       return data.id;
     } catch (error) {
       console.error("Error in saveQuestionResponse:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get or create a question ID for user questions
+   * This creates a temporary entry in interview_questions table for user questions
+   */
+  private async getOrCreateQuestionIdForUserQuestion(
+    sessionId: string,
+    userQuestionId: string,
+    questionText: string
+  ): Promise<number> {
+    try {
+      // For user questions, we'll always create a new mapping to avoid URL encoding issues
+      // The question text will be stored and can be retrieved later
+      console.log(
+        "Creating new question mapping for user question:",
+        questionText.substring(0, 50) + "..."
+      );
+
+      // Create a new entry in interview_questions for this user question
+      const { data: newQuestion, error: insertError } = await supabase
+        .from("interview_questions")
+        .insert({
+          interview_type: "custom",
+          custom_domain: "product_manager", // Use valid enum value
+          question_text: questionText,
+          category: "USER_QUESTION", // Special identifier for user questions
+          focus_areas: ["user_defined"],
+          difficulty: "Medium",
+          is_active: true,
+        })
+        .select("question_id")
+        .single();
+
+      if (insertError) {
+        console.error("Error creating question mapping:", insertError);
+        throw new Error(
+          `Failed to create question mapping: ${insertError.message}`
+        );
+      }
+
+      console.log("Created new question mapping:", newQuestion.question_id);
+      return newQuestion.question_id;
+    } catch (error) {
+      console.error("Error in getOrCreateQuestionIdForUserQuestion:", error);
       throw error;
     }
   }
@@ -350,16 +417,123 @@ export class InterviewSessionService {
 
       // Fetch questions (if question IDs are available)
       let questions: InterviewQuestion[] = [];
-      if (session.questions_asked && Array.isArray(session.questions_asked)) {
+
+      // Check if these are user questions by looking at the responses
+      // User questions will have been mapped to integer IDs, but we can identify them
+      // by checking if they exist in the interview_questions table with custom_domain = "product_manager" and category = "USER_QUESTION"
+      const responseQuestionIds = responses?.map((r) => r.question_id) || [];
+
+      if (responseQuestionIds.length > 0) {
+        // First, try to fetch questions by their IDs
         const { data: questionsData, error: questionsError } = await supabase
           .from("interview_questions")
           .select("*")
-          .in("question_id", session.questions_asked);
+          .in("question_id", responseQuestionIds);
 
         if (questionsError) {
           console.error("Error fetching questions:", questionsError);
+          questions = [];
         } else {
           questions = questionsData || [];
+          console.log("🔍 Questions fetched by ID:", questions);
+
+          // Check if any of these are user questions
+          const hasUserQuestions = questions.some(
+            (q) =>
+              q.custom_domain === "product_manager" &&
+              q.category === "USER_QUESTION"
+          );
+
+          if (hasUserQuestions) {
+            console.log("🔍 Detected user questions in session");
+          }
+        }
+      }
+
+      // Legacy logic for backward compatibility
+      if (
+        questions.length === 0 &&
+        session.questions_asked &&
+        Array.isArray(session.questions_asked)
+      ) {
+        // Check if these are user questions (UUIDs) or app questions (numbers)
+        const isUserQuestions = session.questions_asked.some(
+          (id: any) => typeof id === "string" && id.includes("-")
+        );
+
+        if (isUserQuestions) {
+          // For user questions, we need to fetch the specific questions used in this session
+          // Get the question IDs from the responses
+          const responseQuestionIds =
+            responses?.map((r) => r.question_id) || [];
+
+          console.log(
+            "🔍 User questions - responseQuestionIds:",
+            responseQuestionIds
+          );
+
+          if (responseQuestionIds.length > 0) {
+            const { data: questionsData, error: questionsError } =
+              await supabase
+                .from("interview_questions")
+                .select("*")
+                .in("question_id", responseQuestionIds);
+
+            if (questionsError) {
+              console.error("Error fetching user questions:", questionsError);
+              // If the specific query fails, try the fallback
+              const { data: fallbackData, error: fallbackError } =
+                await supabase
+                  .from("interview_questions")
+                  .select("*")
+                  .eq("custom_domain", "product_manager")
+                  .eq("interview_type", "custom")
+                  .eq("category", "USER_QUESTION");
+
+              if (fallbackError) {
+                console.error(
+                  "Error fetching user questions fallback:",
+                  fallbackError
+                );
+                questions = [];
+              } else {
+                questions = fallbackData || [];
+              }
+            } else {
+              questions = questionsData || [];
+              console.log("🔍 User questions fetched:", questions);
+            }
+          } else {
+            // Fallback: fetch all user questions if no responses found
+            const { data: questionsData, error: questionsError } =
+              await supabase
+                .from("interview_questions")
+                .select("*")
+                .eq("custom_domain", "product_manager")
+                .eq("interview_type", "custom")
+                .eq("category", "USER_QUESTION");
+
+            if (questionsError) {
+              console.error(
+                "Error fetching user questions fallback:",
+                questionsError
+              );
+            } else {
+              questions = questionsData || [];
+            }
+          }
+        } else {
+          // For app questions, fetch normally
+          const { data: questionsData, error: questionsError } = await supabase
+            .from("interview_questions")
+            .select("*")
+            .in("question_id", session.questions_asked);
+
+          if (questionsError) {
+            console.error("Error fetching questions:", questionsError);
+          } else {
+            questions = questionsData || [];
+          }
         }
       }
 

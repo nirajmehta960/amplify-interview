@@ -7,24 +7,22 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 type UserQuestion = Database["public"]["Tables"]["user_questions"]["Row"];
-type UserQuestionInsert = Database["public"]["Tables"]["user_questions"]["Insert"];
-type UserQuestionUpdate = Database["public"]["Tables"]["user_questions"]["Update"];
+type UserQuestionInsert =
+  Database["public"]["Tables"]["user_questions"]["Insert"];
+type UserQuestionUpdate =
+  Database["public"]["Tables"]["user_questions"]["Update"];
 
 export interface CustomQuestion {
   id: string;
   text: string;
   category: string;
-  difficulty: "easy" | "medium" | "hard";
-  tags: string[];
   created_at: string;
-  updated_at: string;
   user_id: string;
 }
 
 export interface QuestionBankStats {
   totalQuestions: number;
   byCategory: Record<string, number>;
-  byDifficulty: Record<string, number>;
   recentQuestions: CustomQuestion[];
 }
 
@@ -87,8 +85,6 @@ class UserQuestionBankService {
     questionData: {
       text: string;
       category: string;
-      difficulty: "easy" | "medium" | "hard";
-      tags?: string[];
     }
   ): Promise<CustomQuestion | null> {
     try {
@@ -96,8 +92,6 @@ class UserQuestionBankService {
         user_id: userId,
         question_text: questionData.text,
         category: questionData.category,
-        difficulty: questionData.difficulty,
-        tags: questionData.tags || [],
       };
 
       const { data, error } = await supabase
@@ -126,17 +120,12 @@ class UserQuestionBankService {
     updates: {
       text?: string;
       category?: string;
-      difficulty?: "easy" | "medium" | "hard";
-      tags?: string[];
     }
   ): Promise<CustomQuestion | null> {
     try {
       const updateData: UserQuestionUpdate = {
         question_text: updates.text,
         category: updates.category,
-        difficulty: updates.difficulty,
-        tags: updates.tags,
-        updated_at: new Date().toISOString(),
       };
 
       const { data, error } = await supabase
@@ -188,18 +177,15 @@ class UserQuestionBankService {
       const questions = await this.getUserQuestions(userId);
 
       const byCategory: Record<string, number> = {};
-      const byDifficulty: Record<string, number> = {};
 
       questions.forEach((question) => {
-        byCategory[question.category] = (byCategory[question.category] || 0) + 1;
-        byDifficulty[question.difficulty] =
-          (byDifficulty[question.difficulty] || 0) + 1;
+        byCategory[question.category] =
+          (byCategory[question.category] || 0) + 1;
       });
 
       return {
         totalQuestions: questions.length,
         byCategory,
-        byDifficulty,
         recentQuestions: questions.slice(0, 5),
       };
     } catch (error) {
@@ -207,7 +193,6 @@ class UserQuestionBankService {
       return {
         totalQuestions: 0,
         byCategory: {},
-        byDifficulty: {},
         recentQuestions: [],
       };
     }
@@ -268,6 +253,43 @@ class UserQuestionBankService {
   }
 
   /**
+   * Get questions by interview type (maps interview type to category)
+   */
+  async getQuestionsByInterviewType(
+    userId: string,
+    interviewType: "behavioral" | "technical" | "leadership" | "custom"
+  ): Promise<CustomQuestion[]> {
+    try {
+      // Map interview types to categories
+      const categoryMap: Record<string, string> = {
+        behavioral: "Behavioral",
+        technical: "Technical",
+        leadership: "Leadership",
+        custom: "Custom", // This will be used for any custom domain questions
+      };
+
+      const category = categoryMap[interviewType] || "General";
+
+      const { data, error } = await supabase
+        .from("user_questions")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("category", category)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching questions by interview type:", error);
+        return [];
+      }
+
+      return data.map(this.mapToCustomQuestion);
+    } catch (error) {
+      console.error("Error in getQuestionsByInterviewType:", error);
+      return [];
+    }
+  }
+
+  /**
    * Map database row to CustomQuestion interface
    */
   private mapToCustomQuestion(row: UserQuestion): CustomQuestion {
@@ -275,10 +297,7 @@ class UserQuestionBankService {
       id: row.id,
       text: row.question_text,
       category: row.category,
-      difficulty: row.difficulty as "easy" | "medium" | "hard",
-      tags: row.tags || [],
       created_at: row.created_at,
-      updated_at: row.updated_at,
       user_id: row.user_id,
     };
   }
