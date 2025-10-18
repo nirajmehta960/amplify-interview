@@ -36,16 +36,47 @@ Amplify Interview is a comprehensive mock interview platform that leverages adva
 - **Real-time Transcription**: Automatic speech-to-text conversion using Deepgram
 - **Question Segmentation**: Automatic breakdown of responses by individual questions
 - **Video Playback & Analysis**: Review recorded sessions with synchronized transcripts
+- **Local Video Storage**: Videos stored securely in browser's IndexedDB for privacy
 - **Download & Export**: Save interview recordings for offline review
 
 ### Interactive Interview Experience
 
-- **Multiple Interview Types**: Behavioral, Technical, Leadership, and Custom interview formats
-- **Custom Domain Support**: Specialized interviews for Product Management, Software Engineering, AI Engineering, Data Science, UX Design, and more
+- **Multiple Interview Types**: Behavioral, Technical, Leadership, and Custom formats
 - **Dynamic Question Selection**: Choose from app-provided questions or personal question bank
 - **Real-time Controls**: Pause, mute, camera controls during interview sessions
 - **Progress Tracking**: Visual indicators for interview progress and time management
 - **Responsive Design**: Optimized for desktop and mobile devices
+
+### Upcoming Features
+
+#### PDF Report Generation
+
+- **Download Detailed Reports**: Generate comprehensive 1-page PDF reports with performance metrics, insights, and improvement recommendations
+- **Professional Formatting**: Clean, dashboard-style reports perfect for sharing with mentors or saving for personal records
+- **Multiple Export Options**: Choose between summary reports or detailed analysis documents
+
+#### Cloud Video Storage
+
+- **Cross-Device Access**: Access your interview videos from any device with secure authentication
+- **Automatic Backup**: Cloud backup with user consent and control over data retention
+- **Storage Optimization**: Intelligent compression and format optimization to reduce storage costs
+- **Retention Policies**: Configurable video retention and auto-deletion settings
+- **Platform Integration**: AWS S3, Google Cloud Storage, or Azure Blob Storage options
+
+#### Enhanced Analytics
+
+- **Deeper Insights**: Advanced performance trends and skill development tracking
+- **Comparative Analysis**: Compare performance across different interview types and time periods
+- **Progress Milestones**: Visual achievement tracking and skill development milestones
+
+### Future Enhancements
+
+- **Team Collaboration**: Share results with mentors or coaches
+- **Mobile App**: Native iOS and Android applications
+- **Interview Scheduling**: Calendar integration and scheduling
+- **Company-specific Questions**: Questions tailored to specific companies
+- **Real-time Collaboration**: Practice with peers and mentors
+- **Career Guidance**: AI-powered career path recommendations
 
 ## 🚀 Technology Stack
 
@@ -78,7 +109,8 @@ Amplify Interview is a comprehensive mock interview platform that leverages adva
 - **WebRTC** for video recording and streaming
 - **MediaRecorder API** for video capture and processing
 - **Video Segmentation Service** for question-based response tracking
-- **Local Storage Service** for video file management
+- **IndexedDB Storage** for local video file management and privacy
+- **Future Enhancement**: Cloud storage integration (AWS S3, Google Cloud Storage) for cross-device access
 
 ## 📋 Prerequisites
 
@@ -220,8 +252,8 @@ amplify-interview/
 
 ### Interview Types
 
-- **Behavioral**: Focus on STAR method, leadership, and soft skills
-- **Technical**: System design, algorithms, and technical problem-solving
+- **Behavioral**: STAR method, leadership, and soft skills
+- **Technical**: System design, algorithms, and problem-solving
 - **Leadership**: Management scenarios and team leadership
 - **Custom**: Mix of question types with domain-specific focus including:
   - **Product Management**: Product strategy, user research, and roadmap planning
@@ -308,6 +340,16 @@ The application can be deployed to any platform that supports Node.js applicatio
 - Responses are analyzed by AI
 - Questions are categorized by type and domain
 
+## 🎥 Video Storage & Privacy
+
+### Current Implementation
+
+- **Local Storage**: All interview videos are stored locally in the user's browser using IndexedDB
+- **Privacy First**: Videos never leave the user's device, ensuring complete privacy
+- **No Server Upload**: No cloud storage costs or data transfer concerns
+- **Browser Managed**: Automatic storage management and cleanup by the browser
+- **Cross-Session Persistence**: Videos remain available across browser sessions
+
 ## 🔒 Security & Privacy
 
 - **Row Level Security**: Database-level access control
@@ -329,24 +371,6 @@ The application can be deployed to any platform that supports Node.js applicatio
 - **Video Recording**: Ensure camera and microphone permissions are granted
 - **AI Analysis**: Check API key configuration and rate limits
 - **Database**: Verify Supabase connection and migration status
-
-## 📈 Roadmap
-
-### Upcoming Features
-
-- **Real-time Collaboration**: Practice with peers and mentors
-- **Mobile App**: Native iOS and Android applications
-- **Advanced Analytics**: Machine learning insights and predictions
-- **Interview Scheduling**: Calendar integration and scheduling
-- **Company-specific Questions**: Questions tailored to specific companies
-- **Video Interview Simulation**: Practice with actual video interview tools
-
-### Long-term Vision
-
-- **AI Interviewer**: Fully automated interview experience
-- **Career Guidance**: AI-powered career path recommendations
-- **Industry Partnerships**: Integration with hiring platforms
-- **Global Expansion**: Multi-language support and localization
 
 ## 📄 License
 

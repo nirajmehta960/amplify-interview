@@ -1360,14 +1360,6 @@ const InterviewResults = () => {
     return "text-red-500";
   };
 
-  const handleDownloadReport = () => {
-    toast({
-      title: "Report Download",
-      description:
-        "Your interview report is being generated and will download shortly.",
-    });
-  };
-
   const handleScheduleAnother = () => {
     navigate("/interview/setup");
   };
@@ -1509,16 +1501,7 @@ const InterviewResults = () => {
 
             {/* Spacer for right alignment */}
             <div className="w-32"></div>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                className="rounded-professional"
-                onClick={handleDownloadReport}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download Report
-              </Button>
-            </div>
+            <div className="flex items-center gap-3"></div>
           </div>
         </div>
       </div>
