@@ -19,7 +19,6 @@ import {
   Download,
   Calendar,
   Lightbulb,
-  Share2,
   Clock,
   Target,
   TrendingUp,
@@ -130,7 +129,6 @@ const InterviewResults = () => {
 
   const [result, setResult] = useState<InterviewResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showShareDialog, setShowShareDialog] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isConverting, setIsConverting] = useState(false);
@@ -1408,7 +1406,7 @@ const InterviewResults = () => {
   };
 
   const handleViewRecommendations = () => {
-    navigate("/dashboard/analytics");
+    navigate("/dashboard");
   };
 
   if (isLoading) {
@@ -1541,14 +1539,6 @@ const InterviewResults = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                className="rounded-professional"
-                onClick={() => setShowShareDialog(true)}
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                Share Results
-              </Button>
               <Button
                 variant="outline"
                 className="rounded-professional"
@@ -2280,35 +2270,39 @@ const InterviewResults = () => {
                   </AccordionTrigger>
                   <AccordionContent className="space-y-6 pt-6">
                     <Tabs defaultValue="response" className="w-full">
-                      {/* Modern Tab Design */}
-                      <TabsList className="grid w-full grid-cols-4 mb-6 bg-light-gray p-1 rounded-professional">
+                      {/* Improved Tab Design with Better Alignment */}
+                      <TabsList className="flex w-full mb-6 bg-gray-100 p-1 rounded-lg border border-gray-200">
                         <TabsTrigger
                           value="response"
-                          className="flex items-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-primary-blue data-[state=active]:shadow-professional transition-all duration-200 hover:text-primary-blue/80 rounded-professional"
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200 hover:text-blue-600/80 rounded-md relative"
                         >
                           <MessageSquare className="w-4 h-4" />
-                          Your Response
+                          <span className="whitespace-nowrap">
+                            Your Response
+                          </span>
                         </TabsTrigger>
                         <TabsTrigger
                           value="analysis"
-                          className="flex items-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-primary-blue data-[state=active]:shadow-professional transition-all duration-200 hover:text-primary-blue/80 rounded-professional"
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200 hover:text-blue-600/80 rounded-md relative"
                         >
                           <BarChart3 className="w-4 h-4" />
-                          Detailed Analysis
+                          <span className="whitespace-nowrap">
+                            Detailed Analysis
+                          </span>
                         </TabsTrigger>
                         <TabsTrigger
                           value="feedback"
-                          className="flex items-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-primary-blue data-[state=active]:shadow-professional transition-all duration-200 hover:text-primary-blue/80 rounded-professional"
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200 hover:text-blue-600/80 rounded-md relative"
                         >
                           <Lightbulb className="w-4 h-4" />
-                          Feedback
+                          <span className="whitespace-nowrap">Feedback</span>
                         </TabsTrigger>
                         <TabsTrigger
                           value="coach"
-                          className="flex items-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-primary-blue data-[state=active]:shadow-professional transition-all duration-200 hover:text-primary-blue/80 rounded-professional"
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200 hover:text-blue-600/80 rounded-md relative"
                         >
                           <Sparkles className="w-4 h-4" />
-                          AI Coach
+                          <span className="whitespace-nowrap">AI Coach</span>
                         </TabsTrigger>
                       </TabsList>
 
@@ -2937,73 +2931,11 @@ const InterviewResults = () => {
                 >
                   View All My Interviews
                 </Button>
-                <Button
-                  onClick={() => setShowShareDialog(true)}
-                  variant="outline"
-                  className="rounded-professional px-6 py-3"
-                >
-                  Share Results
-                </Button>
               </div>
             </div>
           </Card>
         </motion.div>
       </div>
-
-      {/* Share Dialog */}
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Share Your Results</DialogTitle>
-            <DialogDescription>
-              Share your interview performance with others
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="text-center py-4">
-              <div className="text-3xl font-bold text-primary-blue mb-2">
-                {result.overallScore}%
-              </div>
-              <div
-                className={`${getPerformanceColor(
-                  result.performanceBadge
-                )} inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold`}
-              >
-                {result.performanceBadge} Performance
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href);
-                  toast({
-                    title: "Link Copied",
-                    description: "Share link copied to clipboard",
-                  });
-                }}
-                className="flex-1"
-              >
-                Copy Link
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  toast({
-                    title: "Email Sent",
-                    description: "Results will be emailed shortly",
-                  });
-                }}
-                className="flex-1"
-              >
-                Email Results
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

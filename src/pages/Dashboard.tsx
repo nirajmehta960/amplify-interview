@@ -15,6 +15,7 @@ import {
   LogOut,
   RefreshCw,
   Settings,
+  Brain,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -444,45 +445,36 @@ const Dashboard = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
+          className="flex flex-col md:flex-row gap-4 mb-8"
         >
           <Button
             size="lg"
-            className="bg-primary-blue hover:bg-primary-blue/90 text-white h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group"
+            className="bg-primary-blue hover:bg-primary-blue/90 text-white h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group flex-1"
             onClick={() => (window.location.href = "/interview/setup")}
           >
             <Mic className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
             Start New Interview
           </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="bg-white/90 backdrop-blur-sm border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30 hover:text-primary-blue h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group"
-            onClick={() => (window.location.href = "/dashboard/analytics")}
-          >
-            <BarChart3 className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
-            View Progress
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="bg-white/90 backdrop-blur-sm border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30 hover:text-primary-blue h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group"
-            onClick={() =>
-              (window.location.href = "/dashboard/analytics/modern")
-            }
-          >
-            <BarChart3 className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
-            Modern Analytics
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="bg-white/90 backdrop-blur-sm border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30 hover:text-primary-blue h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group"
-            onClick={() => (window.location.href = "/demo/analytics")}
-          >
-            <BarChart3 className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
-            Analytics Demo
-          </Button>
+          <div className="flex flex-col md:flex-row gap-4 flex-1">
+            <Button
+              variant="outline"
+              size="lg"
+              className="bg-white/90 backdrop-blur-sm border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30 hover:text-primary-blue h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group flex-1"
+              onClick={() => (window.location.href = "/dashboard/progress")}
+            >
+              <TrendingUp className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
+              Progress
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="bg-white/90 backdrop-blur-sm border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30 hover:text-primary-blue h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group flex-1"
+              onClick={() => (window.location.href = "/dashboard/insights")}
+            >
+              <Brain className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
+              Insights
+            </Button>
+          </div>
         </motion.div>
 
         {/* Recent Sessions */}

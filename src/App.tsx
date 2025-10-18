@@ -18,6 +18,8 @@ import InterviewResults from "./pages/InterviewResults";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ModernAnalyticsDashboard from "./pages/ModernAnalyticsDashboard";
 import AnalyticsDemo from "./pages/AnalyticsDemo";
+import ProgressTab from "./pages/ProgressTab";
+import InsightsTab from "./pages/InsightsTab";
 import SessionReview from "./pages/SessionReview";
 import NotFound from "./pages/NotFound";
 
@@ -49,6 +51,8 @@ const App = () => (
               element={<ModernAnalyticsDashboard />}
             />
             <Route path="/demo/analytics" element={<AnalyticsDemo />} />
+            <Route path="/dashboard/progress" element={<ProgressTab />} />
+            <Route path="/dashboard/insights" element={<InsightsTab />} />
             <Route path="/interview/setup" element={<InterviewSetup />} />
             <Route path="/interview/session" element={<InterviewSession />} />
             <Route path="/processing" element={<ProcessingInterview />} />

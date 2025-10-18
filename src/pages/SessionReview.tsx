@@ -479,10 +479,25 @@ const SessionReview = () => {
               <h3 className="text-xl font-bold mb-4">Analysis Overlay</h3>
 
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="emotions">Emotions</TabsTrigger>
-                  <TabsTrigger value="gestures">Gestures</TabsTrigger>
-                  <TabsTrigger value="keywords">Keywords</TabsTrigger>
+                <TabsList className="flex w-full bg-gray-100 p-1 rounded-lg border border-gray-200">
+                  <TabsTrigger
+                    value="emotions"
+                    className="flex-1 flex items-center justify-center px-4 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200 hover:text-blue-600/80 rounded-md"
+                  >
+                    Emotions
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="gestures"
+                    className="flex-1 flex items-center justify-center px-4 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200 hover:text-blue-600/80 rounded-md"
+                  >
+                    Gestures
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="keywords"
+                    className="flex-1 flex items-center justify-center px-4 py-2 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200 hover:text-blue-600/80 rounded-md"
+                  >
+                    Keywords
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="emotions" className="mt-4">

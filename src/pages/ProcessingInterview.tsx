@@ -447,93 +447,134 @@ const ProcessingInterview = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl p-8">
-        <div className="text-center mb-8">
+    <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden flex flex-col">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-6 py-4">
+        <div className="text-center">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"
+            className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3"
           >
-            <Brain className="w-10 h-10 text-blue-600" />
+            <Brain className="w-8 h-8 text-blue-600" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
             Processing Your Interview
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm">
             We're analyzing your performance and generating detailed insights...
           </p>
         </div>
+      </div>
 
-        {/* Overall Progress */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              Overall Progress
-            </span>
-            <span className="text-sm text-gray-500">
-              {Math.round(overallProgress)}%
-            </span>
-          </div>
-          <Progress value={overallProgress} className="h-2" />
-        </div>
-
-        {/* Processing Steps */}
-        <div className="space-y-4">
-          {steps.map((step, index) => (
-            <motion.div
-              key={step.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={`p-4 rounded-lg border-2 transition-all duration-300 ${getStepColor(
-                step
-              )}`}
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0">{getStepIcon(step)}</div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{step.title}</h3>
-                  <p className="text-sm text-gray-600">{step.description}</p>
-                  {step.status === "processing" && (
-                    <div className="mt-2">
-                      <Progress value={step.progress} className="h-1" />
+      {/* Main Content */}
+      <div className="flex-1 p-6">
+        <div className="h-full max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+            {/* Left Column - Overall Progress */}
+            <div className="flex flex-col justify-center">
+              <Card className="p-6 bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+                <div className="text-center space-y-4">
+                  <div className="relative w-32 h-32 mx-auto">
+                    <svg
+                      className="w-32 h-32 transform -rotate-90"
+                      viewBox="0 0 120 120"
+                    >
+                      <circle
+                        cx="60"
+                        cy="60"
+                        r="50"
+                        stroke="currentColor"
+                        strokeWidth="8"
+                        fill="none"
+                        className="text-gray-200"
+                      />
+                      <circle
+                        cx="60"
+                        cy="60"
+                        r="50"
+                        stroke="currentColor"
+                        strokeWidth="8"
+                        fill="none"
+                        strokeDasharray={`${2 * Math.PI * 50}`}
+                        strokeDashoffset={`${
+                          2 * Math.PI * 50 * (1 - overallProgress / 100)
+                        }`}
+                        className="text-blue-600 transition-all duration-500 ease-in-out"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-blue-600">
+                          {Math.round(overallProgress)}%
+                        </div>
+                        <div className="text-sm text-gray-500">Complete</div>
+                      </div>
                     </div>
-                  )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Overall Progress
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {currentStep < steps.length
+                        ? `Currently: ${steps[currentStep]?.title}`
+                        : "Processing complete!"}
+                    </p>
+                  </div>
                 </div>
-                {step.status === "completed" && (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                )}
-                {step.status === "error" && (
-                  <AlertCircle className="w-5 h-5 text-red-500" />
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Current Step Highlight */}
-        {currentStep < steps.length && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg"
-          >
-            <div className="flex items-center gap-3">
-              <Clock className="w-5 h-5 text-blue-600" />
-              <div>
-                <p className="font-medium text-blue-900">
-                  Currently: {steps[currentStep]?.title}
-                </p>
-                <p className="text-sm text-blue-700">
-                  {steps[currentStep]?.description}
-                </p>
-              </div>
+              </Card>
             </div>
-          </motion.div>
-        )}
-      </Card>
+
+            {/* Right Column - Processing Steps */}
+            <div className="flex flex-col justify-center">
+              <Card className="p-4 bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Processing Steps
+                  </h3>
+                  {steps.map((step, index) => (
+                    <motion.div
+                      key={step.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={`p-3 rounded-lg border transition-all duration-300 ${getStepColor(
+                        step
+                      )}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">{getStepIcon(step)}</div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 text-sm">
+                            {step.title}
+                          </h4>
+                          <p className="text-xs text-gray-600 truncate">
+                            {step.description}
+                          </p>
+                          {step.status === "processing" && (
+                            <div className="mt-1">
+                              <Progress value={step.progress} className="h-1" />
+                            </div>
+                          )}
+                        </div>
+                        {step.status === "completed" && (
+                          <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        )}
+                        {step.status === "error" && (
+                          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
