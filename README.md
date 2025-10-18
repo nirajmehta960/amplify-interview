@@ -372,24 +372,6 @@ The application can be deployed to any platform that supports Node.js applicatio
 - **AI Analysis**: Check API key configuration and rate limits
 - **Database**: Verify Supabase connection and migration status
 
-## 📈 Roadmap
-
-### Upcoming Features
-
-- **Real-time Collaboration**: Practice with peers and mentors
-- **Mobile App**: Native iOS and Android applications
-- **Advanced Analytics**: Machine learning insights and predictions
-- **Interview Scheduling**: Calendar integration and scheduling
-- **Company-specific Questions**: Questions tailored to specific companies
-- **Video Interview Simulation**: Practice with actual video interview tools
-
-### Long-term Vision
-
-- **AI Interviewer**: Fully automated interview experience
-- **Career Guidance**: AI-powered career path recommendations
-- **Industry Partnerships**: Integration with hiring platforms
-- **Global Expansion**: Multi-language support and localization
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
