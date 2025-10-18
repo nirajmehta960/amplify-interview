@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Settings,
   Brain,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -454,6 +455,15 @@ const Dashboard = () => {
             >
               <TrendingUp className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
               Progress
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="bg-white/90 backdrop-blur-sm border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30 hover:text-primary-blue h-20 rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 group flex-1"
+              onClick={() => (window.location.href = "/dashboard/practice-questions")}
+            >
+              <BookOpen className="w-6 h-6 mr-2 group-hover:scale-110 transition-transform" />
+              Practice Questions
             </Button>
             <Button
               variant="outline"

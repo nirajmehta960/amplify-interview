@@ -144,7 +144,8 @@ export const getQuestionsForInterviewFromDB = async (
   selectedField?: string
 ): Promise<Question[]> => {
   if (useCustomQuestions && customQuestions.length > 0) {
-    // Convert custom questions to Question objects
+    // For custom questions, we'll classify them and store metadata
+    // This will be handled in the interview session service
     return customQuestions.map((question, index) => ({
       id: `custom-${index + 1}`,
       text: question,
@@ -189,9 +190,29 @@ export const getQuestionsForInterview = async (
   interviewType: "behavioral" | "technical" | "leadership" | "custom",
   useCustomQuestions: boolean,
   customQuestions: string[],
-  selectedField?: string
+  selectedField?: string,
+  useUserQuestions?: boolean,
+  selectedUserQuestions?: string[],
+  userId?: string
 ): Promise<Question[]> => {
   try {
+    // Handle user questions first
+    if (useUserQuestions && selectedUserQuestions && selectedUserQuestions.length > 0 && userId) {
+      const { userQuestionBankService } = await import("./userQuestionBankService");
+      const userQuestions = await userQuestionBankService.getQuestionsForInterview(
+        userId,
+        selectedUserQuestions
+      );
+      
+      return userQuestions.map((q, index) => ({
+        id: q.id,
+        text: q.text,
+        category: q.category,
+        difficulty: q.difficulty === "easy" ? 1 : q.difficulty === "medium" ? 2 : 3,
+        thinkingTime: 45,
+      }));
+    }
+
     // Always fetch from database - no fallback to hardcoded questions
     const questions = await getQuestionsForInterviewFromDB(
       interviewType,

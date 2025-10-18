@@ -50,12 +50,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   getAvailableFields,
   getQuestionCountByType,
   getQuestionCountByCustomDomain,
   type Field,
 } from "@/services/questionBankService";
+import { userQuestionBankService, CustomQuestion } from "@/services/userQuestionBankService";
 // Removed InterviewContext import - using direct configuration flow
 
 interface InterviewType {
@@ -75,11 +77,14 @@ interface InterviewConfig {
   useCustomQuestions: boolean;
   customQuestions: string[];
   selectedField?: string; // For custom interview type
+  useUserQuestions: boolean; // New: use questions from user's question bank
+  selectedUserQuestions: string[]; // New: selected question IDs from user's bank
 }
 
 const InterviewSetup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   // Removed InterviewContext integration - using direct configuration flow
 
   const [selectedType, setSelectedType] = useState<string>("");
@@ -102,7 +107,13 @@ const InterviewSetup = () => {
     useCustomQuestions: false,
     customQuestions: [],
     selectedField: "",
+    useUserQuestions: false,
+    selectedUserQuestions: [],
   });
+
+  // User questions state
+  const [userQuestions, setUserQuestions] = useState<CustomQuestion[]>([]);
+  const [loadingUserQuestions, setLoadingUserQuestions] = useState(false);
 
   const interviewTypes: InterviewType[] = [
     {
@@ -278,6 +289,56 @@ const InterviewSetup = () => {
     }));
   };
 
+  // Load user questions
+  const loadUserQuestions = async () => {
+    if (!user) return;
+    
+    setLoadingUserQuestions(true);
+    try {
+      const questions = await userQuestionBankService.getUserQuestions(user.id);
+      setUserQuestions(questions);
+    } catch (error) {
+      console.error("Error loading user questions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load your questions",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingUserQuestions(false);
+    }
+  };
+
+  // Handle question source change
+  const handleQuestionSourceChange = (source: "app" | "custom" | "user") => {
+    setConfig((prev) => ({
+      ...prev,
+      useCustomQuestions: source === "custom",
+      useUserQuestions: source === "user",
+      customQuestions: source === "custom" ? prev.customQuestions : [],
+      selectedUserQuestions: source === "user" ? prev.selectedUserQuestions : [],
+    }));
+
+    if (source === "user" && userQuestions.length === 0) {
+      loadUserQuestions();
+    }
+  };
+
+  // Handle user question selection
+  const handleUserQuestionToggle = (questionId: string) => {
+    setConfig((prev) => {
+      const isSelected = prev.selectedUserQuestions.includes(questionId);
+      const newSelection = isSelected
+        ? prev.selectedUserQuestions.filter(id => id !== questionId)
+        : [...prev.selectedUserQuestions, questionId];
+      
+      return {
+        ...prev,
+        selectedUserQuestions: newSelection,
+      };
+    });
+  };
+
   const handleCameraTest = () => {
     const newCameraTest = !cameraTest;
     setCameraTest(newCameraTest);
@@ -323,6 +384,11 @@ const InterviewSetup = () => {
     return config.customQuestions.length === config.questionCount;
   };
 
+  const isUserQuestionsValid = () => {
+    if (!config.useUserQuestions) return true;
+    return config.selectedUserQuestions.length === config.questionCount;
+  };
+
   const handleStartInterview = async () => {
     if (!selectedType) {
       toast({
@@ -357,6 +423,23 @@ const InterviewSetup = () => {
         toast({
           title: "Question Count Mismatch",
           description: `You have selected ${config.questionCount} questions but added ${config.customQuestions.length} custom questions. Please add exactly ${config.questionCount} questions.`,
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    if (config.useUserQuestions && !isUserQuestionsValid()) {
+      if (config.selectedUserQuestions.length === 0) {
+        toast({
+          title: "Select Practice Questions",
+          description: "Please select at least one practice question to continue.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Question Count Mismatch",
+          description: `You have selected ${config.questionCount} questions but selected ${config.selectedUserQuestions.length} practice questions. Please select exactly ${config.questionCount} questions.`,
           variant: "destructive",
         });
       }
@@ -582,20 +665,15 @@ const InterviewSetup = () => {
                   <Label className="text-sm font-medium text-dark-navy">
                     Question Source
                   </Label>
-                  <div className="flex gap-4">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant={
-                        !config.useCustomQuestions ? "default" : "outline"
+                        !config.useCustomQuestions && !config.useUserQuestions ? "default" : "outline"
                       }
                       size="sm"
-                      onClick={() =>
-                        setConfig((prev) => ({
-                          ...prev,
-                          useCustomQuestions: false,
-                        }))
-                      }
+                      onClick={() => handleQuestionSourceChange("app")}
                       className={`flex-1 transition-all duration-300 ${
-                        !config.useCustomQuestions
+                        !config.useCustomQuestions && !config.useUserQuestions
                           ? "bg-primary-blue hover:bg-primary-blue/90 text-white shadow-professional"
                           : "bg-white/50 border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30"
                       }`}
@@ -604,15 +682,24 @@ const InterviewSetup = () => {
                     </Button>
                     <Button
                       variant={
+                        config.useUserQuestions ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => handleQuestionSourceChange("user")}
+                      className={`flex-1 transition-all duration-300 ${
+                        config.useUserQuestions
+                          ? "bg-primary-blue hover:bg-primary-blue/90 text-white shadow-professional"
+                          : "bg-white/50 border-light-gray/50 hover:bg-primary-blue/5 hover:border-primary-blue/30"
+                      }`}
+                    >
+                      Use My Practice Questions
+                    </Button>
+                    <Button
+                      variant={
                         config.useCustomQuestions ? "default" : "outline"
                       }
                       size="sm"
-                      onClick={() =>
-                        setConfig((prev) => ({
-                          ...prev,
-                          useCustomQuestions: true,
-                        }))
-                      }
+                      onClick={() => handleQuestionSourceChange("custom")}
                       className={`flex-1 transition-all duration-300 ${
                         config.useCustomQuestions
                           ? "bg-primary-blue hover:bg-primary-blue/90 text-white shadow-professional"
@@ -777,6 +864,95 @@ const InterviewSetup = () => {
                   </div>
                 )}
 
+                {/* User Questions Selection */}
+                {config.useUserQuestions && (
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">
+                      Select from Your Practice Questions
+                    </Label>
+                    {loadingUserQuestions ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        <span className="text-sm text-muted-foreground">
+                          Loading your questions...
+                        </span>
+                      </div>
+                    ) : userQuestions.length === 0 ? (
+                      <div className="text-center p-4 bg-muted rounded-lg">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          You don't have any practice questions yet.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate("/dashboard/practice-questions")}
+                        >
+                          Create Practice Questions
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="max-h-60 overflow-y-auto space-y-2">
+                          {userQuestions.map((question) => (
+                            <div
+                              key={question.id}
+                              className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                                config.selectedUserQuestions.includes(question.id)
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/50"
+                              }`}
+                              onClick={() => handleUserQuestionToggle(question.id)}
+                            >
+                              <div className="flex items-start gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={config.selectedUserQuestions.includes(question.id)}
+                                  onChange={() => handleUserQuestionToggle(question.id)}
+                                  className="mt-1"
+                                />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">{question.text}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant="outline" className="text-xs">
+                                      {question.category}
+                                    </Badge>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-xs ${
+                                        question.difficulty === "easy" 
+                                          ? "text-green-600" 
+                                          : question.difficulty === "medium"
+                                          ? "text-yellow-600"
+                                          : "text-red-600"
+                                      }`}
+                                    >
+                                      {question.difficulty}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="text-sm text-muted-foreground">
+                          {config.selectedUserQuestions.length} of {config.questionCount} questions selected.
+                          {config.selectedUserQuestions.length < config.questionCount && (
+                            <span className="text-amber-600">
+                              {" "}Select {config.questionCount - config.selectedUserQuestions.length} more questions.
+                            </span>
+                          )}
+                          {config.selectedUserQuestions.length === config.questionCount && (
+                            <span className="text-green-600 font-medium">
+                              {" "}✓ Ready to start interview!
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Duration Selector */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-dark-navy">
@@ -851,7 +1027,7 @@ const InterviewSetup = () => {
               <Button
                 size="lg"
                 onClick={handleStartInterview}
-                disabled={!selectedType || !isCustomQuestionsValid()}
+                disabled={!selectedType || !isCustomQuestionsValid() || !isUserQuestionsValid()}
                 className="bg-primary-blue hover:bg-primary-blue/90 text-white px-10 py-4 h-auto rounded-professional shadow-professional hover:shadow-professional-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Play className="w-5 h-5 mr-2" />

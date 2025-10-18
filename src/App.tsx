@@ -13,6 +13,7 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import PracticeQuestions from "./pages/PracticeQuestions";
 import Dashboard from "./pages/Dashboard";
 import InterviewSetup from "./pages/InterviewSetup";
 import InterviewSession from "./pages/InterviewSession";
@@ -94,6 +95,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <InsightsTab />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/practice-questions"
+              element={
+                <ProtectedRoute>
+                  <PracticeQuestions />
                 </ProtectedRoute>
               }
             />

@@ -26,6 +26,10 @@ import {
   type CommunicationScores,
   type ContentScores,
 } from "./aiAnalysisPrompts";
+import {
+  questionClassificationService,
+  ClassifiedQuestion,
+} from "./questionClassificationService";
 
 export interface AnalysisRequest {
   questionText: string;
@@ -35,6 +39,7 @@ export interface AnalysisRequest {
   focusAreas?: string[];
   category?: string;
   customDomain?: string;
+  classifiedQuestion?: ClassifiedQuestion;
 }
 
 export interface AnalysisResponse {
@@ -163,24 +168,49 @@ export async function analyzeQuestionResponseFromRequest(
     // Select appropriate model and prompt based on interview type
     const model = openRouterService.selectModel(request.interviewType);
 
-    // Build system prompt dynamically
-    const systemPrompt = buildSystemPrompt(
-      request.interviewType,
-      request.customDomain
-    );
+    // Use classified question information if available
+    let systemPrompt: string;
+    let userPrompt: string;
 
-    // Build the user prompt with actual data
-    const userPrompt = buildUserPrompt(
-      request.questionText,
-      request.responseText,
-      request.duration,
-      {
-        category: request.category,
-        focusAreas: request.focusAreas?.join(", "),
-        interviewType: request.interviewType,
-        customDomain: request.customDomain,
-      }
-    );
+    if (request.classifiedQuestion) {
+      // Use classification-specific prompts
+      systemPrompt = questionClassificationService.getAnalysisPrompt(
+        request.classifiedQuestion.classification
+      );
+
+      userPrompt = buildUserPrompt(
+        request.questionText,
+        request.responseText,
+        request.duration,
+        {
+          category: request.classifiedQuestion.classification.category,
+          focusAreas:
+            request.classifiedQuestion.classification.expectedSkills.join(", "),
+          interviewType: request.classifiedQuestion.classification.type,
+          customDomain: request.classifiedQuestion.classification.domain,
+          keywords:
+            request.classifiedQuestion.classification.keywords.join(", "),
+        }
+      );
+    } else {
+      // Use standard prompts
+      systemPrompt = buildSystemPrompt(
+        request.interviewType,
+        request.customDomain
+      );
+
+      userPrompt = buildUserPrompt(
+        request.questionText,
+        request.responseText,
+        request.duration,
+        {
+          category: request.category,
+          focusAreas: request.focusAreas?.join(", "),
+          interviewType: request.interviewType,
+          customDomain: request.customDomain,
+        }
+      );
+    }
 
     // Make API call to OpenRouter
     const apiResponse = await openRouterService.callOpenRouterWithRetry({
@@ -270,11 +300,28 @@ export async function analyzeInterviewSession(
   sessionId: string
 ): Promise<SessionAnalysisResult> {
   try {
+    // Get classified questions for this session
+    const { supabase } = await import("../integrations/supabase/client");
+    const { data: session, error } = await supabase
+      .from("interview_sessions")
+      .select("questions_asked")
+      .eq("id", sessionId)
+      .single();
+
+    let classifiedQuestions: ClassifiedQuestion[] = [];
+    if (!error && session?.questions_asked) {
+      const metadata = session.questions_asked as any;
+      classifiedQuestions = metadata.classifiedQuestions || [];
+    }
+
     // Import the AI analysis service that has full database integration
     const { aiAnalysisService } = await import("./aiAnalysisService");
 
-    // Process the complete interview (all responses + summary)
-    const result = await aiAnalysisService.processCompleteInterview(sessionId);
+    // Process the complete interview (all responses + summary) with classified questions
+    const result = await aiAnalysisService.processCompleteInterview(
+      sessionId,
+      classifiedQuestions
+    );
 
     // Convert the result to the expected format
     const sessionAnalysisResult: SessionAnalysisResult = {

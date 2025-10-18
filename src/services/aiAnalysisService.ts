@@ -22,6 +22,10 @@ import {
   CostCalculation,
 } from "./openRouterService";
 import { AIAnalysisUtils } from "../utils/aiAnalysisUtils";
+import {
+  questionClassificationService,
+  ClassifiedQuestion,
+} from "./questionClassificationService";
 
 class AIAnalysisService {
   /**
@@ -187,7 +191,7 @@ class AIAnalysisService {
   }
 
   /**
-   * Process a single question response using AI
+   * Process a single question response using AI (enhanced for custom questions)
    */
   public async processQuestionResponse(
     responseText: string,
@@ -206,15 +210,26 @@ class AIAnalysisService {
       model?: string;
       includeExample?: boolean;
       customPrompt?: string;
+      classifiedQuestion?: ClassifiedQuestion;
     }
   ): Promise<InterviewAnalysis> {
     const startTime = Date.now();
 
     try {
-      // Get AI analysis from OpenRouter
+      // Use classified question information if available
+      const enhancedQuestionData = options?.classifiedQuestion
+        ? {
+            ...questionData,
+            classification: options.classifiedQuestion.classification,
+            analysisApproach:
+              options.classifiedQuestion.classification.analysisApproach,
+          }
+        : questionData;
+
+      // Get AI analysis from OpenRouter with enhanced question data
       const { analysis, cost, usage } = await openRouterService.analyzeResponse(
         responseText,
-        questionData,
+        enhancedQuestionData,
         sessionData,
         options
       );
@@ -347,6 +362,7 @@ class AIAnalysisService {
         response_id: string;
       };
     }>,
+    classifiedQuestions: ClassifiedQuestion[] = [],
     options?: {
       model?: string;
       concurrency?: number;
@@ -359,12 +375,20 @@ class AIAnalysisService {
     for (let i = 0; i < responses.length; i += concurrency) {
       const batch = responses.slice(i, i + concurrency);
 
-      const batchPromises = batch.map((response) =>
-        this.processQuestionResponse(
+      const batchPromises = batch.map((response) => {
+        // Find classified question for this response
+        const classifiedQuestion = classifiedQuestions.find(
+          (q) => q.text === response.questionData.question_text
+        );
+
+        return this.processQuestionResponse(
           response.responseText,
           response.questionData,
           response.sessionData,
-          options
+          {
+            ...options,
+            classifiedQuestion,
+          }
         ).catch((error) => {
           console.error(
             `Error processing individual response ${response.questionData.question_id}:`,
@@ -372,8 +396,8 @@ class AIAnalysisService {
           );
           // Return null for failed responses - we'll filter them out later
           return null;
-        })
-      );
+        });
+      });
 
       try {
         const batchResults = await Promise.all(batchPromises);
@@ -1269,6 +1293,7 @@ class AIAnalysisService {
    */
   public async processCompleteInterview(
     sessionId: string,
+    classifiedQuestions: ClassifiedQuestion[] = [],
     options?: {
       model?: string;
       concurrency?: number;
@@ -1354,7 +1379,11 @@ class AIAnalysisService {
       });
 
       // Process all responses
-      const analyses = await this.batchProcessResponses(responses, options);
+      const analyses = await this.batchProcessResponses(
+        responses,
+        classifiedQuestions,
+        options
+      );
 
       // Create session summary
       const summary = await this.processSessionSummary(sessionId, options);

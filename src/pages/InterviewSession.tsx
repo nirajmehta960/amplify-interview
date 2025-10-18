@@ -12,6 +12,7 @@ import { videoSegmentService } from "@/services/videoSegmentService";
 import { localInterviewStorageService } from "@/services/localInterviewStorageService";
 import { interviewSessionService } from "@/services/interviewSessionService";
 import { useAuth } from "@/contexts/AuthContext";
+import { ClassifiedQuestion } from "@/services/questionClassificationService";
 import {
   getQuestionsForInterview,
   Question,
@@ -78,6 +79,9 @@ const InterviewSession = () => {
   // Removed InterviewContext integration - using direct configuration flow
   const { user } = useAuth();
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [classifiedQuestions, setClassifiedQuestions] = useState<
+    ClassifiedQuestion[]
+  >([]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -167,7 +171,10 @@ const InterviewSession = () => {
             interviewType.id,
             config.useCustomQuestions,
             config.customQuestions,
-            config.selectedField
+            config.selectedField,
+            config.useUserQuestions,
+            config.selectedUserQuestions,
+            user?.id
           );
 
           // Limit questions to the configured count
@@ -191,10 +198,74 @@ const InterviewSession = () => {
                     useCustomQuestions: config.useCustomQuestions,
                     customQuestions: config.customQuestions,
                     selectedField: config.selectedField,
+                    useUserQuestions: config.useUserQuestions,
+                    selectedUserQuestions: config.selectedUserQuestions,
                   },
                 });
               setCurrentSessionId(sessionId);
               console.log("Created database session:", sessionId);
+
+              // Process custom questions for classification if using custom questions
+              if (
+                config.useCustomQuestions &&
+                config.customQuestions &&
+                config.customQuestions.length > 0
+              ) {
+                try {
+                  console.log(
+                    "Processing custom questions for classification..."
+                  );
+                  const classified =
+                    await interviewSessionService.processCustomQuestions(
+                      config.customQuestions,
+                      sessionId,
+                      {
+                        interviewType: interviewType.id as any,
+                        selectedRole: config.selectedField,
+                        useCustomQuestions: config.useCustomQuestions,
+                      }
+                    );
+                  setClassifiedQuestions(classified);
+                  console.log(
+                    "Custom questions classified:",
+                    classified.length
+                  );
+                } catch (error) {
+                  console.error("Error classifying custom questions:", error);
+                }
+              }
+
+              // Process user questions for classification if using user questions
+              if (
+                config.useUserQuestions &&
+                config.selectedUserQuestions &&
+                config.selectedUserQuestions.length > 0
+              ) {
+                try {
+                  console.log("Processing user questions for classification...");
+                  
+                  // Get the actual question texts from the loaded questions
+                  const userQuestionTexts = limitedQuestions.map(q => q.text);
+                  
+                  const classified =
+                    await interviewSessionService.processCustomQuestions(
+                      userQuestionTexts,
+                      sessionId,
+                      {
+                        interviewType: interviewType.id as any,
+                        selectedRole: config.selectedField,
+                        useCustomQuestions: false, // This is user questions, not custom
+                      }
+                    );
+                  setClassifiedQuestions(classified);
+                  console.log(
+                    "User questions classified:",
+                    classified.length
+                  );
+                } catch (error) {
+                  console.error("Error classifying user questions:", error);
+                }
+              }
             } catch (error) {
               console.error("Error creating database session:", error);
               // Generate a fallback session ID for local storage

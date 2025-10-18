@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  questionClassificationService,
+  ClassifiedQuestion,
+} from "./questionClassificationService";
 
 type InterviewSession =
   Database["public"]["Tables"]["interview_sessions"]["Row"];
@@ -14,6 +18,8 @@ export interface InterviewConfig {
   useCustomQuestions: boolean;
   customQuestions?: string[];
   selectedField?: string;
+  useUserQuestions?: boolean;
+  selectedUserQuestions?: string[];
 }
 
 export interface CreateSessionData {
@@ -509,6 +515,123 @@ export class InterviewSessionService {
       return data || [];
     } catch (error) {
       console.error("Error in getUserInterviewHistory:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Process and classify custom questions for better AI analysis
+   */
+  async processCustomQuestions(
+    customQuestions: string[],
+    sessionId: string,
+    context: {
+      interviewType: "behavioral" | "technical" | "leadership" | "custom";
+      selectedRole?: string;
+      useCustomQuestions: boolean;
+    }
+  ): Promise<ClassifiedQuestion[]> {
+    try {
+      console.log("Smart classifying custom questions with context:", context);
+
+      const classifiedQuestions =
+        await questionClassificationService.classifyQuestionsSmart(
+          customQuestions,
+          context
+        );
+
+      // Store classified questions metadata in the session
+      await this.storeClassifiedQuestions(sessionId, classifiedQuestions);
+
+      console.log("Custom questions classified:", classifiedQuestions.length);
+      console.log(
+        "Classification summary:",
+        classifiedQuestions.map((q) => ({
+          id: q.id,
+          type: q.classification.type,
+          userIntent: q.classification.userIntent,
+          confidence: q.classification.confidence,
+        }))
+      );
+
+      return classifiedQuestions;
+    } catch (error) {
+      console.error("Error processing custom questions:", error);
+      // Return basic classified questions as fallback
+      return customQuestions.map((question, index) => ({
+        id: `custom-${index + 1}`,
+        text: question,
+        classification: {
+          type: "general" as const,
+          difficulty: "medium" as const,
+          category: "Custom",
+          analysisApproach: "general" as const,
+          keywords: [],
+          expectedSkills: [],
+          userIntent: "predefined" as const,
+          confidence: 0.5,
+        },
+        originalIndex: index,
+      }));
+    }
+  }
+
+  /**
+   * Store classified questions metadata in session
+   */
+  private async storeClassifiedQuestions(
+    sessionId: string,
+    classifiedQuestions: ClassifiedQuestion[]
+  ): Promise<void> {
+    try {
+      const metadata = {
+        classifiedQuestions: classifiedQuestions.map((q) => ({
+          id: q.id,
+          text: q.text,
+          classification: q.classification,
+          originalIndex: q.originalIndex,
+        })),
+        classificationTimestamp: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from("interview_sessions")
+        .update({
+          questions_asked: metadata,
+        })
+        .eq("id", sessionId);
+
+      if (error) {
+        console.error("Error storing classified questions:", error);
+      } else {
+        console.log("Classified questions metadata stored");
+      }
+    } catch (error) {
+      console.error("Error storing classified questions metadata:", error);
+    }
+  }
+
+  /**
+   * Get classified questions for a session
+   */
+  async getClassifiedQuestions(
+    sessionId: string
+  ): Promise<ClassifiedQuestion[]> {
+    try {
+      const { data: session, error } = await supabase
+        .from("interview_sessions")
+        .select("questions_asked")
+        .eq("id", sessionId)
+        .single();
+
+      if (error || !session?.questions_asked) {
+        return [];
+      }
+
+      const metadata = session.questions_asked as any;
+      return metadata.classifiedQuestions || [];
+    } catch (error) {
+      console.error("Error fetching classified questions:", error);
       return [];
     }
   }
