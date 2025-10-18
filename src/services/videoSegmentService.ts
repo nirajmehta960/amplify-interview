@@ -110,12 +110,16 @@ class VideoSegmentService {
    * Extract audio segments from video blob and transcribe them
    */
   async transcribeQuestionSegments(
-    videoBlob: Blob
+    videoBlob: Blob,
+    segmentsToTranscribe?: QuestionSegment[]
   ): Promise<QuestionResponse[]> {
+    // Use provided segments or fall back to internal segments
+    const segments = segmentsToTranscribe || this.questionSegments;
+
     console.log(
-      `Transcribing question segments. Found ${this.questionSegments.length} segments`
+      `Transcribing question segments. Found ${segments.length} segments`
     );
-    if (this.questionSegments.length === 0) {
+    if (segments.length === 0) {
       console.warn("No question segments found for transcription");
       return [];
     }
@@ -134,26 +138,25 @@ class VideoSegmentService {
       const sentences =
         (fullTranscription as TranscriptionResult).sentences || [];
 
-      const totalDuration = this.questionSegments.reduce(
+      const totalDuration = segments.reduce(
         (sum, seg) => sum + seg.duration,
         0
       );
 
       // If total duration is too short or segments have very short durations, use equal splitting
       const useEqualSplitting =
-        totalDuration < 30 ||
-        this.questionSegments.some((seg) => seg.duration < 5);
+        totalDuration < 30 || segments.some((seg) => seg.duration < 5);
 
       if (!words || words.length === 0) {
         // No word timestamps available, fallback to previous logic (equal or ratio split)
         const splitWords = fullText.split(" ");
         if (useEqualSplitting) {
           const wordsPerSegment = Math.ceil(
-            splitWords.length / this.questionSegments.length
+            splitWords.length / segments.length
           );
 
-          for (let i = 0; i < this.questionSegments.length; i++) {
-            const segment = this.questionSegments[i];
+          for (let i = 0; i < segments.length; i++) {
+            const segment = segments[i];
             const startWord = i * wordsPerSegment;
             const endWord = Math.min(
               (i + 1) * wordsPerSegment,
@@ -171,15 +174,14 @@ class VideoSegmentService {
           }
         } else {
           // timing-based ratio split without word timestamps
-          for (let i = 0; i < this.questionSegments.length; i++) {
-            const segment = this.questionSegments[i];
+          for (let i = 0; i < segments.length; i++) {
+            const segment = segments[i];
 
             const segmentStartRatio =
-              this.questionSegments
-                .slice(0, i)
-                .reduce((sum, seg) => sum + seg.duration, 0) / totalDuration;
+              segments.slice(0, i).reduce((sum, seg) => sum + seg.duration, 0) /
+              totalDuration;
             const segmentEndRatio =
-              this.questionSegments
+              segments
                 .slice(0, i + 1)
                 .reduce((sum, seg) => sum + seg.duration, 0) / totalDuration;
 
@@ -199,8 +201,8 @@ class VideoSegmentService {
         }
       } else if (this.recordingStartEpochMs) {
         // Precise mapping using Deepgram word-level timestamps
-        for (let i = 0; i < this.questionSegments.length; i++) {
-          const seg = this.questionSegments[i];
+        for (let i = 0; i < segments.length; i++) {
+          const seg = segments[i];
           // Do not add prep gap here: startQuestionSegment already fires after the 10s thinking window
           const absoluteStartMs = seg.startTime - this.recordingStartEpochMs;
           const absoluteEndMs = seg.endTime - this.recordingStartEpochMs;
@@ -232,11 +234,9 @@ class VideoSegmentService {
       } else {
         console.warn("Recording start not marked; falling back to ratio split");
         const splitWords = fullText.split(" ");
-        const wordsPerSegment = Math.ceil(
-          splitWords.length / this.questionSegments.length
-        );
-        for (let i = 0; i < this.questionSegments.length; i++) {
-          const segment = this.questionSegments[i];
+        const wordsPerSegment = Math.ceil(splitWords.length / segments.length);
+        for (let i = 0; i < segments.length; i++) {
+          const segment = segments[i];
           const startWord = i * wordsPerSegment;
           const endWord = Math.min(
             (i + 1) * wordsPerSegment,

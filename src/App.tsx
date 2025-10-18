@@ -13,6 +13,7 @@ import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import InterviewSetup from "./pages/InterviewSetup";
 import InterviewSession from "./pages/InterviewSession";
+import ProcessingInterview from "./pages/ProcessingInterview";
 import InterviewResults from "./pages/InterviewResults";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ModernAnalyticsDashboard from "./pages/ModernAnalyticsDashboard";
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/demo/analytics" element={<AnalyticsDemo />} />
             <Route path="/interview/setup" element={<InterviewSetup />} />
             <Route path="/interview/session" element={<InterviewSession />} />
+            <Route path="/processing" element={<ProcessingInterview />} />
             <Route path="/results/:sessionId" element={<InterviewResults />} />
             <Route path="/review/:sessionId" element={<SessionReview />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

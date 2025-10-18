@@ -120,7 +120,6 @@ export async function analyzeQuestionResponse(
       success: true,
       result: {
         overall_score: analysis.overall_score || 0,
-        star_scores: analysis.star_scores as any,
         communication_scores: analysis.communication_scores as any,
         content_scores: analysis.content_scores as any,
         strengths: Array.isArray(analysis.strengths) ? analysis.strengths : [],
@@ -282,7 +281,6 @@ export async function analyzeInterviewSession(
       sessionId,
       analyses: result.analyses.map((analysis) => ({
         overall_score: analysis.overall_score || 0,
-        star_scores: analysis.star_scores as any,
         communication_scores: analysis.communication_scores as any,
         content_scores: analysis.content_scores as any,
         strengths: Array.isArray(analysis.strengths) ? analysis.strengths : [],
@@ -367,9 +365,9 @@ export function enhanceAnalysisWithMetrics(
   }
 
   // Recalculate overall score if needed
-  if (analysis.star_scores) {
+  if (analysis.communication_scores && analysis.content_scores) {
     const recalculatedScore = calculateOverallScore(
-      analysis.star_scores,
+      null, // star_scores removed
       analysis.communication_scores,
       analysis.content_scores
     );

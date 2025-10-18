@@ -1103,14 +1103,14 @@ export function generateFallbackAnalysis(
   return {
     overall_score: adjustedScore,
     communication_scores: {
-      clarity: Math.max(3, Math.min(7, confidenceScore)),
-      structure: Math.max(3, Math.min(7, confidenceScore)),
-      conciseness: Math.max(3, Math.min(7, confidenceScore)),
+      clarity: Math.max(30, Math.min(70, confidenceScore * 10)),
+      structure: Math.max(30, Math.min(70, confidenceScore * 10)),
+      conciseness: Math.max(30, Math.min(70, confidenceScore * 10)),
     },
     content_scores: {
-      relevance: Math.max(3, Math.min(7, confidenceScore)),
-      depth: Math.max(3, Math.min(7, confidenceScore)),
-      specificity: Math.max(3, Math.min(7, confidenceScore)),
+      relevance: Math.max(30, Math.min(70, confidenceScore * 10)),
+      depth: Math.max(30, Math.min(70, confidenceScore * 10)),
+      specificity: Math.max(30, Math.min(70, confidenceScore * 10)),
     },
     strengths: [
       "Response provided",

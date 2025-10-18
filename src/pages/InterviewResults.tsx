@@ -1072,13 +1072,10 @@ const InterviewResults = () => {
 
         if (!videoData) {
           console.error("No video data found for session:", finalSessionId);
-          // If no video data but we have sessionId from params, continue without video
-          if (sessionIdFromParams) {
-            console.log("Continuing without video data for database session");
-          } else {
-            setIsLoading(false);
-            return;
-          }
+          console.log(
+            "Continuing without video data - video card will show error message"
+          );
+          // Always continue, even without video data
         }
 
         console.log("Video data loaded:", videoData);
@@ -1150,10 +1147,23 @@ const InterviewResults = () => {
                 ? "Fair"
                 : "Needs Improvement"
               : "Good",
-          duration:
-            sessionData.videoMetadata?.duration ||
-            videoData?.metadata.duration ||
-            0,
+          duration: (() => {
+            // Calculate duration from response durations (database source of truth)
+            const responseDurationSum =
+              sessionData.questionResponses?.reduce(
+                (sum: number, response: any) => {
+                  return sum + (response.duration || 0);
+                },
+                0
+              ) || 0;
+
+            // Use response duration sum if available, otherwise fall back to video metadata
+            return responseDurationSum > 0
+              ? responseDurationSum
+              : sessionData.videoMetadata?.duration ||
+                  videoData?.metadata.duration ||
+                  0;
+          })(),
           completionTime: videoData?.metadata?.timestamp
             ? new Date(videoData.metadata.timestamp).toISOString()
             : new Date().toISOString(),
@@ -1229,7 +1239,20 @@ const InterviewResults = () => {
             ?.estimatedPracticeTime,
           videoMetadata: videoData
             ? {
-                duration: videoData?.metadata?.duration || 0,
+                duration: (() => {
+                  // Use response duration sum for consistency with duration card
+                  const responseDurationSum =
+                    sessionData.questionResponses?.reduce(
+                      (sum: number, response: any) => {
+                        return sum + (response.duration || 0);
+                      },
+                      0
+                    ) || 0;
+
+                  return responseDurationSum > 0
+                    ? responseDurationSum
+                    : videoData?.metadata?.duration || 0;
+                })(),
                 format: actualFormat, // Use the actual detected format
                 size: videoBlob?.size || 0,
                 hasAudio: Boolean(videoData.audioBlob),
@@ -1461,8 +1484,27 @@ const InterviewResults = () => {
   })();
 
   const totalDuration = (() => {
-    const base = result?.duration || 0;
-    return chapters.length ? chapters[chapters.length - 1].end : base;
+    // Calculate total duration from response durations (in seconds)
+    const responseDurationSum = responsesForCalcs.reduce((sum, response) => {
+      return sum + (response.duration || 0);
+    }, 0);
+
+    // Debug logging
+    console.log("🔍 Duration Debug:", {
+      responseDurationSum,
+      resultDuration: result?.duration,
+      responsesForCalcs: responsesForCalcs.map((r) => ({
+        id: r.id,
+        duration: r.duration,
+      })),
+      finalDuration:
+        responseDurationSum > 0 ? responseDurationSum : result?.duration || 0,
+    });
+
+    // Use response duration sum if available, otherwise fall back to result duration
+    return responseDurationSum > 0
+      ? responseDurationSum
+      : result?.duration || 0;
   })();
 
   const seekTo = (time: number) => {
@@ -1737,83 +1779,103 @@ const InterviewResults = () => {
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Video Player */}
-            {videoUrl && (
-              <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary-blue/10 rounded-professional">
-                        <Play className="w-5 h-5 text-primary-blue" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold text-dark-navy font-display">
-                          Your Interview Recording
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                          Watch your interview performance and review your
-                          responses
+            <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary-blue/10 rounded-professional">
+                      <Play className="w-5 h-5 text-primary-blue" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-dark-navy font-display">
+                        Your Interview Recording
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Watch your interview performance and review your
+                        responses
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-accent-green text-white">
+                      Complete
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {totalDuration > 0 && isFinite(totalDuration)
+                        ? `${Math.floor(totalDuration / 60)}m ${Math.round(
+                            totalDuration % 60
+                          )}s`
+                        : "0m 0s"}
+                    </span>
+                  </div>
+                </div>
+                <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
+                  {!videoUrl ? (
+                    // Show error message when video is not available
+                    <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+                      <div className="text-center text-white">
+                        <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+                          <AlertCircle className="w-8 h-8 text-red-400" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2">
+                          Video Not Available
+                        </h3>
+                        <p className="text-white/70">
+                          This interview was recorded locally and is not
+                          accessible in production.
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-accent-green text-white">
-                        Complete
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {totalDuration > 0 && isFinite(totalDuration)
-                          ? `${Math.floor(totalDuration / 60)}m ${Math.round(
-                              totalDuration % 60
-                            )}s`
-                          : "0m 0s"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
-                    {isConverting &&
-                      (() => {
-                        const videoFormat =
-                          result?.videoMetadata?.format || "video/webm";
-                        const isMP4 = isMP4Format(videoFormat);
+                  ) : (
+                    <>
+                      {isConverting &&
+                        (() => {
+                          const videoFormat =
+                            result?.videoMetadata?.format || "video/webm";
+                          const isMP4 = isMP4Format(videoFormat);
 
-                        // Only show conversion overlay if we're actually converting (not MP4)
-                        if (!isMP4) {
-                          return (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
-                              <div className="text-center text-white">
-                                <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                                <p className="text-sm">
-                                  Converting video to MP4...
-                                </p>
+                          // Only show conversion overlay if we're actually converting (not MP4)
+                          if (!isMP4) {
+                            return (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
+                                <div className="text-center text-white">
+                                  <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                                  <p className="text-sm">
+                                    Converting video to MP4...
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
-
-                    {/* Black overlay with play button when video is not playing */}
-                    {!videoPlaying && !isConverting && (
-                      <div
-                        className="absolute inset-0 bg-black flex items-center justify-center cursor-pointer z-20"
-                        onClick={() => {
-                          if (videoRef.current) {
-                            videoRef.current.play();
-                            setVideoPlaying(true);
+                            );
                           }
-                        }}
-                      >
-                        <div className="text-center text-white">
-                          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
-                            <Play className="w-8 h-8 text-white ml-1" />
-                          </div>
-                          <h3 className="text-xl font-semibold mb-2">
-                            Interview Recording
-                          </h3>
-                          <p className="text-white/70">Click to play</p>
-                        </div>
-                      </div>
-                    )}
+                          return null;
+                        })()}
 
+                      {/* Black overlay with play button when video is not playing */}
+                      {!videoPlaying && !isConverting && (
+                        <div
+                          className="absolute inset-0 bg-black flex items-center justify-center cursor-pointer z-20"
+                          onClick={() => {
+                            if (videoRef.current) {
+                              videoRef.current.play();
+                              setVideoPlaying(true);
+                            }
+                          }}
+                        >
+                          <div className="text-center text-white">
+                            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+                              <Play className="w-8 h-8 text-white ml-1" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-2">
+                              Interview Recording
+                            </h3>
+                            <p className="text-white/70">Click to play</p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {videoUrl && (
                     <video
                       controls
                       className="w-full h-full"
@@ -1837,8 +1899,10 @@ const InterviewResults = () => {
                     >
                       Your browser does not support the video tag.
                     </video>
-                  </div>
-                  {/* Playback controls */}
+                  )}
+                </div>
+                {/* Playback controls */}
+                {videoUrl && (
                   <div className="flex gap-2 items-center flex-wrap">
                     {(() => {
                       const videoFormat =
@@ -1998,58 +2062,58 @@ const InterviewResults = () => {
                       </Button>
                     </div>
                   </div>
+                )}
 
-                  {/* Chapter timeline */}
-                  {chapters.length > 0 && totalDuration > 0 && (
-                    <div className="mt-4">
-                      <div className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4" /> Chapters
-                        <span className="ml-auto text-xs">
-                          {Math.floor(currentTime)}s /{" "}
-                          {Math.floor(totalDuration)}s
-                        </span>
-                      </div>
-                      <div className="relative h-4 w-full bg-muted rounded overflow-hidden">
-                        {chapters.map((ch, i) => (
-                          <button
-                            key={i}
-                            title={`Q${ch.index}: ${ch.question}`}
-                            onClick={() => seekTo(ch.start)}
-                            style={{
-                              left: `${(ch.start / totalDuration) * 100}%`,
-                              width: `${(ch.duration / totalDuration) * 100}%`,
-                            }}
-                            className={`absolute top-0 h-full ${markerColor(
-                              ch.score
-                            )} hover:opacity-80 transition-opacity`}
-                          />
-                        ))}
-                        {/* Playhead */}
-                        <div
-                          className="absolute top-0 bottom-0 w-0.5 bg-black/60 dark:bg-white/60"
-                          style={{
-                            left: `${(currentTime / totalDuration) * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                        {chapters.map((ch, i) => (
-                          <span
-                            key={i}
-                            className="truncate"
-                            style={{
-                              width: `${(ch.duration / totalDuration) * 100}%`,
-                            }}
-                          >
-                            Q{ch.index}
-                          </span>
-                        ))}
-                      </div>
+                {/* Chapter timeline */}
+                {videoUrl && chapters.length > 0 && totalDuration > 0 && (
+                  <div className="mt-4">
+                    <div className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4" /> Chapters
+                      <span className="ml-auto text-xs">
+                        {Math.floor(currentTime)}s / {Math.floor(totalDuration)}
+                        s
+                      </span>
                     </div>
-                  )}
-                </div>
-              </Card>
-            )}
+                    <div className="relative h-4 w-full bg-muted rounded overflow-hidden">
+                      {chapters.map((ch, i) => (
+                        <button
+                          key={i}
+                          title={`Q${ch.index}: ${ch.question}`}
+                          onClick={() => seekTo(ch.start)}
+                          style={{
+                            left: `${(ch.start / totalDuration) * 100}%`,
+                            width: `${(ch.duration / totalDuration) * 100}%`,
+                          }}
+                          className={`absolute top-0 h-full ${markerColor(
+                            ch.score
+                          )} hover:opacity-80 transition-opacity`}
+                        />
+                      ))}
+                      {/* Playhead */}
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-black/60 dark:bg-white/60"
+                        style={{
+                          left: `${(currentTime / totalDuration) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                      {chapters.map((ch, i) => (
+                        <span
+                          key={i}
+                          className="truncate"
+                          style={{
+                            width: `${(ch.duration / totalDuration) * 100}%`,
+                          }}
+                        >
+                          Q{ch.index}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
 
             {/* Performance Trend */}
             <Card className="p-6 bg-white rounded-professional shadow-professional border-0">

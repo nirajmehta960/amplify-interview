@@ -65,8 +65,7 @@ export interface OpenRouterResponse {
 // Analysis result interface
 export interface AIAnalysisResult {
   overall_score: number;
-  star_scores?: StarScores;
-  technical_scores?: TechnicalScores;
+  // star_scores and technical_scores removed - not in database schema
   communication_scores: CommunicationScores;
   content_scores: ContentScores;
   strengths: string[];
@@ -76,7 +75,6 @@ export interface AIAnalysisResult {
   filler_words: FillerWords;
   speaking_pace: "too_fast" | "appropriate" | "too_slow";
   confidence_score: number;
-  response_length_assessment: "too_short" | "appropriate" | "too_long";
 }
 
 // Cost calculation result
@@ -535,9 +533,17 @@ class OpenRouterService {
     fallbackScore: number
   ): number {
     const match = jsonString.match(new RegExp(`"${fieldName}":\\s*(\\d+)`));
-    return match
-      ? parseInt(match[1])
-      : Math.min(10, Math.max(1, fallbackScore / 10));
+    if (match) {
+      const score = parseInt(match[1]);
+      // If the extracted score is <= 10, assume it's out of 10 and convert to 100
+      if (score <= 10) {
+        return Math.round(score * 10);
+      }
+      // If it's already out of 100, return as is
+      return score;
+    }
+    // Fallback: use overall score as base, ensure it's out of 100
+    return Math.min(100, Math.max(10, fallbackScore));
   }
 
   /**
@@ -700,7 +706,6 @@ Return your analysis as a JSON object with the following structure:
   "filler_words": {"words": ["um", "like"], "counts": {"um": 2, "like": 1}, "total": 3},
   "speaking_pace": "too_fast|appropriate|too_slow",
   "confidence_score": number (0.0-10.0),
-  "response_length_assessment": "too_short|appropriate|too_long"
 }`;
 
     if (interviewType === "behavioral" || interviewType === "leadership") {
@@ -709,7 +714,7 @@ Return your analysis as a JSON object with the following structure:
         `
 
 For behavioral/leadership questions, also include:
-"star_scores": {"situation": number (0-100), "task": number (0-100), "action": number (0-100), "result": number (0-100)}
+// star_scores removed - not in database schema
 
 Focus on STAR method structure, leadership qualities, and behavioral examples.`
       );
@@ -721,7 +726,7 @@ Focus on STAR method structure, leadership qualities, and behavioral examples.`
         `
 
 For technical/custom questions, also include:
-"technical_scores": {"understanding": number (0-100), "approach": number (0-100), "depth": number (0-100), "clarity": number (0-100)}
+// technical_scores removed - not in database schema
 
 Focus on technical accuracy, problem-solving approach, and domain knowledge.`
       );
@@ -769,45 +774,7 @@ Focus on technical accuracy, problem-solving approach, and domain knowledge.`
       );
     }
 
-    // Normalize star_scores
-    if (analysis.star_scores) {
-      analysis.star_scores.situation = this.normalizeScore(
-        analysis.star_scores.situation,
-        100
-      );
-      analysis.star_scores.task = this.normalizeScore(
-        analysis.star_scores.task,
-        100
-      );
-      analysis.star_scores.action = this.normalizeScore(
-        analysis.star_scores.action,
-        100
-      );
-      analysis.star_scores.result = this.normalizeScore(
-        analysis.star_scores.result,
-        100
-      );
-    }
-
-    // Normalize technical_scores
-    if (analysis.technical_scores) {
-      analysis.technical_scores.understanding = this.normalizeScore(
-        analysis.technical_scores.understanding,
-        100
-      );
-      analysis.technical_scores.approach = this.normalizeScore(
-        analysis.technical_scores.approach,
-        100
-      );
-      analysis.technical_scores.depth = this.normalizeScore(
-        analysis.technical_scores.depth,
-        100
-      );
-      analysis.technical_scores.clarity = this.normalizeScore(
-        analysis.technical_scores.clarity,
-        100
-      );
-    }
+    // star_scores and technical_scores normalization removed - fields don't exist in database schema
 
     // Normalize confidence_score (keep out of 10, then convert to 100 for display)
     analysis.confidence_score = this.normalizeScore(
@@ -866,7 +833,6 @@ Focus on technical accuracy, problem-solving approach, and domain knowledge.`
       "filler_words",
       "speaking_pace",
       "confidence_score",
-      "response_length_assessment",
     ];
 
     for (const field of requiredFields) {
@@ -897,13 +863,6 @@ Focus on technical accuracy, problem-solving approach, and domain knowledge.`
     if (!validSpeakingPaces.includes(analysis.speaking_pace)) {
       throw new Error(
         `speaking_pace must be one of: ${validSpeakingPaces.join(", ")}`
-      );
-    }
-
-    const validLengths = ["too_short", "appropriate", "too_long"];
-    if (!validLengths.includes(analysis.response_length_assessment)) {
-      throw new Error(
-        `response_length_assessment must be one of: ${validLengths.join(", ")}`
       );
     }
   }

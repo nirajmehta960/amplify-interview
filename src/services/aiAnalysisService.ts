@@ -257,6 +257,36 @@ class AIAnalysisService {
         questionData.interview_type
       );
 
+      // Normalize fallback analysis scores to ensure consistency
+      if (fallbackAnalysis.communication_scores) {
+        fallbackAnalysis.communication_scores.clarity = Math.min(
+          100,
+          Math.max(10, fallbackAnalysis.communication_scores.clarity)
+        );
+        fallbackAnalysis.communication_scores.structure = Math.min(
+          100,
+          Math.max(10, fallbackAnalysis.communication_scores.structure)
+        );
+        fallbackAnalysis.communication_scores.conciseness = Math.min(
+          100,
+          Math.max(10, fallbackAnalysis.communication_scores.conciseness)
+        );
+      }
+      if (fallbackAnalysis.content_scores) {
+        fallbackAnalysis.content_scores.relevance = Math.min(
+          100,
+          Math.max(10, fallbackAnalysis.content_scores.relevance)
+        );
+        fallbackAnalysis.content_scores.depth = Math.min(
+          100,
+          Math.max(10, fallbackAnalysis.content_scores.depth)
+        );
+        fallbackAnalysis.content_scores.specificity = Math.min(
+          100,
+          Math.max(10, fallbackAnalysis.content_scores.specificity)
+        );
+      }
+
       // Convert fallback to database format
       const analysisData = {
         interview_response_id: sessionData.response_id,
@@ -267,8 +297,6 @@ class AIAnalysisService {
         custom_domain: questionData.custom_domain || null,
         model_used: "fallback",
         overall_score: fallbackAnalysis.overall_score || 75,
-        star_scores: fallbackAnalysis.star_scores || null,
-        technical_scores: fallbackAnalysis.technical_scores || null,
         communication_scores: fallbackAnalysis.communication_scores || null,
         content_scores: fallbackAnalysis.content_scores || null,
         strengths: fallbackAnalysis.strengths || [],
@@ -820,10 +848,6 @@ class AIAnalysisService {
         "Filler words increase when discussing complex topics - practice recording yourself"
       );
     }
-    if (analyses[0]?.star_scores) {
-      const star = this.analyzeStarConsistency(analyses as any);
-      if (star) patterns.push(star);
-    }
     const avgConfidence =
       analyses.reduce((s, a) => s + (a.confidence_score || 0), 0) /
       analyses.length;
@@ -855,26 +879,6 @@ class AIAnalysisService {
     if (improvement < -10)
       return "Performance declined in later questions - may indicate fatigue or pressure";
     return "Maintained consistent performance throughout interview";
-  }
-
-  private analyzeStarConsistency(
-    analyses: Array<{ star_scores: any }>
-  ): string | null {
-    const resultScores = analyses.map((a) => a.star_scores?.result || 0);
-    const avgResult =
-      resultScores.reduce((a, b) => a + b, 0) /
-      Math.max(1, resultScores.length);
-    if (avgResult < 6) {
-      return "Consistently weak on quantifying results - focus on adding specific metrics";
-    }
-    const actionScores = analyses.map((a) => a.star_scores?.action || 0);
-    const avgAction =
-      actionScores.reduce((a, b) => a + b, 0) /
-      Math.max(1, actionScores.length);
-    if (avgAction < 6) {
-      return 'Need stronger emphasis on personal actions taken - use "I" more than "we"';
-    }
-    return null;
   }
 
   private generatePracticeAreas(analyses: InterviewAnalysis[]): string[] {
@@ -911,20 +915,6 @@ class AIAnalysisService {
     if (avg.depth < 7) practiceAreas.add("Providing sufficient detail");
     if (avg.specificity < 7)
       practiceAreas.add("Using specific examples and metrics");
-    if (analyses[0]?.star_scores) {
-      const starAvg: any = { situation: 0, task: 0, action: 0, result: 0 };
-      analyses.forEach((a) => {
-        if (a.star_scores) {
-          Object.keys(starAvg).forEach(
-            (k) => (starAvg[k] += a.star_scores[k] || 0)
-          );
-        }
-      });
-      Object.keys(starAvg).forEach((k) => (starAvg[k] /= analyses.length));
-      Object.keys(starAvg).forEach((k) => {
-        if (starAvg[k] < 7) practiceAreas.add(`STAR method - ${k} component`);
-      });
-    }
     const avgFillers =
       analyses.reduce((s, a) => s + ((a.filler_words as any)?.total || 0), 0) /
       analyses.length;
@@ -1220,14 +1210,6 @@ class AIAnalysisService {
             typeof analysis.content_scores === "string"
               ? JSON.parse(analysis.content_scores)
               : analysis.content_scores,
-          star_scores:
-            typeof analysis.star_scores === "string"
-              ? JSON.parse(analysis.star_scores)
-              : analysis.star_scores,
-          technical_scores:
-            typeof analysis.technical_scores === "string"
-              ? JSON.parse(analysis.technical_scores)
-              : analysis.technical_scores,
           filler_words:
             typeof analysis.filler_words === "string"
               ? JSON.parse(analysis.filler_words)
