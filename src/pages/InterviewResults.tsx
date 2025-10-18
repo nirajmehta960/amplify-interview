@@ -149,7 +149,41 @@ const InterviewResults = () => {
 
   // Helper function to get interview type display name
   const getInterviewTypeDisplay = (sessionData: any): string => {
-    // Try to get interview type from session data
+    // First try to get interview type from analysis data (most accurate)
+    const analyses = (sessionData as any)?._analyses;
+    console.log("🔍 getInterviewTypeDisplay - sessionData:", sessionData);
+    console.log("🔍 getInterviewTypeDisplay - analyses:", analyses);
+
+    if (analyses && analyses.length > 0) {
+      const firstAnalysis = analyses[0];
+      const interviewType = firstAnalysis.interview_type;
+      const customDomain = firstAnalysis.custom_domain;
+
+      console.log("🔍 getInterviewTypeDisplay - firstAnalysis:", firstAnalysis);
+      console.log("🔍 getInterviewTypeDisplay - interviewType:", interviewType);
+      console.log("🔍 getInterviewTypeDisplay - customDomain:", customDomain);
+
+      if (interviewType) {
+        switch (interviewType.toLowerCase()) {
+          case "behavioral":
+            return "Behavioral Mock Interview";
+          case "technical":
+            return "Technical Mock Interview";
+          case "leadership":
+            return "Leadership Mock Interview";
+          case "custom":
+            return customDomain
+              ? `${customDomain
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (l) => l.toUpperCase())} Mock Interview`
+              : "Custom Mock Interview";
+          default:
+            return `${interviewType} Mock Interview`;
+        }
+      }
+    }
+
+    // Fallback to session data
     const interviewType =
       sessionData?.interviewType ||
       sessionData?.interview_type ||
@@ -157,6 +191,7 @@ const InterviewResults = () => {
     const customField =
       sessionData?.customField ||
       sessionData?.custom_field ||
+      sessionData?.custom_domain ||
       sessionData?.field;
 
     if (interviewType) {
@@ -169,7 +204,9 @@ const InterviewResults = () => {
           return "Leadership Mock Interview";
         case "custom":
           return customField
-            ? `${customField} Mock Interview`
+            ? `${customField
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase())} Mock Interview`
             : "Custom Mock Interview";
         default:
           return `${interviewType} Mock Interview`;
@@ -177,7 +214,9 @@ const InterviewResults = () => {
     }
 
     if (customField) {
-      return `${customField} Mock Interview`;
+      return `${customField
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase())} Mock Interview`;
     }
 
     // Default fallback
@@ -999,6 +1038,17 @@ const InterviewResults = () => {
                     );
                   }
                 }
+
+                // Update result with analysis data for dynamic header
+                setResult((prevResult) => {
+                  if (prevResult) {
+                    return {
+                      ...prevResult,
+                      sessionData: sessionData,
+                    };
+                  }
+                  return prevResult;
+                });
               } catch (analysisError) {
                 console.warn(
                   "Could not fetch AI analysis data:",
@@ -1678,153 +1728,138 @@ const InterviewResults = () => {
           </div>
         </motion.div>
 
-        {/* Video Player */}
-        {videoUrl && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="mb-8"
-          >
-            <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary-blue/10 rounded-professional">
-                      <Play className="w-5 h-5 text-primary-blue" />
+        {/* Video Player and Performance Trend - Horizontal Layout */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="mb-8"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Video Player */}
+            {videoUrl && (
+              <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary-blue/10 rounded-professional">
+                        <Play className="w-5 h-5 text-primary-blue" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-dark-navy font-display">
+                          Your Interview Recording
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                          Watch your interview performance and review your
+                          responses
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-dark-navy font-display">
-                        Your Interview Recording
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        Watch your interview performance and review your
-                        responses
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-accent-green text-white">
+                        Complete
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {totalDuration > 0 && isFinite(totalDuration)
+                          ? `${Math.floor(totalDuration / 60)}m ${Math.round(
+                              totalDuration % 60
+                            )}s`
+                          : "0m 0s"}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-accent-green text-white">
-                      Complete
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {totalDuration > 0 && isFinite(totalDuration)
-                        ? `${Math.floor(totalDuration / 60)}m ${Math.round(
-                            totalDuration % 60
-                          )}s`
-                        : "0m 0s"}
-                    </span>
+                  <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
+                    {isConverting &&
+                      (() => {
+                        const videoFormat =
+                          result?.videoMetadata?.format || "video/webm";
+                        const isMP4 = isMP4Format(videoFormat);
+
+                        // Only show conversion overlay if we're actually converting (not MP4)
+                        if (!isMP4) {
+                          return (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
+                              <div className="text-center text-white">
+                                <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                                <p className="text-sm">
+                                  Converting video to MP4...
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
+
+                    {/* Black overlay with play button when video is not playing */}
+                    {!videoPlaying && !isConverting && (
+                      <div
+                        className="absolute inset-0 bg-black flex items-center justify-center cursor-pointer z-20"
+                        onClick={() => {
+                          if (videoRef.current) {
+                            videoRef.current.play();
+                            setVideoPlaying(true);
+                          }
+                        }}
+                      >
+                        <div className="text-center text-white">
+                          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+                            <Play className="w-8 h-8 text-white ml-1" />
+                          </div>
+                          <h3 className="text-xl font-semibold mb-2">
+                            Interview Recording
+                          </h3>
+                          <p className="text-white/70">Click to play</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <video
+                      controls
+                      className="w-full h-full"
+                      src={seekableVideoUrl || videoUrl}
+                      poster=""
+                      preload="metadata"
+                      ref={videoRef}
+                      onTimeUpdate={(e) =>
+                        setCurrentTime(
+                          (e.target as HTMLVideoElement).currentTime
+                        )
+                      }
+                      onRateChange={(e) =>
+                        setPlaybackRate(
+                          (e.target as HTMLVideoElement).playbackRate
+                        )
+                      }
+                      onPlay={() => setVideoPlaying(true)}
+                      onPause={() => setVideoPlaying(false)}
+                      style={{ display: videoPlaying ? "block" : "none" }}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
                   </div>
-                </div>
-                <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
-                  {isConverting &&
-                    (() => {
+                  {/* Playback controls */}
+                  <div className="flex gap-2 items-center flex-wrap">
+                    {(() => {
                       const videoFormat =
                         result?.videoMetadata?.format || "video/webm";
                       const isMP4 = isMP4Format(videoFormat);
+                      const formatName = getFormatDisplayName(videoFormat);
+                      const fileExtension = getFileExtension(videoFormat);
 
-                      // Only show conversion overlay if we're actually converting (not MP4)
-                      if (!isMP4) {
+                      // Debug: Download button logic (disabled)
+                      // console.log("Download button logic:", {
+                      //   videoFormat,
+                      //   isMP4,
+                      //   formatName,
+                      //   fileExtension,
+                      //   result: result,
+                      //   videoMetadata: result?.videoMetadata,
+                      // });
+
+                      if (isMP4) {
+                        // Video is already MP4 - show single download button
                         return (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
-                            <div className="text-center text-white">
-                              <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                              <p className="text-sm">
-                                Converting video to MP4...
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-
-                  {/* Black overlay with play button when video is not playing */}
-                  {!videoPlaying && !isConverting && (
-                    <div
-                      className="absolute inset-0 bg-black flex items-center justify-center cursor-pointer z-20"
-                      onClick={() => {
-                        if (videoRef.current) {
-                          videoRef.current.play();
-                          setVideoPlaying(true);
-                        }
-                      }}
-                    >
-                      <div className="text-center text-white">
-                        <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
-                          <Play className="w-8 h-8 text-white ml-1" />
-                        </div>
-                        <h3 className="text-xl font-semibold mb-2">
-                          Interview Recording
-                        </h3>
-                        <p className="text-white/70">Click to play</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <video
-                    controls
-                    className="w-full h-full"
-                    src={seekableVideoUrl || videoUrl}
-                    poster=""
-                    preload="metadata"
-                    ref={videoRef}
-                    onTimeUpdate={(e) =>
-                      setCurrentTime((e.target as HTMLVideoElement).currentTime)
-                    }
-                    onRateChange={(e) =>
-                      setPlaybackRate(
-                        (e.target as HTMLVideoElement).playbackRate
-                      )
-                    }
-                    onPlay={() => setVideoPlaying(true)}
-                    onPause={() => setVideoPlaying(false)}
-                    style={{ display: videoPlaying ? "block" : "none" }}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-                {/* Playback controls */}
-                <div className="flex gap-2 items-center flex-wrap">
-                  {(() => {
-                    const videoFormat =
-                      result?.videoMetadata?.format || "video/webm";
-                    const isMP4 = isMP4Format(videoFormat);
-                    const formatName = getFormatDisplayName(videoFormat);
-                    const fileExtension = getFileExtension(videoFormat);
-
-                    // Debug: Download button logic (disabled)
-                    // console.log("Download button logic:", {
-                    //   videoFormat,
-                    //   isMP4,
-                    //   formatName,
-                    //   fileExtension,
-                    //   result: result,
-                    //   videoMetadata: result?.videoMetadata,
-                    // });
-
-                    if (isMP4) {
-                      // Video is already MP4 - show single download button
-                      return (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const link = document.createElement("a");
-                            link.href = videoUrl;
-                            link.download = `interview-${result.id}.${fileExtension}`;
-                            link.click();
-                          }}
-                          className="flex items-center gap-2"
-                        >
-                          <Download className="h-4 w-4" />
-                          Download {formatName}
-                        </Button>
-                      );
-                    } else {
-                      // Video is not MP4 - show both options
-                      return (
-                        <>
                           <Button
                             variant="outline"
                             size="sm"
@@ -1839,257 +1874,298 @@ const InterviewResults = () => {
                             <Download className="h-4 w-4" />
                             Download {formatName}
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={async () => {
-                              if (!videoUrl) return;
-
-                              // console.log("MP4 conversion button clicked - starting conversion");
-                              try {
-                                setIsConverting(true);
-                                toast({
-                                  title: "Converting Video",
-                                  description:
-                                    "Converting to MP4 format for better compatibility...",
-                                });
-
-                                // Get the original video blob
-                                const response = await fetch(videoUrl);
-                                const videoBlob = await response.blob();
-
-                                // Convert to MP4
-                                const mp4Blob =
-                                  await videoConversionService.convertWebMToMP4(
-                                    videoBlob
-                                  );
-
-                                // Download MP4
+                        );
+                      } else {
+                        // Video is not MP4 - show both options
+                        return (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
                                 const link = document.createElement("a");
-                                link.href = URL.createObjectURL(mp4Blob);
-                                link.download = `interview-${result.id}.mp4`;
+                                link.href = videoUrl;
+                                link.download = `interview-${result.id}.${fileExtension}`;
                                 link.click();
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <Download className="h-4 w-4" />
+                              Download {formatName}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                if (!videoUrl) return;
 
-                                toast({
-                                  title: "Download Complete",
-                                  description:
-                                    "MP4 video downloaded successfully!",
-                                });
-                              } catch (error) {
-                                console.error("MP4 conversion failed:", error);
-                                toast({
-                                  title: "Conversion Failed",
-                                  description:
-                                    "Failed to convert to MP4. Please try downloading the WebM version.",
-                                  variant: "destructive",
-                                });
-                              } finally {
-                                setIsConverting(false);
-                              }
-                            }}
-                            disabled={isConverting}
-                            className="flex items-center gap-2"
-                          >
-                            <Download className="h-4 w-4" />
-                            {isConverting ? "Converting..." : "Download MP4"}
-                          </Button>
-                        </>
-                      );
-                    }
-                  })()}
+                                // console.log("MP4 conversion button clicked - starting conversion");
+                                try {
+                                  setIsConverting(true);
+                                  toast({
+                                    title: "Converting Video",
+                                    description:
+                                      "Converting to MP4 format for better compatibility...",
+                                  });
 
-                  {/* Speed controls */}
-                  <div className="ml-auto flex items-center gap-1">
-                    {[0.75, 1, 1.25, 1.5].map((rate) => (
-                      <Button
-                        key={rate}
-                        variant={playbackRate === rate ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          if (videoRef.current) {
-                            videoRef.current.playbackRate = rate;
-                            setPlaybackRate(rate);
+                                  // Get the original video blob
+                                  const response = await fetch(videoUrl);
+                                  const videoBlob = await response.blob();
+
+                                  // Convert to MP4
+                                  const mp4Blob =
+                                    await videoConversionService.convertWebMToMP4(
+                                      videoBlob
+                                    );
+
+                                  // Download MP4
+                                  const link = document.createElement("a");
+                                  link.href = URL.createObjectURL(mp4Blob);
+                                  link.download = `interview-${result.id}.mp4`;
+                                  link.click();
+
+                                  toast({
+                                    title: "Download Complete",
+                                    description:
+                                      "MP4 video downloaded successfully!",
+                                  });
+                                } catch (error) {
+                                  console.error(
+                                    "MP4 conversion failed:",
+                                    error
+                                  );
+                                  toast({
+                                    title: "Conversion Failed",
+                                    description:
+                                      "Failed to convert to MP4. Please try downloading the WebM version.",
+                                    variant: "destructive",
+                                  });
+                                } finally {
+                                  setIsConverting(false);
+                                }
+                              }}
+                              disabled={isConverting}
+                              className="flex items-center gap-2"
+                            >
+                              <Download className="h-4 w-4" />
+                              {isConverting ? "Converting..." : "Download MP4"}
+                            </Button>
+                          </>
+                        );
+                      }
+                    })()}
+
+                    {/* Speed controls */}
+                    <div className="ml-auto flex items-center gap-1">
+                      {[0.75, 1, 1.25, 1.5].map((rate) => (
+                        <Button
+                          key={rate}
+                          variant={
+                            playbackRate === rate ? "default" : "outline"
                           }
-                        }}
-                      >
-                        {rate}x
-                      </Button>
-                    ))}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          if (
-                            videoRef.current &&
-                            (document as any).pictureInPictureEnabled
-                          ) {
-                            if ((document as any).pictureInPictureElement) {
-                              await (document as any).exitPictureInPicture();
-                            } else {
-                              await (
-                                videoRef.current as any
-                              ).requestPictureInPicture();
+                          size="sm"
+                          onClick={() => {
+                            if (videoRef.current) {
+                              videoRef.current.playbackRate = rate;
+                              setPlaybackRate(rate);
                             }
-                          }
-                        } catch {}
-                      }}
-                    >
-                      PiP
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Chapter timeline */}
-                {chapters.length > 0 && totalDuration > 0 && (
-                  <div className="mt-4">
-                    <div className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4" /> Chapters
-                      <span className="ml-auto text-xs">
-                        {Math.floor(currentTime)}s / {Math.floor(totalDuration)}
-                        s
-                      </span>
-                    </div>
-                    <div className="relative h-4 w-full bg-muted rounded overflow-hidden">
-                      {chapters.map((ch, i) => (
-                        <button
-                          key={i}
-                          title={`Q${ch.index}: ${ch.question}`}
-                          onClick={() => seekTo(ch.start)}
-                          style={{
-                            left: `${(ch.start / totalDuration) * 100}%`,
-                            width: `${(ch.duration / totalDuration) * 100}%`,
-                          }}
-                          className={`absolute top-0 h-full ${markerColor(
-                            ch.score
-                          )} hover:opacity-80 transition-opacity`}
-                        />
-                      ))}
-                      {/* Playhead */}
-                      <div
-                        className="absolute top-0 bottom-0 w-0.5 bg-black/60 dark:bg-white/60"
-                        style={{
-                          left: `${(currentTime / totalDuration) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      {chapters.map((ch, i) => (
-                        <span
-                          key={i}
-                          className="truncate"
-                          style={{
-                            width: `${(ch.duration / totalDuration) * 100}%`,
                           }}
                         >
-                          Q{ch.index}
-                        </span>
+                          {rate}x
+                        </Button>
                       ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            if (
+                              videoRef.current &&
+                              (document as any).pictureInPictureEnabled
+                            ) {
+                              if ((document as any).pictureInPictureElement) {
+                                await (document as any).exitPictureInPicture();
+                              } else {
+                                await (
+                                  videoRef.current as any
+                                ).requestPictureInPicture();
+                              }
+                            }
+                          } catch {}
+                        }}
+                      >
+                        PiP
+                      </Button>
                     </div>
                   </div>
-                )}
+
+                  {/* Chapter timeline */}
+                  {chapters.length > 0 && totalDuration > 0 && (
+                    <div className="mt-4">
+                      <div className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4" /> Chapters
+                        <span className="ml-auto text-xs">
+                          {Math.floor(currentTime)}s /{" "}
+                          {Math.floor(totalDuration)}s
+                        </span>
+                      </div>
+                      <div className="relative h-4 w-full bg-muted rounded overflow-hidden">
+                        {chapters.map((ch, i) => (
+                          <button
+                            key={i}
+                            title={`Q${ch.index}: ${ch.question}`}
+                            onClick={() => seekTo(ch.start)}
+                            style={{
+                              left: `${(ch.start / totalDuration) * 100}%`,
+                              width: `${(ch.duration / totalDuration) * 100}%`,
+                            }}
+                            className={`absolute top-0 h-full ${markerColor(
+                              ch.score
+                            )} hover:opacity-80 transition-opacity`}
+                          />
+                        ))}
+                        {/* Playhead */}
+                        <div
+                          className="absolute top-0 bottom-0 w-0.5 bg-black/60 dark:bg-white/60"
+                          style={{
+                            left: `${(currentTime / totalDuration) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        {chapters.map((ch, i) => (
+                          <span
+                            key={i}
+                            className="truncate"
+                            style={{
+                              width: `${(ch.duration / totalDuration) * 100}%`,
+                            }}
+                          >
+                            Q{ch.index}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {/* Performance Trend */}
+            <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary-blue/10 rounded-professional">
+                    <BarChart3 className="w-5 h-5 text-primary-blue" />
+                  </div>
+                  <h3 className="text-xl font-bold text-dark-navy font-display">
+                    Performance Trend
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setChartType("bar")}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      chartType === "bar"
+                        ? "bg-primary-blue text-white"
+                        : "bg-light-gray text-muted-foreground hover:bg-light-gray/80"
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Bar
+                  </button>
+                  <button
+                    onClick={() => setChartType("line")}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      chartType === "line"
+                        ? "bg-primary-blue text-white"
+                        : "bg-light-gray text-muted-foreground hover:bg-light-gray/80"
+                    }`}
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    Line
+                  </button>
+                </div>
+              </div>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  {chartType === "line" ? (
+                    <LineChart
+                      data={result.responses.map((r, i) => ({
+                        name: `Q${i + 1}`,
+                        score: r.score,
+                      }))}
+                      margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F5F7FA" />
+                      <XAxis
+                        dataKey="name"
+                        stroke="#64748B"
+                        tick={{
+                          fontSize: result.responses.length > 10 ? 10 : 12,
+                        }}
+                        interval={
+                          result.responses.length > 10 ? "preserveStartEnd" : 0
+                        }
+                      />
+                      <YAxis domain={[0, 100]} stroke="#64748B" />
+                      <ReTooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #F5F7FA",
+                          borderRadius: "12px",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="score"
+                        stroke="#3871C2"
+                        strokeWidth={3}
+                        dot={{ r: 5, fill: "#3871C2" }}
+                      />
+                    </LineChart>
+                  ) : (
+                    <BarChart
+                      data={result.responses.map((r, i) => ({
+                        name: `Q${i + 1}`,
+                        score: r.score,
+                      }))}
+                      margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F5F7FA" />
+                      <XAxis
+                        dataKey="name"
+                        stroke="#64748B"
+                        tick={{
+                          fontSize: result.responses.length > 10 ? 10 : 12,
+                        }}
+                        interval={
+                          result.responses.length > 10 ? "preserveStartEnd" : 0
+                        }
+                      />
+                      <YAxis domain={[0, 100]} stroke="#64748B" />
+                      <ReTooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #F5F7FA",
+                          borderRadius: "12px",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                        }}
+                      />
+                      <Bar
+                        dataKey="score"
+                        fill="#3871C2"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
               </div>
             </Card>
-          </motion.div>
-        )}
-
-        {/* Performance Chart - Full Width */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="mb-8"
-        >
-          <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-blue/10 rounded-professional">
-                  <BarChart3 className="w-5 h-5 text-primary-blue" />
-                </div>
-                <h3 className="text-xl font-bold text-dark-navy font-display">
-                  Performance Trend
-                </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setChartType("bar")}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    chartType === "bar"
-                      ? "bg-primary-blue text-white"
-                      : "bg-light-gray text-muted-foreground hover:bg-light-gray/80"
-                  }`}
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  Bar
-                </button>
-                <button
-                  onClick={() => setChartType("line")}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    chartType === "line"
-                      ? "bg-primary-blue text-white"
-                      : "bg-light-gray text-muted-foreground hover:bg-light-gray/80"
-                  }`}
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  Line
-                </button>
-              </div>
-            </div>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                {chartType === "line" ? (
-                  <LineChart
-                    data={result.responses.map((r, i) => ({
-                      name: `Q${i + 1}`,
-                      score: r.score,
-                    }))}
-                    margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F5F7FA" />
-                    <XAxis dataKey="name" stroke="#64748B" />
-                    <YAxis domain={[0, 100]} stroke="#64748B" />
-                    <ReTooltip
-                      contentStyle={{
-                        backgroundColor: "white",
-                        border: "1px solid #F5F7FA",
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="score"
-                      stroke="#3871C2"
-                      strokeWidth={3}
-                      dot={{ r: 5, fill: "#3871C2" }}
-                    />
-                  </LineChart>
-                ) : (
-                  <BarChart
-                    data={result.responses.map((r, i) => ({
-                      name: `Q${i + 1}`,
-                      score: r.score,
-                    }))}
-                    margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F5F7FA" />
-                    <XAxis dataKey="name" stroke="#64748B" />
-                    <YAxis domain={[0, 100]} stroke="#64748B" />
-                    <ReTooltip
-                      contentStyle={{
-                        backgroundColor: "white",
-                        border: "1px solid #F5F7FA",
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      }}
-                    />
-                    <Bar dataKey="score" fill="#3871C2" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                )}
-              </ResponsiveContainer>
-            </div>
-          </Card>
+          </div>
         </motion.div>
+
         {/* Response Transcriptions - Full Width */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -2761,43 +2837,6 @@ const InterviewResults = () => {
               <Button variant="outline" className="rounded-professional">
                 Copy to Clipboard
               </Button>
-            </div>
-          </Card>
-        </motion.div>
-
-        {/* Question-by-Question Breakdown */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mt-8"
-        >
-          <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-primary-blue/10 rounded-professional">
-                <BarChart3 className="w-5 h-5 text-primary-blue" />
-              </div>
-              <h3 className="text-xl font-bold text-dark-navy font-display">
-                Question-by-Question Breakdown
-              </h3>
-            </div>
-            <div className="h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={result.responses.map((r, i) => ({
-                    name: `Q${i + 1}`,
-                    score: r.score,
-                  }))}
-                  layout="vertical"
-                  margin={{ left: 24, right: 8, top: 8, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                  <XAxis type="number" domain={[0, 100]} />
-                  <YAxis dataKey="name" type="category" />
-                  <ReTooltip />
-                  <Bar dataKey="score" fill="#3871C2"></Bar>
-                </BarChart>
-              </ResponsiveContainer>
             </div>
           </Card>
         </motion.div>

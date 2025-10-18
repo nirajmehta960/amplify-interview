@@ -54,8 +54,6 @@ export interface InterviewAnalysis {
   custom_domain?: string;
   model_used: string;
   overall_score: number;
-  star_scores?: StarScores;
-  technical_scores?: TechnicalScores;
   communication_scores: CommunicationScores;
   content_scores: ContentScores;
   strengths: string[];
@@ -65,12 +63,10 @@ export interface InterviewAnalysis {
   filler_words: FillerWords;
   speaking_pace: "too_fast" | "appropriate" | "too_slow";
   confidence_score: number;
-  response_length_assessment: "too_short" | "appropriate" | "too_long";
   tokens_used: number;
   input_tokens: number;
   output_tokens: number;
   cost_cents: number;
-  processing_time_ms: number;
   created_at: string;
 }
 
@@ -91,16 +87,13 @@ export interface InterviewSummary {
   total_cost_cents: number;
   overall_strengths: string[];
   overall_improvements: string[];
-  pattern_insights: string[];
   readiness_level: "ready" | "needs_practice" | "significant_improvement";
   readiness_score: number;
   role_specific_feedback: string;
   next_steps: string[];
-  recommended_practice_areas: string[];
   estimated_practice_time: string;
   total_duration_seconds: number;
   average_time_per_question: number;
-  time_distribution: Record<string, number>;
   created_at: string;
   updated_at: string;
 }
@@ -116,8 +109,6 @@ export interface InterviewAnalysisInsert {
   custom_domain?: string;
   model_used: string;
   overall_score?: number;
-  star_scores?: StarScores;
-  technical_scores?: TechnicalScores;
   communication_scores?: CommunicationScores;
   content_scores?: ContentScores;
   strengths?: string[];
@@ -127,12 +118,10 @@ export interface InterviewAnalysisInsert {
   filler_words?: FillerWords;
   speaking_pace?: "too_fast" | "appropriate" | "too_slow";
   confidence_score?: number;
-  response_length_assessment?: "too_short" | "appropriate" | "too_long";
   tokens_used?: number;
   input_tokens?: number;
   output_tokens?: number;
   cost_cents?: number;
-  processing_time_ms?: number;
   created_at?: string;
 }
 
@@ -153,16 +142,13 @@ export interface InterviewSummaryInsert {
   total_cost_cents?: number;
   overall_strengths?: string[];
   overall_improvements?: string[];
-  pattern_insights?: string[];
   readiness_level: "ready" | "needs_practice" | "significant_improvement";
   readiness_score?: number;
   role_specific_feedback?: string;
   next_steps?: string[];
-  recommended_practice_areas?: string[];
   estimated_practice_time?: string;
   total_duration_seconds?: number;
   average_time_per_question?: number;
-  time_distribution?: Record<string, number>;
   created_at?: string;
   updated_at?: string;
 }
@@ -178,8 +164,6 @@ export interface InterviewAnalysisUpdate {
   custom_domain?: string;
   model_used?: string;
   overall_score?: number;
-  star_scores?: StarScores;
-  technical_scores?: TechnicalScores;
   communication_scores?: CommunicationScores;
   content_scores?: ContentScores;
   strengths?: string[];
@@ -189,12 +173,10 @@ export interface InterviewAnalysisUpdate {
   filler_words?: FillerWords;
   speaking_pace?: "too_fast" | "appropriate" | "too_slow";
   confidence_score?: number;
-  response_length_assessment?: "too_short" | "appropriate" | "too_long";
   tokens_used?: number;
   input_tokens?: number;
   output_tokens?: number;
   cost_cents?: number;
-  processing_time_ms?: number;
   created_at?: string;
 }
 
@@ -215,16 +197,13 @@ export interface InterviewSummaryUpdate {
   total_cost_cents?: number;
   overall_strengths?: string[];
   overall_improvements?: string[];
-  pattern_insights?: string[];
   readiness_level?: "ready" | "needs_practice" | "significant_improvement";
   readiness_score?: number;
   role_specific_feedback?: string;
   next_steps?: string[];
-  recommended_practice_areas?: string[];
   estimated_practice_time?: string;
   total_duration_seconds?: number;
   average_time_per_question?: number;
-  time_distribution?: Record<string, number>;
   created_at?: string;
   updated_at?: string;
 }

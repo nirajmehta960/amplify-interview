@@ -427,7 +427,10 @@ class OpenRouterService {
       try {
         return JSON.parse(candidate);
       } catch (e) {
-        console.error("JSON parsing failed after sanitization:", e, candidate);
+        // Only log the error if we can't recover with fallback parsing
+        console.warn(
+          "JSON parsing failed after sanitization, attempting fixes..."
+        );
 
         // Try to fix common JSON issues
         let fixedCandidate = candidate;
@@ -446,6 +449,19 @@ class OpenRouterService {
             return match;
           }
         );
+
+        // Fix malformed quotes in strings (e.g., "word\" -> "word")
+        fixedCandidate = fixedCandidate.replace(/([^\\])\\([^\\])/g, "$1$2");
+
+        // Fix escaped quotes in the middle of strings
+        fixedCandidate = fixedCandidate.replace(
+          /"([^"]*)\\"([^"]*)"/g,
+          '"$1$2"'
+        );
+
+        // Fix missing commas before closing braces
+        fixedCandidate = fixedCandidate.replace(/"\s*}/g, '"}');
+        fixedCandidate = fixedCandidate.replace(/"\s*]/g, '"]');
 
         // Fix trailing commas before closing braces/brackets
         fixedCandidate = fixedCandidate.replace(/,(\s*[}\]])/g, "$1");
@@ -466,14 +482,26 @@ class OpenRouterService {
           '"$1\\"$2\\"$3":'
         );
 
+        // Remove extra fields that don't exist in our schema
+        fixedCandidate = fixedCandidate.replace(
+          /"star_scores":\s*{[^}]*},?\s*/g,
+          ""
+        );
+        fixedCandidate = fixedCandidate.replace(
+          /"response_length_assessment":\s*"[^"]*",?\s*/g,
+          ""
+        );
+
+        // Fix any double commas that might result from field removal
+        fixedCandidate = fixedCandidate.replace(/,(\s*,)/g, ",");
+        fixedCandidate = fixedCandidate.replace(/,(\s*[}\]])/g, "$1");
+
         // Try parsing the fixed version
         try {
           return JSON.parse(fixedCandidate);
         } catch (fixError) {
-          console.error(
-            "JSON parsing failed even after fixes:",
-            fixError,
-            fixedCandidate
+          console.warn(
+            "JSON parsing failed even after fixes, trying essential fields extraction..."
           );
 
           // Last resort: try to extract just the essential fields manually
@@ -496,6 +524,20 @@ class OpenRouterService {
     throw new Error(
       "JSON parsing failed: Expected valid JSON object in model output"
     );
+  }
+
+  /**
+   * Helper method to extract individual scores from JSON string
+   */
+  private extractScore(
+    jsonString: string,
+    fieldName: string,
+    fallbackScore: number
+  ): number {
+    const match = jsonString.match(new RegExp(`"${fieldName}":\\s*(\\d+)`));
+    return match
+      ? parseInt(match[1])
+      : Math.min(10, Math.max(1, fallbackScore / 10));
   }
 
   /**
@@ -555,6 +597,14 @@ class OpenRouterService {
         ? parseFloat(confidenceMatch[1])
         : 8.0;
 
+      // Extract speaking pace
+      const speakingPaceMatch = jsonString.match(
+        /"speaking_pace":\s*"([^"]+)"/
+      );
+      const speakingPace = speakingPaceMatch
+        ? speakingPaceMatch[1]
+        : "appropriate";
+
       return {
         overall_score: overallScore,
         strengths:
@@ -573,20 +623,27 @@ class OpenRouterService {
               ],
         actionable_feedback: actionableFeedback,
         improved_example: improvedExample,
+        speaking_pace: speakingPace,
         confidence_score: confidenceScore,
         communication_scores: {
-          clarity: Math.min(10, Math.max(1, overallScore / 10)),
-          structure: Math.min(10, Math.max(1, overallScore / 10)),
-          conciseness: Math.min(10, Math.max(1, overallScore / 10)),
+          clarity: this.extractScore(jsonString, "clarity", overallScore),
+          structure: this.extractScore(jsonString, "structure", overallScore),
+          conciseness: this.extractScore(
+            jsonString,
+            "conciseness",
+            overallScore
+          ),
         },
         content_scores: {
-          relevance: Math.min(10, Math.max(1, overallScore / 10)),
-          depth: Math.min(10, Math.max(1, overallScore / 10)),
-          specificity: Math.min(10, Math.max(1, overallScore / 10)),
+          relevance: this.extractScore(jsonString, "relevance", overallScore),
+          depth: this.extractScore(jsonString, "depth", overallScore),
+          specificity: this.extractScore(
+            jsonString,
+            "specificity",
+            overallScore
+          ),
         },
         filler_words: { total: 0, words: [], counts: {} },
-        speaking_pace: "appropriate",
-        response_length_assessment: "appropriate",
       };
     } catch (error) {
       console.error("Essential fields extraction failed:", error);
@@ -852,6 +909,22 @@ Focus on technical accuracy, problem-solving approach, and domain knowledge.`
   }
 
   /**
+   * Convert speaking pace string to integer for database storage
+   */
+  private convertSpeakingPaceToInt(speakingPace: string): number {
+    switch (speakingPace) {
+      case "too_fast":
+        return 1;
+      case "appropriate":
+        return 2;
+      case "too_slow":
+        return 3;
+      default:
+        return 2; // Default to appropriate
+    }
+  }
+
+  /**
    * Convert AI analysis result to database insert format
    */
   public convertToDatabaseFormat(
@@ -882,8 +955,6 @@ Focus on technical accuracy, problem-solving approach, and domain knowledge.`
       custom_domain: customDomain,
       model_used: modelUsed,
       overall_score: analysis.overall_score,
-      star_scores: analysis.star_scores,
-      technical_scores: analysis.technical_scores,
       communication_scores: analysis.communication_scores,
       content_scores: analysis.content_scores,
       strengths: analysis.strengths,
@@ -891,14 +962,12 @@ Focus on technical accuracy, problem-solving approach, and domain knowledge.`
       actionable_feedback: analysis.actionable_feedback,
       improved_example: analysis.improved_example,
       filler_words: analysis.filler_words,
-      speaking_pace: analysis.speaking_pace,
+      speaking_pace: this.convertSpeakingPaceToInt(analysis.speaking_pace),
       confidence_score: analysis.confidence_score,
-      response_length_assessment: analysis.response_length_assessment,
       tokens_used: usage.total_tokens || cost.totalTokens,
       input_tokens: usage.prompt_tokens || cost.inputTokens,
       output_tokens: usage.completion_tokens || cost.outputTokens,
       cost_cents: cost.totalCostCents,
-      processing_time_ms: 0, // Will be set by the calling service
     };
   }
 }

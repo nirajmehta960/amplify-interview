@@ -47,8 +47,6 @@ export interface ContentScores {
 
 export interface StandardAnalysisResult {
   overall_score: number;
-  star_scores?: StarScores;
-  technical_scores?: TechnicalScores;
   communication_scores: CommunicationScores;
   content_scores: ContentScores;
   strengths: string[];
@@ -58,7 +56,6 @@ export interface StandardAnalysisResult {
   filler_words: FillerWords;
   speaking_pace: "too_fast" | "appropriate" | "too_slow";
   confidence_score: number;
-  response_length_assessment: "too_short" | "appropriate" | "too_long";
 }
 
 /**
@@ -136,12 +133,6 @@ OUTPUT FORMAT:
 Return ONLY valid JSON matching this exact structure:
 {
   "overall_score": 85,
-  "star_scores": {
-    "situation": 9,
-    "task": 8,
-    "action": 9,
-    "result": 7
-  },
   "communication_scores": {
     "clarity": 8,
     "structure": 9,
@@ -174,8 +165,7 @@ Return ONLY valid JSON matching this exact structure:
     "total": 6
   },
   "speaking_pace": "appropriate",
-  "confidence_score": 7.5,
-  "response_length_assessment": "appropriate"
+  "confidence_score": 7.5
 }
 
 Calculate overall_score as weighted average: (STAR scores × 0.4) + (Communication scores × 0.3) + (Content scores × 0.3)
@@ -265,12 +255,6 @@ OUTPUT FORMAT:
 Return ONLY valid JSON matching this exact structure:
 {
   "overall_score": 85,
-  "technical_scores": {
-    "understanding": 9,
-    "approach": 8,
-    "depth": 9,
-    "clarity": 7
-  },
   "communication_scores": {
     "clarity": 8,
     "structure": 9,
@@ -303,8 +287,7 @@ Return ONLY valid JSON matching this exact structure:
     "total": 3
   },
   "speaking_pace": "appropriate",
-  "confidence_score": 8.0,
-  "response_length_assessment": "appropriate"
+  "confidence_score": 8.0
 }
 
 Calculate overall_score with same weighting as behavioral: (Technical scores × 0.4) + (Communication scores × 0.3) + (Content scores × 0.3)
@@ -391,12 +374,6 @@ OUTPUT FORMAT:
 Return ONLY valid JSON matching this exact structure:
 {
   "overall_score": 85,
-  "star_scores": {
-    "situation": 9,
-    "task": 8,
-    "action": 9,
-    "result": 7
-  },
   "communication_scores": {
     "clarity": 8,
     "structure": 9,
@@ -429,8 +406,7 @@ Return ONLY valid JSON matching this exact structure:
     "total": 3
   },
   "speaking_pace": "appropriate",
-  "confidence_score": 8.0,
-  "response_length_assessment": "appropriate"
+  "confidence_score": 8.0
 }
 
 Calculate overall_score with same weighting as behavioral: (STAR scores × 0.4) + (Communication scores × 0.3) + (Content scores × 0.3)
@@ -498,7 +474,7 @@ RED FLAGS:
 - No hypothesis testing
 - Unclear success criteria
 
-Use technical_scores with PM-specific interpretation.`,
+Focus on communication and content scores for PM-specific analysis.`,
 
     userPromptTemplate: `Analyze this Product Manager interview response:
 
@@ -542,7 +518,7 @@ ENGINEERING COMPETENCIES:
 - API Design
 - Database Design
 
-Use technical_scores with engineering-specific interpretation.`,
+Focus on communication and content scores for engineering-specific analysis.`,
 
     userPromptTemplate: `Analyze this Software Engineer interview response:
 
@@ -585,7 +561,7 @@ DATA SCIENCE COMPETENCIES:
 - Business Impact Translation
 - Ethical AI Considerations
 
-Use technical_scores with data science-specific interpretation.`,
+Focus on communication and content scores for data science-specific analysis.`,
 
     userPromptTemplate: `Analyze this Data Scientist interview response:
 
@@ -628,7 +604,7 @@ DESIGN COMPETENCIES:
 - Prototyping & Iteration
 - Design Systems
 
-Use technical_scores with design-specific interpretation.`,
+Focus on communication and content scores for design-specific analysis.`,
 
     userPromptTemplate: `Analyze this UI/UX Designer interview response:
 
@@ -671,7 +647,7 @@ DEVOPS COMPETENCIES:
 - Cloud Platforms
 - Automation Mindset
 
-Use technical_scores with DevOps-specific interpretation.`,
+Focus on communication and content scores for DevOps-specific analysis.`,
 
     userPromptTemplate: `Analyze this DevOps Engineer interview response:
 
@@ -714,7 +690,7 @@ AI ENGINEERING COMPETENCIES:
 - Scalability & Latency
 - Ethical AI & Bias Mitigation
 
-Use technical_scores with AI engineering-specific interpretation.`,
+Focus on communication and content scores for AI engineering-specific analysis.`,
 
     userPromptTemplate: `Analyze this AI Engineer interview response:
 
@@ -838,7 +814,6 @@ export function validateAnalysisResponse(response: any): boolean {
     "filler_words",
     "speaking_pace",
     "confidence_score",
-    "response_length_assessment",
   ];
 
   // Check all required fields exist
@@ -878,14 +853,6 @@ export function validateAnalysisResponse(response: any): boolean {
   }
 
   // Validate response length assessment
-  if (
-    !["too_short", "appropriate", "too_long"].includes(
-      response.response_length_assessment
-    )
-  ) {
-    console.error("Invalid response_length_assessment value");
-    return false;
-  }
 
   // Validate confidence score
   if (response.confidence_score < 0 || response.confidence_score > 10) {
@@ -1167,6 +1134,5 @@ export function generateFallbackAnalysis(
     filler_words: fillerWords,
     speaking_pace: speakingPace,
     confidence_score: confidenceScore,
-    response_length_assessment: responseLength,
   };
 }

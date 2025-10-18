@@ -132,16 +132,16 @@ export async function analyzeQuestionResponse(
         filler_words: analysis.filler_words as any,
         speaking_pace: analysis.speaking_pace || "",
         confidence_score: analysis.confidence_score || 0,
-        response_length_assessment: analysis.response_length_assessment || "",
+        // response_length_assessment not in database schema
         model_used: analysis.model_used || "",
         tokens_used: analysis.tokens_used || 0,
         cost_cents: analysis.cost_cents || 0,
-        processing_time_ms: analysis.processing_time_ms || 0,
+        // processing_time_ms not in database schema
       },
       model: analysis.model_used,
       tokensUsed: analysis.tokens_used || 0,
       costCents: analysis.cost_cents || 0,
-      processingTimeMs: analysis.processing_time_ms || 0,
+      // processingTimeMs not in database schema
     };
   } catch (error) {
     console.error("Error analyzing question response:", error);
@@ -271,7 +271,6 @@ export async function analyzeInterviewSession(
   sessionId: string
 ): Promise<SessionAnalysisResult> {
   try {
-
     // Import the AI analysis service that has full database integration
     const { aiAnalysisService } = await import("./aiAnalysisService");
 
@@ -295,11 +294,11 @@ export async function analyzeInterviewSession(
         filler_words: analysis.filler_words as any,
         speaking_pace: analysis.speaking_pace || "",
         confidence_score: analysis.confidence_score || 0,
-        response_length_assessment: analysis.response_length_assessment || "",
+        // response_length_assessment not in database schema
         model_used: analysis.model_used || "",
         tokens_used: analysis.tokens_used || 0,
         cost_cents: analysis.cost_cents || 0,
-        processing_time_ms: analysis.processing_time_ms || 0,
+        // processing_time_ms not in database schema
       })),
       summary: {
         average_score: result.summary.average_score || 0,
@@ -319,7 +318,6 @@ export async function analyzeInterviewSession(
       },
       totalCostCents: result.totalCost,
     };
-
 
     return sessionAnalysisResult;
   } catch (error) {
@@ -346,10 +344,7 @@ export function enhanceAnalysisWithMetrics(
     analysis.speaking_pace = assessSpeakingPace(responseText, duration);
   }
 
-  // Assess response length if not already done
-  if (!analysis.response_length_assessment) {
-    analysis.response_length_assessment = assessResponseLength(duration);
-  }
+  // response_length_assessment not in database schema
 
   // Calculate confidence score if not already done
   if (!analysis.confidence_score || analysis.confidence_score === 0) {
@@ -365,7 +360,7 @@ export function enhanceAnalysisWithMetrics(
     analysis.confidence_score = calculateConfidenceScore(
       analysis.filler_words,
       analysis.speaking_pace,
-      analysis.response_length_assessment,
+      "appropriate", // Default response length assessment
       hasQuantifiedResults,
       hasPersonalOwnership
     );
@@ -537,4 +532,3 @@ export async function getAnalysisStatus(sessionId: string): Promise<{
     };
   }
 }
-

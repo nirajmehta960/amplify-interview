@@ -82,8 +82,6 @@ export class InterviewSessionService {
         },
         questions_asked: questions.map((q) => q.question_id),
         completed_at: null,
-        overall_score: null,
-        ai_feedback: null,
       };
 
       const { data: session, error } = await supabase
@@ -253,8 +251,6 @@ export class InterviewSessionService {
         question_id: Number(response.questionId), // Ensure question_id is a number (int8)
         response_text: response.responseText,
         duration: Math.round(response.duration), // Convert to integer
-        score: null,
-        ai_feedback: null,
       };
 
       const { data, error } = await supabase

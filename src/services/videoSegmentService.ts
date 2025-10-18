@@ -27,6 +27,13 @@ class VideoSegmentService {
   startQuestionSegment(questionId: string, questionText: string): void {
     const startTime = Date.now();
     this.currentQuestionStartTime = startTime;
+
+    // Set recording start time on first question
+    if (!this.recordingStartEpochMs) {
+      this.recordingStartEpochMs = startTime;
+    }
+
+    console.log(`Started tracking question ${questionId} at ${startTime}`);
   }
 
   /**
@@ -53,6 +60,9 @@ class VideoSegmentService {
 
     this.questionSegments.push(segment);
     this.currentQuestionStartTime = null;
+
+    console.log(`Ended tracking for question ${questionId}:`, segment);
+    console.log(`Total question segments: ${this.questionSegments.length}`);
   }
 
   /**
@@ -80,7 +90,20 @@ class VideoSegmentService {
    * Get all question segments
    */
   getQuestionSegments(): QuestionSegment[] {
+    console.log(
+      `Getting question segments: ${this.questionSegments.length} segments`
+    );
     return [...this.questionSegments];
+  }
+
+  /**
+   * Reset question segments (useful for new interviews)
+   */
+  resetQuestionSegments(): void {
+    this.questionSegments = [];
+    this.currentQuestionStartTime = null;
+    this.recordingStartEpochMs = null;
+    console.log("Reset question segments");
   }
 
   /**
@@ -89,6 +112,9 @@ class VideoSegmentService {
   async transcribeQuestionSegments(
     videoBlob: Blob
   ): Promise<QuestionResponse[]> {
+    console.log(
+      `Transcribing question segments. Found ${this.questionSegments.length} segments`
+    );
     if (this.questionSegments.length === 0) {
       console.warn("No question segments found for transcription");
       return [];

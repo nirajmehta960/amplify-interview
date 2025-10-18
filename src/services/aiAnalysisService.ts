@@ -25,6 +25,22 @@ import { AIAnalysisUtils } from "../utils/aiAnalysisUtils";
 
 class AIAnalysisService {
   /**
+   * Convert speaking pace string to integer for database storage
+   */
+  private convertSpeakingPaceToInt(speakingPace: string): number {
+    switch (speakingPace) {
+      case "too_fast":
+        return 1;
+      case "appropriate":
+        return 2;
+      case "too_slow":
+        return 3;
+      default:
+        return 2; // Default to appropriate
+    }
+  }
+
+  /**
    * Create analysis for a single question response
    */
   public async createAnalysis(
@@ -220,8 +236,7 @@ class AIAnalysisService {
         cost
       );
 
-      // Add processing time
-      analysisData.processing_time_ms = processingTime;
+      // Processing time not stored in database schema
 
       // Save to database
       const savedAnalysis = await this.createAnalysis(analysisData);
@@ -263,15 +278,16 @@ class AIAnalysisService {
         improved_example:
           fallbackAnalysis.improved_example || "Example not available",
         filler_words: fallbackAnalysis.filler_words || null,
-        speaking_pace: fallbackAnalysis.speaking_pace || null,
+        speaking_pace: fallbackAnalysis.speaking_pace
+          ? this.convertSpeakingPaceToInt(fallbackAnalysis.speaking_pace)
+          : null,
         confidence_score: fallbackAnalysis.confidence_score || 0,
-        response_length_assessment:
-          fallbackAnalysis.response_length_assessment || null,
+        // response_length_assessment not in database schema
         tokens_used: 0,
         input_tokens: 0,
         output_tokens: 0,
         cost_cents: 0,
-        processing_time_ms: Date.now() - startTime,
+        // processing_time_ms not in database schema
       };
 
       // Save fallback analysis to database
@@ -723,16 +739,16 @@ class AIAnalysisService {
         total_cost_cents: totalCost,
         overall_strengths: topStrengths as any,
         overall_improvements: topImprovements as any,
-        pattern_insights: patternInsights as any,
+        // pattern_insights not in database schema
         readiness_level: readinessLevel,
         readiness_score: Math.round(averageScore),
         role_specific_feedback: roleSpecificFeedback,
         next_steps: nextSteps as any,
-        recommended_practice_areas: practiceAreas as any,
+        // recommended_practice_areas not in database schema
         estimated_practice_time: estimatedPracticeTime,
         total_duration_seconds: sessionData.duration * 60, // Convert minutes to seconds
         average_time_per_question: (sessionData.duration * 60) / totalQuestions,
-        time_distribution: {} as any, // Simplified for now
+        // time_distribution not in database schema
       };
 
       // Create the summary in database
@@ -1101,16 +1117,16 @@ class AIAnalysisService {
       total_cost_cents: 0,
       overall_strengths: ["Good communication skills"] as any,
       overall_improvements: ["Continue practicing"] as any,
-      pattern_insights: ["Consistent performance"] as any,
+      // pattern_insights not in database schema
       readiness_level: "needs_practice",
       readiness_score: 75,
       role_specific_feedback: "Analysis completed with fallback data",
       next_steps: ["Practice more interviews"] as any,
-      recommended_practice_areas: ["Communication"] as any,
+      // recommended_practice_areas not in database schema
       estimated_practice_time: "1-2 weeks",
       total_duration_seconds: 0,
       average_time_per_question: 0,
-      time_distribution: {} as any,
+      // time_distribution not in database schema
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -1284,6 +1300,11 @@ class AIAnalysisService {
     const startTime = Date.now();
 
     try {
+      // Validate session ID
+      if (!sessionId || sessionId === "null" || sessionId === "undefined") {
+        throw new Error("Invalid session ID provided for analysis");
+      }
+
       // Get session data and responses
       const { data: sessionData, error: sessionError } = await supabase
         .from("interview_sessions")

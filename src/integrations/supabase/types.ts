@@ -80,11 +80,7 @@ export type Database = {
           session_id: string;
           question_id: number;
           response_text: string | null;
-          response_audio_url: string | null;
-          response_video_url: string | null;
           duration: number | null;
-          score: number | null;
-          ai_feedback: string | null;
           created_at: string;
         };
         Insert: {
@@ -92,11 +88,7 @@ export type Database = {
           session_id: string;
           question_id: number;
           response_text?: string | null;
-          response_audio_url?: string | null;
-          response_video_url?: string | null;
           duration?: number | null;
-          score?: number | null;
-          ai_feedback?: string | null;
           created_at?: string;
         };
         Update: {
@@ -104,11 +96,7 @@ export type Database = {
           session_id?: string;
           question_id?: number;
           response_text?: string | null;
-          response_audio_url?: string | null;
-          response_video_url?: string | null;
           duration?: number | null;
-          score?: number | null;
-          ai_feedback?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -139,8 +127,6 @@ export type Database = {
           custom_domain: string | null;
           model_used: string;
           overall_score: number | null;
-          star_scores: Json | null;
-          technical_scores: Json | null;
           communication_scores: Json | null;
           content_scores: Json | null;
           strengths: Json | null;
@@ -148,14 +134,12 @@ export type Database = {
           actionable_feedback: string | null;
           improved_example: string | null;
           filler_words: Json | null;
-          speaking_pace: string | null;
+          speaking_pace: number | null;
           confidence_score: number | null;
-          response_length_assessment: string | null;
           tokens_used: number | null;
           input_tokens: number | null;
           output_tokens: number | null;
           cost_cents: number | null;
-          processing_time_ms: number | null;
           created_at: string;
         };
         Insert: {
@@ -168,8 +152,6 @@ export type Database = {
           custom_domain?: string | null;
           model_used: string;
           overall_score?: number | null;
-          star_scores?: Json | null;
-          technical_scores?: Json | null;
           communication_scores?: Json | null;
           content_scores?: Json | null;
           strengths?: Json | null;
@@ -177,14 +159,12 @@ export type Database = {
           actionable_feedback?: string | null;
           improved_example?: string | null;
           filler_words?: Json | null;
-          speaking_pace?: string | null;
+          speaking_pace?: number | null;
           confidence_score?: number | null;
-          response_length_assessment?: string | null;
           tokens_used?: number | null;
           input_tokens?: number | null;
           output_tokens?: number | null;
           cost_cents?: number | null;
-          processing_time_ms?: number | null;
           created_at?: string;
         };
         Update: {
@@ -197,8 +177,6 @@ export type Database = {
           custom_domain?: string | null;
           model_used?: string;
           overall_score?: number | null;
-          star_scores?: Json | null;
-          technical_scores?: Json | null;
           communication_scores?: Json | null;
           content_scores?: Json | null;
           strengths?: Json | null;
@@ -206,14 +184,12 @@ export type Database = {
           actionable_feedback?: string | null;
           improved_example?: string | null;
           filler_words?: Json | null;
-          speaking_pace?: string | null;
+          speaking_pace?: number | null;
           confidence_score?: number | null;
-          response_length_assessment?: string | null;
           tokens_used?: number | null;
           input_tokens?: number | null;
           output_tokens?: number | null;
           cost_cents?: number | null;
-          processing_time_ms?: number | null;
           created_at?: string;
         };
         Relationships: [
@@ -265,16 +241,13 @@ export type Database = {
           total_cost_cents: number | null;
           overall_strengths: Json | null;
           overall_improvements: Json | null;
-          pattern_insights: Json | null;
           readiness_level: string;
           readiness_score: number | null;
           role_specific_feedback: string | null;
           next_steps: Json | null;
-          recommended_practice_areas: Json | null;
           estimated_practice_time: string | null;
           total_duration_seconds: number | null;
           average_time_per_question: number | null;
-          time_distribution: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -295,16 +268,13 @@ export type Database = {
           total_cost_cents?: number | null;
           overall_strengths?: Json | null;
           overall_improvements?: Json | null;
-          pattern_insights?: Json | null;
           readiness_level: string;
           readiness_score?: number | null;
           role_specific_feedback?: string | null;
           next_steps?: Json | null;
-          recommended_practice_areas?: Json | null;
           estimated_practice_time?: string | null;
           total_duration_seconds?: number | null;
           average_time_per_question?: number | null;
-          time_distribution?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -325,16 +295,13 @@ export type Database = {
           total_cost_cents?: number | null;
           overall_strengths?: Json | null;
           overall_improvements?: Json | null;
-          pattern_insights?: Json | null;
           readiness_level?: string;
           readiness_score?: number | null;
           role_specific_feedback?: string | null;
           next_steps?: Json | null;
-          recommended_practice_areas?: Json | null;
           estimated_practice_time?: string | null;
           total_duration_seconds?: number | null;
           average_time_per_question?: number | null;
-          time_distribution?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -360,45 +327,33 @@ export type Database = {
           id: string;
           user_id: string;
           interview_type: string;
-          score: number | null;
+          session_score: number | null;
           duration: number;
           created_at: string;
           interview_config: Json | null;
           questions_asked: Json | null;
-          notes: string | null;
-          recording_url: string | null;
-          ai_feedback: Json | null;
-          overall_score: number | null;
           completed_at: string | null;
         };
         Insert: {
           id?: string;
           user_id: string;
           interview_type: string;
-          score?: number | null;
+          session_score?: number | null;
           duration: number;
           created_at?: string;
           interview_config?: Json | null;
           questions_asked?: Json | null;
-          notes?: string | null;
-          recording_url?: string | null;
-          ai_feedback?: Json | null;
-          overall_score?: number | null;
           completed_at?: string | null;
         };
         Update: {
           id?: string;
           user_id?: string;
           interview_type?: string;
-          score?: number | null;
+          session_score?: number | null;
           duration?: number;
           created_at?: string;
           interview_config?: Json | null;
           questions_asked?: Json | null;
-          notes?: string | null;
-          recording_url?: string | null;
-          ai_feedback?: Json | null;
-          overall_score?: number | null;
           completed_at?: string | null;
         };
         Relationships: [

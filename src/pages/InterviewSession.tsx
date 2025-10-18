@@ -197,6 +197,8 @@ const InterviewSession = () => {
                   "Failed to create interview session. Please try again.",
                 variant: "destructive",
               });
+              // Don't proceed with the interview if session creation failed
+              return;
             }
           }
         } catch (error) {
@@ -263,6 +265,8 @@ const InterviewSession = () => {
       !firstQuestionStartedRef.current
     ) {
       firstQuestionStartedRef.current = true;
+      // Reset question segments for new interview
+      videoSegmentService.resetQuestionSegments();
       videoSegmentService.startQuestionSegment(
         currentQuestion.id,
         currentQuestion.text
@@ -582,6 +586,11 @@ const InterviewSession = () => {
 
         // Process video for transcription and AI analysis
         console.log("Starting question segment transcription...");
+        console.log(
+          "Question segments before transcription:",
+          videoSegmentService.getQuestionSegments()
+        );
+
         if (streamed) {
           // If we already have the full transcript with words, inject to segmenter
           const original = unifiedTranscriptionService.transcribeVideoDirectly;
@@ -591,6 +600,10 @@ const InterviewSession = () => {
           try {
             questionResponses =
               await videoSegmentService.transcribeQuestionSegments(videoBlob);
+            console.log(
+              "Question segments transcribed (streamed):",
+              questionResponses
+            );
           } finally {
             (unifiedTranscriptionService as any).transcribeVideoDirectly =
               original;
@@ -600,7 +613,10 @@ const InterviewSession = () => {
           // Fallback: upload entire video and then segment
           questionResponses =
             await videoSegmentService.transcribeQuestionSegments(videoBlob);
-          console.log("Question segments transcribed:", questionResponses);
+          console.log(
+            "Question segments transcribed (fallback):",
+            questionResponses
+          );
           console.log("Starting main video transcription...");
           transcriptionResult =
             await unifiedTranscriptionService.transcribeVideoDirectly(
@@ -647,6 +663,11 @@ const InterviewSession = () => {
         // Use real AI analysis with OpenRouter AFTER responses are saved
         try {
           console.log("Starting real AI analysis with OpenRouter...");
+
+          // Check if we have a valid session ID
+          if (!currentSessionId) {
+            throw new Error("No valid session ID available for analysis");
+          }
 
           // Import the core analysis service
           const { analyzeInterviewSession } = await import(
