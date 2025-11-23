@@ -105,16 +105,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false);
         }
       } else if (event === "SIGNED_IN") {
-        // Clean up OAuth callback URL hash fragments
+        // Handle OAuth callback redirect - if redirected to wrong URL, fix it
         if (
           window.location.hash &&
           window.location.hash.includes("#access_token")
         ) {
-          window.history.replaceState(
-            null,
-            "",
-            window.location.pathname + window.location.search
-          );
+          // If we're on localhost but should be on production, redirect to production
+          if (
+            window.location.origin.includes("localhost") &&
+            import.meta.env.VITE_APP_URL &&
+            !import.meta.env.VITE_APP_URL.includes("localhost")
+          ) {
+            // Preserve the hash token and redirect to production
+            window.location.href = `${import.meta.env.VITE_APP_URL}${
+              window.location.pathname
+            }${window.location.search}${window.location.hash}`;
+            return;
+          }
+
+          // Clean up hash and use correct base URL
+          const baseUrl =
+            import.meta.env.VITE_APP_URL || window.location.origin;
+
+          // Navigate to dashboard with correct URL
+          const dashboardUrl = `${baseUrl}/dashboard`;
+
+          // If we're not on the production URL, redirect
+          if (
+            window.location.origin !== baseUrl &&
+            import.meta.env.VITE_APP_URL
+          ) {
+            window.location.href = dashboardUrl;
+            return;
+          }
+
+          // Clean up hash and navigate to dashboard
+          window.history.replaceState(null, "", "/dashboard");
+          navigate("/dashboard", { replace: true });
         }
 
         // Check if this is a new user (first time sign-in, including OAuth)
