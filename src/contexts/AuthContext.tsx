@@ -278,7 +278,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    // Use VITE_APP_URL in production, fallback to window.location.origin for local dev
+    const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+    const redirectUrl = `${baseUrl}/dashboard`;
 
     const { error } = await supabase.auth.signUp({
       email,
@@ -300,7 +302,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const redirectUrl = `${window.location.origin}/dashboard`;
+      // Use VITE_APP_URL in production, fallback to window.location.origin for local dev
+      const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+      const redirectUrl = `${baseUrl}/dashboard`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -321,8 +325,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = async (email: string) => {
     try {
+      // Use VITE_APP_URL in production, fallback to window.location.origin for local dev
+      const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${baseUrl}/auth/reset-password`,
       });
 
       return { error };
