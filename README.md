@@ -1,5 +1,8 @@
 # Amplify Interview
 
+![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-blue)
+
 **AI-Powered Mock Interview Platform for Technical, Behavioral, Leadership, and Custom Domain Interview Preparation**
 
 Amplify Interview is a comprehensive mock interview platform that leverages advanced AI models to provide personalized interview coaching, detailed performance analysis, and skill development tracking. Whether you're preparing for technical interviews, behavioral assessments, leadership roles, or custom domains like Product Management, Software Engineering, AI Engineering, and more - our platform offers a complete interview preparation experience with video recording, real-time transcription, and intelligent feedback.
@@ -47,36 +50,18 @@ Amplify Interview is a comprehensive mock interview platform that leverages adva
 - **Progress Tracking**: Visual indicators for interview progress and time management
 - **Responsive Design**: Optimized for desktop and mobile devices
 
+### Secure Authentication
+
+- **Multiple Sign-in Options**: Email/password and Google OAuth integration
+- **Protected Routes**: Automatic redirection for authenticated and unauthenticated users
+
 ### Upcoming Features
 
-#### PDF Report Generation
-
-- **Download Detailed Reports**: Generate comprehensive 1-page PDF reports with performance metrics, insights, and improvement recommendations
-- **Professional Formatting**: Clean, dashboard-style reports perfect for sharing with mentors or saving for personal records
-- **Multiple Export Options**: Choose between summary reports or detailed analysis documents
-
-#### Cloud Video Storage
-
-- **Cross-Device Access**: Access your interview videos from any device with secure authentication
-- **Automatic Backup**: Cloud backup with user consent and control over data retention
-- **Storage Optimization**: Intelligent compression and format optimization to reduce storage costs
-- **Retention Policies**: Configurable video retention and auto-deletion settings
-- **Platform Integration**: AWS S3, Google Cloud Storage, or Azure Blob Storage options
-
-#### Enhanced Analytics
-
-- **Deeper Insights**: Advanced performance trends and skill development tracking
-- **Comparative Analysis**: Compare performance across different interview types and time periods
-- **Progress Milestones**: Visual achievement tracking and skill development milestones
-
-### Future Enhancements
-
-- **Team Collaboration**: Share results with mentors or coaches
+- **PDF Report Generation**: Download detailed performance reports in PDF format
+- **Cloud Video Storage**: Cross-device access with AWS S3/Google Cloud Storage integration
+- **Enhanced Analytics**: Advanced performance trends and comparative analysis
+- **Team Collaboration**: Share results with mentors and coaches
 - **Mobile App**: Native iOS and Android applications
-- **Interview Scheduling**: Calendar integration and scheduling
-- **Company-specific Questions**: Questions tailored to specific companies
-- **Real-time Collaboration**: Practice with peers and mentors
-- **Career Guidance**: AI-powered career path recommendations
 
 ## 🚀 Technology Stack
 
@@ -96,6 +81,7 @@ Amplify Interview is a comprehensive mock interview platform that leverages adva
 - **PostgreSQL** for robust data storage and relationships
 - **Row Level Security (RLS)** for data protection and user isolation
 - **Supabase Auth** for secure user authentication and session management
+- **Google OAuth Integration** for seamless social authentication via Supabase Auth
 
 ### AI & Analysis
 
@@ -140,24 +126,31 @@ npm install
 
 ### 3. Environment Configuration
 
-Create a `.env` file in the root directory with the following variables:
+Create a `.env` file in the root directory:
 
-```env
-# Supabase Configuration
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# OpenRouter API Configuration
-VITE_OPENROUTER_API_KEY=your_openrouter_api_key
-VITE_OPENROUTER_APP_NAME=Amplify Interview
-
-# Deepgram Configuration
-VITE_DEEPGRAM_API_KEY=your_deepgram_api_key
-
-# Application Configuration
-VITE_APP_URL=http://localhost:5173
-VITE_APP_NAME=Amplify Interview
+```bash
+# Copy the example file
+cp .env.example .env
 ```
+
+Then edit `.env` and fill in your API keys and configuration values. See `.env.example` for detailed documentation of all environment variables.
+
+**Required Variables:**
+
+- `VITE_SUPABASE_URL` - Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
+- `VITE_OPENROUTER_API_KEY` - Your OpenRouter API key
+- `VITE_RESEND_API_KEY` - Your Resend API key (for welcome emails)
+- `VITE_EMAIL_FROM` - Your email address for sending emails
+- `VITE_APP_NAME` - Your application name
+- `VITE_APP_URL` - Your application URL
+
+**Optional Variables:**
+
+- `VITE_DEEPGRAM_API_KEY` - Deepgram API key (for transcription)
+- `VITE_SITE_URL` - Your site URL (for OpenRouter)
+- `VITE_SITE_TITLE` - Your site title (for OpenRouter)
+- Local development URLs (for running with Vercel dev)
 
 ### 4. Database Setup
 
@@ -166,7 +159,38 @@ VITE_APP_NAME=Amplify Interview
 3. **Set up Row Level Security policies** for data protection
 4. **Configure authentication settings** in your Supabase dashboard
 
-### 5. API Keys Setup
+### 5. Email Configuration (Optional)
+
+- **Confirmation emails**: Sent via Supabase's default service (customizable in Dashboard → Authentication → Email Templates)
+- **Welcome emails**: Sent via Resend API (configure `VITE_RESEND_API_KEY` in `.env`)
+
+**Note**: If using a free Vercel domain, you can customize Supabase email templates but cannot use Resend SMTP (requires verified custom domain).
+
+### 6. Google OAuth Setup (Optional but Recommended)
+
+Enable Google OAuth for one-click authentication:
+
+1. **Create Google OAuth Credentials**:
+
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable the **Google+ API**
+   - Navigate to **Credentials** > **Create Credentials** > **OAuth client ID**
+   - Choose **Web application** as the application type
+   - Add authorized redirect URI: `https://<your-supabase-project-id>.supabase.co/auth/v1/callback`
+   - Copy your **Client ID** and **Client Secret**
+
+2. **Configure in Supabase Dashboard**:
+   - Go to your [Supabase Dashboard](https://app.supabase.com/)
+   - Navigate to **Authentication** > **Providers**
+   - Enable **Google** provider
+   - Enter your **Client ID** and **Client Secret** from Google Cloud Console
+   - Add allowed redirect URLs:
+     - Development: `http://localhost:5173/dashboard`
+     - Production: `https://yourdomain.com/dashboard`
+   - Click **Save**
+
+### 7. API Keys Setup
 
 #### OpenRouter API
 
@@ -180,7 +204,15 @@ VITE_APP_NAME=Amplify Interview
 2. Generate an API key from your console
 3. Add the key to your `.env` file
 
-### 6. Start Development Server
+#### Resend API (Optional - for welcome emails)
+
+1. Sign up at [resend.com](https://resend.com)
+2. Generate an API key and add it to `.env` as `VITE_RESEND_API_KEY`
+3. Set `VITE_EMAIL_FROM` (use `onboarding@resend.dev` for testing)
+
+**Note**: Welcome emails are automatically sent to new users. If not configured, the app works without sending emails.
+
+### 8. Start Development Server
 
 ```bash
 npm run dev
@@ -240,35 +272,13 @@ amplify-interview/
 └── vite.config.ts          # Vite configuration
 ```
 
-## 🎯 Usage Guide
+## 🎯 Quick Start Guide
 
-### Getting Started
-
-1. **Sign Up**: Create a new account or sign in with existing credentials
-2. **Set Up Interview**: Choose interview type, questions, and duration
+1. **Sign Up**: Create a new account with email/password or Google OAuth
+2. **Set Up Interview**: Choose interview type (Behavioral, Technical, Leadership, or Custom) and questions
 3. **Start Recording**: Begin your mock interview with video recording
 4. **Review Results**: Analyze your performance with detailed AI feedback
-5. **Track Progress**: Monitor your improvement over time
-
-### Interview Types
-
-- **Behavioral**: STAR method, leadership, and soft skills
-- **Technical**: System design, algorithms, and problem-solving
-- **Leadership**: Management scenarios and team leadership
-- **Custom**: Mix of question types with domain-specific focus including:
-  - **Product Management**: Product strategy, user research, and roadmap planning
-  - **Software Engineering**: Coding challenges, system design, and architecture
-  - **AI Engineering**: Machine learning, data science, and AI system design
-  - **Data Science**: Statistical analysis, data modeling, and insights
-  - **UX Design**: User experience, design thinking, and usability
-  - **And more**: Expandable to any professional domain
-
-### Question Management
-
-- **App Questions**: Pre-built questions for different interview types
-- **Custom Questions**: Create and manage your own question bank
-- **Question Categories**: Organize questions by type and difficulty
-- **Domain Selection**: Choose questions specific to your field
+5. **Track Progress**: Monitor your improvement over time with analytics and charts
 
 ## 🔧 Development
 
@@ -321,42 +331,13 @@ The application can be deployed to any platform that supports Node.js applicatio
 - **Heroku**
 - **AWS Amplify**
 
-## 📊 Database Schema
-
-### Core Tables
-
-- **profiles**: User profile information
-- **interview_sessions**: Interview session metadata
-- **interview_questions**: Question bank and metadata
-- **interview_responses**: Individual question responses
-- **interview_analysis**: AI analysis results
-- **interview_summary**: Session summaries and scores
-- **user_questions**: Custom user-created questions
-
-### Key Relationships
-
-- Users have many interview sessions
-- Sessions contain multiple responses
-- Responses are analyzed by AI
-- Questions are categorized by type and domain
-
-## 🎥 Video Storage & Privacy
-
-### Current Implementation
-
-- **Local Storage**: All interview videos are stored locally in the user's browser using IndexedDB
-- **Privacy First**: Videos never leave the user's device, ensuring complete privacy
-- **No Server Upload**: No cloud storage costs or data transfer concerns
-- **Browser Managed**: Automatic storage management and cleanup by the browser
-- **Cross-Session Persistence**: Videos remain available across browser sessions
-
 ## 🔒 Security & Privacy
 
-- **Row Level Security**: Database-level access control
-- **Authentication**: Secure user authentication with Supabase Auth
+- **Row Level Security**: Database-level access control with user isolation
+- **Secure Authentication**: Email/password and Google OAuth with automatic token refresh
+- **Local Video Storage**: All videos stored in browser's IndexedDB - never uploaded to servers
 - **Data Encryption**: All sensitive data encrypted in transit and at rest
-- **Privacy First**: No personal data shared with third parties
-- **GDPR Compliant**: Full compliance with data protection regulations
+- **Privacy First**: No personal data shared with third parties, GDPR compliant
 
 ## 🤝 Support
 
@@ -371,10 +352,11 @@ The application can be deployed to any platform that supports Node.js applicatio
 - **Video Recording**: Ensure camera and microphone permissions are granted
 - **AI Analysis**: Check API key configuration and rate limits
 - **Database**: Verify Supabase connection and migration status
+- **Google OAuth**: Enable provider in Supabase Dashboard → Authentication → Providers and verify redirect URLs match your app URLs
 
-## 📄 License
+## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - Copyright (c) 2025 Niraj Mehta. See the LICENSE file for details.
 
 ## 🙏 Acknowledgments
 
@@ -390,8 +372,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Project Maintainer**: Niraj Mehta
 - **Email**: nirajmehta960@gmail.com
 
----
+## 📄 License
 
-**Built with ❤️ for the developer community**
+MIT License - Copyright (c) 2025 Niraj Mehta
+
+---
 
 _Help others succeed in their interview preparation journey by contributing to this project!_
