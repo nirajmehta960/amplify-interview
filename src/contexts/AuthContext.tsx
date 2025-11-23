@@ -3,11 +3,13 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   ReactNode,
 } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { sendWelcomeEmail } from "@/services/emailService";
 
 interface AuthContextType {
   user: User | null;
@@ -18,6 +20,7 @@ interface AuthContextType {
     password: string,
     fullName: string
   ) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   loading: boolean;
@@ -30,6 +33,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  // Track users we've already sent welcome emails to (prevents duplicates)
+  // Use a combination of ref (for current session) and localStorage (persistent)
+  const welcomeEmailSentRef = useRef<Set<string>>(new Set());
+  const emailSendingInProgressRef = useRef<Set<string>>(new Set());
+
+  // Helper function to check if welcome email was already sent
+  const hasWelcomeEmailBeenSent = (userId: string): boolean => {
+    // Check ref first (fast, for current session)
+    if (welcomeEmailSentRef.current.has(userId)) {
+      return true;
+    }
+
+    // Check localStorage (persistent across sessions)
+    try {
+      const sentEmails = JSON.parse(
+        localStorage.getItem("amplify_welcomeEmailsSent") || "[]"
+      );
+      if (sentEmails.includes(userId)) {
+        // Also add to ref for faster access
+        welcomeEmailSentRef.current.add(userId);
+        return true;
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+
+    return false;
+  };
+
+  // Helper function to mark welcome email as sent
+  const markWelcomeEmailAsSent = (userId: string): void => {
+    // Mark in ref immediately
+    welcomeEmailSentRef.current.add(userId);
+
+    // Mark in localStorage for persistence
+    try {
+      const sentEmails = JSON.parse(
+        localStorage.getItem("amplify_welcomeEmailsSent") || "[]"
+      );
+      if (!sentEmails.includes(userId)) {
+        sentEmails.push(userId);
+        localStorage.setItem(
+          "amplify_welcomeEmailsSent",
+          JSON.stringify(sentEmails)
+        );
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -38,8 +91,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state change:", event, session?.user?.id);
-
       if (mounted) {
         setSession(session);
         setUser(session?.user ?? null);
@@ -48,11 +99,128 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Handle specific auth events
       if (event === "SIGNED_OUT") {
-        console.log("User signed out, clearing state");
         if (mounted) {
           setSession(null);
           setUser(null);
           setLoading(false);
+        }
+      } else if (event === "SIGNED_IN") {
+        // Clean up OAuth callback URL hash fragments
+        if (
+          window.location.hash &&
+          window.location.hash.includes("#access_token")
+        ) {
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + window.location.search
+          );
+        }
+
+        // Check if this is a new user (first time sign-in, including OAuth)
+        if (mounted && session?.user) {
+          const user = session.user;
+          const userId = user.id;
+
+          // Check if we've already sent welcome email OR if sending is in progress
+          const alreadySentEmail = hasWelcomeEmailBeenSent(userId);
+          const isSendingInProgress =
+            emailSendingInProgressRef.current.has(userId);
+
+          if (alreadySentEmail || isSendingInProgress) {
+            // Already sent or sending in progress, skip
+            // Navigate to dashboard if needed
+            const currentPath = window.location.pathname;
+            if (
+              currentPath === "/auth/signin" ||
+              currentPath === "/auth/signup"
+            ) {
+              navigate("/dashboard", { replace: true });
+            }
+            return;
+          }
+
+          // Check if this is a new user (created within last 5 minutes)
+          const userCreatedAt = new Date(user.created_at);
+          const now = new Date();
+          const timeSinceCreation =
+            (now.getTime() - userCreatedAt.getTime()) / 1000; // seconds
+          const isNewUser = timeSinceCreation < 300; // 5 minutes
+
+          if (isNewUser && user.email) {
+            const userName =
+              user.user_metadata?.full_name ||
+              user.user_metadata?.name ||
+              user.email?.split("@")[0] ||
+              "there";
+
+            // Mark as sending in progress IMMEDIATELY to prevent duplicates
+            emailSendingInProgressRef.current.add(userId);
+            markWelcomeEmailAsSent(userId);
+
+            // Get dashboard URL from environment or use current origin
+            const dashboardUrl = import.meta.env.VITE_APP_URL
+              ? `${import.meta.env.VITE_APP_URL}/dashboard`
+              : `${window.location.origin}/dashboard`;
+
+            // Send welcome email asynchronously (don't block the UI)
+            sendWelcomeEmail({
+              email: user.email,
+              userName: userName,
+              dashboardUrl: dashboardUrl,
+            })
+              .then((result) => {
+                if (result.error) {
+                  // On error, remove from sent list so we can retry later
+                  welcomeEmailSentRef.current.delete(userId);
+                  try {
+                    const sentEmails = JSON.parse(
+                      localStorage.getItem("amplify_welcomeEmailsSent") || "[]"
+                    );
+                    const filtered = sentEmails.filter(
+                      (id: string) => id !== userId
+                    );
+                    localStorage.setItem(
+                      "amplify_welcomeEmailsSent",
+                      JSON.stringify(filtered)
+                    );
+                  } catch (e) {
+                    // Ignore errors
+                  }
+                }
+                // Remove from in-progress set
+                emailSendingInProgressRef.current.delete(userId);
+              })
+              .catch(() => {
+                // On error, remove from sent list so we can retry later
+                welcomeEmailSentRef.current.delete(userId);
+                try {
+                  const sentEmails = JSON.parse(
+                    localStorage.getItem("amplify_welcomeEmailsSent") || "[]"
+                  );
+                  const filtered = sentEmails.filter(
+                    (id: string) => id !== userId
+                  );
+                  localStorage.setItem(
+                    "amplify_welcomeEmailsSent",
+                    JSON.stringify(filtered)
+                  );
+                } catch (e) {
+                  // Ignore errors
+                }
+                // Remove from in-progress set
+                emailSendingInProgressRef.current.delete(userId);
+              });
+          }
+
+          // Navigate to dashboard if user is authenticated and on auth pages (typically after OAuth)
+          const currentPath = window.location.pathname;
+          if (
+            currentPath === "/auth/signin" ||
+            currentPath === "/auth/signup"
+          ) {
+            navigate("/dashboard", { replace: true });
+          }
         }
       }
     });
@@ -60,16 +228,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session
     const initializeAuth = async () => {
       try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
-
-        if (error) {
-          console.error("Error getting session:", error);
+        // Load previously sent welcome emails from localStorage
+        try {
+          const sentEmails = JSON.parse(
+            localStorage.getItem("amplify_welcomeEmailsSent") || "[]"
+          );
+          sentEmails.forEach((id: string) => {
+            welcomeEmailSentRef.current.add(id);
+          });
+        } catch (e) {
+          // Ignore localStorage errors
         }
 
-        console.log("Initial session check:", session?.user?.id);
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
         if (mounted) {
           setSession(session);
@@ -77,7 +250,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false);
         }
       } catch (error) {
-        console.error("Error initializing auth:", error);
         if (mounted) {
           setLoading(false);
         }
@@ -126,43 +298,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const redirectUrl = `${window.location.origin}/dashboard`;
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+          },
+        },
+      });
+
+      return { error };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const resetPassword = async (email: string) => {
     try {
-      console.log("Sending password reset email to:", email);
-
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       });
 
-      if (error) {
-        console.error("Error sending reset email:", error);
-      } else {
-        console.log("Password reset email sent successfully");
-      }
-
       return { error };
     } catch (error) {
-      console.error("Reset password error:", error);
-      return { error };
+      return { error: error as Error };
     }
   };
 
   const signOut = async () => {
     try {
-      console.log("Signing out user...");
-
       // Clear local state immediately
       setUser(null);
       setSession(null);
 
       // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        console.error("Error signing out:", error);
-      } else {
-        console.log("Successfully signed out");
-      }
+      await supabase.auth.signOut();
 
       // Navigate to sign in page
       navigate("/auth/signin", { replace: true });
@@ -170,7 +346,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear any local storage
       localStorage.removeItem("currentSession");
     } catch (error) {
-      console.error("Sign out error:", error);
       // Even if there's an error, clear local state and navigate
       setUser(null);
       setSession(null);
@@ -180,7 +355,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, signIn, signUp, signOut, resetPassword, loading }}
+      value={{
+        user,
+        session,
+        signIn,
+        signUp,
+        signInWithGoogle,
+        signOut,
+        resetPassword,
+        loading,
+      }}
     >
       {children}
     </AuthContext.Provider>
