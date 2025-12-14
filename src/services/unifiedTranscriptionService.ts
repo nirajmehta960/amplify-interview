@@ -37,7 +37,7 @@ class UnifiedTranscriptionService {
         const result = await this.transcribeWithProvider(videoBlob, provider);
         return result;
       } catch (error) {
-        console.error(`❌ Provider ${provider} failed:`, error);
+        console.error(`Provider ${provider} failed:`, error);
         // Don't continue to next provider, throw the error immediately
         throw new Error(
           `Transcription failed with ${provider}: ${

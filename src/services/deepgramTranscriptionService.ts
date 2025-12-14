@@ -37,7 +37,7 @@ class DeepgramTranscriptionService {
     this.apiKey = import.meta.env.VITE_DEEPGRAM_API_KEY || "";
     if (!this.apiKey) {
       console.warn(
-        "⚠️ VITE_DEEPGRAM_API_KEY not found in environment variables"
+        "VITE_DEEPGRAM_API_KEY not found in environment variables"
       );
     }
   }
@@ -131,7 +131,7 @@ class DeepgramTranscriptionService {
 
       // Check for specific quota errors
       if (response.status === 429) {
-        console.error("🚨 Deepgram API Quota Exceeded!");
+        console.error("Deepgram API Quota Exceeded!");
         console.error("Please check your Deepgram usage and billing");
         console.error("Visit: https://console.deepgram.com/usage");
       }

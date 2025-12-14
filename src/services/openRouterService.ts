@@ -714,9 +714,6 @@ Return your analysis as a JSON object with the following structure:
         basePrompt +
         `
 
-For behavioral/leadership questions, also include:
-// star_scores removed - not in database schema
-
 Focus on STAR method structure, leadership qualities, and behavioral examples.`
       );
     }
@@ -725,9 +722,6 @@ Focus on STAR method structure, leadership qualities, and behavioral examples.`
       return (
         basePrompt +
         `
-
-For technical/custom questions, also include:
-// technical_scores removed - not in database schema
 
 Focus on technical accuracy, problem-solving approach, and domain knowledge.`
       );

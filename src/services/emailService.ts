@@ -40,7 +40,7 @@ const getApiUrl = () => {
 };
 
 // Email template is now in the serverless function (api/send-welcome-email.ts)
-// This service just calls the API endpoint to avoid CORS issues
+// Email service - calls API endpoint to avoid CORS
 
 export interface SendWelcomeEmailParams {
   email: string;
@@ -57,6 +57,8 @@ export async function sendWelcomeEmail({
   const endpoint = `${apiUrl}/api/send-welcome-email`;
 
   try {
+    console.log("Sending welcome email to:", email, "via endpoint:", endpoint);
+    
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -71,15 +73,17 @@ export async function sendWelcomeEmail({
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || `HTTP error! status: ${response.status}`
-      );
+      const errorMessage = errorData.error || `HTTP error! status: ${response.status}`;
+      console.error("Welcome email API error:", errorMessage, errorData);
+      throw new Error(errorMessage);
     }
 
-    await response.json();
+    const result = await response.json();
+    console.log("Welcome email sent successfully:", result);
     return {};
   } catch (error: any) {
-    // Don't throw error - we don't want to block signup if email fails
+    // Log error for debugging but don't throw - we don't want to block signup if email fails
+    console.error("Failed to send welcome email:", error.message || error);
     return { error: error as Error };
   }
 }

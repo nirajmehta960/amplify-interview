@@ -337,7 +337,7 @@ class AIAnalysisService {
       const savedAnalysis = await this.createAnalysis(analysisData);
 
       console.warn(
-        `⚠️ FALLBACK analysis used for question ${questionData.question_id} - AI analysis failed. Score: ${fallbackAnalysis.overall_score}`
+        `FALLBACK analysis used for question ${questionData.question_id} - AI analysis failed. Score: ${fallbackAnalysis.overall_score}`
       );
 
       return savedAnalysis;
@@ -376,7 +376,7 @@ class AIAnalysisService {
       const batch = responses.slice(i, i + concurrency);
 
       const batchPromises = batch.map((response) => {
-        // Find classified question for this response
+        // Find classified question
         const classifiedQuestion = classifiedQuestions.find(
           (q) => q.text === response.questionData.question_text
         );
@@ -645,7 +645,7 @@ class AIAnalysisService {
     sessionId: string
   ): Promise<InterviewSummary> {
     try {
-      // Get all analyses for this session
+      // Get all analyses for session
       const { data: analyses, error: analysesError } = await supabase
         .from("interview_analysis")
         .select("*")
@@ -693,7 +693,7 @@ class AIAnalysisService {
       // Only proceed with AI-generated summary if we have valid analyses
       if (validAnalyses.length === 0) {
         console.warn(
-          "⚠️ No valid AI analyses found for summary generation - using fallback summary"
+          "No valid AI analyses found for summary generation - using fallback summary"
         );
         return this.createFallbackSummary(sessionId);
       }

@@ -126,8 +126,7 @@ class VideoSegmentService {
 
     const responses: QuestionResponse[] = [];
 
-    // For now, we'll transcribe the entire video and split it logically
-    // In a more advanced implementation, you'd extract actual audio segments
+    // Transcribe entire video and split logically
     try {
       const fullTranscription =
         await unifiedTranscriptionService.transcribeVideoDirectly(videoBlob);
