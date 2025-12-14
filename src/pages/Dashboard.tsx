@@ -1,43 +1,32 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import {
-  DESIGN_SYSTEM,
-  cn,
-  createMotionVariant,
-  createInteractiveState,
-} from "@/lib/design-system";
-import {
-  Video,
-  Target,
-  TrendingUp,
-  Flame,
-  Mic,
-  BarChart3,
-  MessageCircle,
-  LayoutGrid,
-  List,
+import { 
+  Mic, 
+  Video, 
+  Target, 
+  TrendingUp, 
+  Flame, 
+  Sparkles,
   ChevronRight,
-  LogOut,
+  BarChart3,
+  MessageSquare,
+  Lightbulb,
   RefreshCw,
-  Settings,
-  Brain,
-  BookOpen,
+  MoreHorizontal,
+  LogOut,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import Logo from "@/components/Logo";
-// Removed EnvironmentTest and TranscriptionProviderSelector - no longer needed
 
 interface InterviewSession {
   id: string;
@@ -80,12 +69,11 @@ interface InterviewSummary {
 }
 
 const Dashboard = () => {
-  const { user, loading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [sessions, setSessions] = useState<InterviewSession[]>([]);
   const [summaries, setSummaries] = useState<InterviewSummary[]>([]);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
     if (user) {
@@ -95,7 +83,6 @@ const Dashboard = () => {
     }
   }, [user]);
 
-  // Refresh data when component becomes visible (user returns from interview)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible" && user) {
@@ -105,11 +92,9 @@ const Dashboard = () => {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [user]);
 
-  // Also refresh on window focus
   useEffect(() => {
     const handleFocus = () => {
       if (user) {
@@ -123,22 +108,25 @@ const Dashboard = () => {
   }, [user]);
 
   const fetchProfile = async () => {
-    // First try to get from profiles table
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user?.id)
-      .single();
+    try {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user?.id)
+        .single();
 
-    if (profileData) {
-      setProfile(profileData);
-    } else {
-      // Fallback to user metadata if no profile exists
+      if (profileData) {
+        setProfile(profileData);
+      } else {
+        setProfile({
+          full_name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User",
+          avatar_url: user?.user_metadata?.avatar_url,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
       setProfile({
-        full_name:
-          user?.user_metadata?.full_name ||
-          user?.email?.split("@")[0] ||
-          "User",
+        full_name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User",
         avatar_url: user?.user_metadata?.avatar_url,
       });
     }
@@ -157,7 +145,6 @@ const Dashboard = () => {
         return;
       }
 
-      console.log("Fetched sessions:", data);
       setSessions(data || []);
     } catch (error) {
       console.error("Error in fetchSessions:", error);
@@ -177,54 +164,43 @@ const Dashboard = () => {
         return;
       }
 
-      console.log("Fetched summaries:", data);
       setSummaries(data || []);
     } catch (error) {
       console.error("Error in fetchSummaries:", error);
     }
   };
 
-  // Authentication is now handled by ProtectedRoute component
-
-  // Calculate improvement based on recent summaries
   const calculateImprovement = () => {
-    if (summaries.length < 2) return "0%";
+    if (summaries.length < 2) return "+0%";
 
-    // Use performance_trend from summaries if available
     const latestSummary = summaries[0];
     if (latestSummary?.performance_trend) {
       switch (latestSummary.performance_trend.toLowerCase()) {
         case "improving":
-          return "+15%"; // Positive improvement
+          return "+15%";
         case "consistent":
-          return "+5%"; // Slight improvement
+          return "+5%";
         case "declining":
-          return "-10%"; // Negative trend
+          return "-10%";
         default:
-          return "0%";
+          return "+0%";
       }
     }
 
-    // Fallback calculation based on average scores
-    const recentSummaries = summaries.slice(0, 2); // Last 2 summaries
-    const olderSummaries = summaries.slice(2, 4); // Previous 2 summaries
+    const recentSummaries = summaries.slice(0, 2);
+    const olderSummaries = summaries.slice(2, 4);
 
-    if (olderSummaries.length === 0) return "0%";
+    if (olderSummaries.length === 0) return "+0%";
 
-    const recentAvg =
-      recentSummaries.reduce((acc, s) => acc + (s.average_score || 0), 0) /
-      recentSummaries.length;
-    const olderAvg =
-      olderSummaries.reduce((acc, s) => acc + (s.average_score || 0), 0) /
-      olderSummaries.length;
+    const recentAvg = recentSummaries.reduce((acc, s) => acc + (s.average_score || 0), 0) / recentSummaries.length;
+    const olderAvg = olderSummaries.reduce((acc, s) => acc + (s.average_score || 0), 0) / olderSummaries.length;
 
-    if (olderAvg === 0) return "0%";
+    if (olderAvg === 0) return "+0%";
 
     const improvement = ((recentAvg - olderAvg) / olderAvg) * 100;
     return `${improvement > 0 ? "+" : ""}${Math.round(improvement)}%`;
   };
 
-  // Calculate practice streak based on summaries
   const calculatePracticeStreak = () => {
     if (summaries.length === 0) return "0 days";
 
@@ -232,19 +208,15 @@ const Dashboard = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Sort summaries by date (most recent first)
     const sortedSummaries = [...summaries].sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
     for (const summary of sortedSummaries) {
       const summaryDate = new Date(summary.created_at);
       summaryDate.setHours(0, 0, 0, 0);
 
-      const daysDiff = Math.floor(
-        (today.getTime() - summaryDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
+      const daysDiff = Math.floor((today.getTime() - summaryDate.getTime()) / (1000 * 60 * 60 * 24));
 
       if (daysDiff === streak) {
         streak++;
@@ -257,59 +229,27 @@ const Dashboard = () => {
     return `${streak} days`;
   };
 
-  // Calculate overall average score from summaries
   const calculateAverageScore = () => {
     if (summaries.length === 0) return 0;
-
-    const totalScore = summaries.reduce(
-      (acc, summary) => acc + (summary.average_score || 0),
-      0
-    );
+    const totalScore = summaries.reduce((acc, summary) => acc + (summary.average_score || 0), 0);
     return Math.round(totalScore / summaries.length);
   };
 
-  const stats = [
-    {
-      icon: Video,
-      label: "Total Interviews",
-      value: summaries.length || sessions.length, // Use summaries count, fallback to sessions
-      color: "from-primary-blue to-primary-blue/80",
-    },
-    {
-      icon: Target,
-      label: "Average Score",
-      value: calculateAverageScore(),
-      color: "from-accent-green to-accent-green/80",
-    },
-    {
-      icon: TrendingUp,
-      label: "Improvement",
-      value: calculateImprovement(),
-      color: "from-primary-blue to-primary-blue/80",
-    },
-    {
-      icon: Flame,
-      label: "Practice Streak",
-      value: calculatePracticeStreak(),
-      color: "from-accent-orange to-accent-orange/80",
-    },
-  ];
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-accent-green";
-    if (score >= 60) return "text-primary-blue";
-    if (score >= 40) return "text-accent-orange";
-    return "text-red-500";
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Interview Ready":
+        return "badge-success";
+      case "Almost Ready":
+        return "badge-warning";
+      default:
+        return "badge-info";
+    }
   };
 
-  const getScoreBadgeColor = (score: number) => {
-    if (score >= 80)
-      return "bg-accent-green/10 border-accent-green/20 text-accent-green";
-    if (score >= 60)
-      return "bg-primary-blue/10 border-primary-blue/20 text-primary-blue";
-    if (score >= 40)
-      return "bg-accent-orange/10 border-accent-orange/20 text-accent-orange";
-    return "bg-red-100 border-red-200 text-red-600";
+  const getScoreColor = (score: number) => {
+    if (score >= 85) return "text-accent";
+    if (score >= 70) return "text-warning";
+    return "text-destructive";
   };
 
   const getReadinessLevel = (score: number) => {
@@ -322,7 +262,6 @@ const Dashboard = () => {
   const getMotivationalMessage = () => {
     const totalInterviews = summaries.length || sessions.length;
     const avgScore = calculateAverageScore();
-    const streak = calculatePracticeStreak();
 
     if (totalInterviews === 0) {
       return "Ready to start your interview journey? Your first mock interview is just a click away!";
@@ -339,390 +278,233 @@ const Dashboard = () => {
     return "Every interview is a learning opportunity. Keep practicing and you'll see improvement!";
   };
 
-  const handleViewDetails = (sessionId: string) => {
-    navigate(`/results/${sessionId}`);
+  const avgScore = calculateAverageScore();
+  const stats = [
+    { icon: Video, label: "Total Interviews", value: String(summaries.length || sessions.length), color: "primary" },
+    { icon: Target, label: "Average Score", value: String(avgScore), badge: avgScore > 0 ? getReadinessLevel(avgScore) : undefined, color: "accent" },
+    { icon: TrendingUp, label: "Improvement", value: calculateImprovement(), subtitle: "vs previous interviews", color: "info" },
+    { icon: Flame, label: "Practice Streak", value: calculatePracticeStreak(), color: "warning" },
+  ];
+
+  const handleRefresh = () => {
+    fetchSessions();
+    fetchSummaries();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-light-gray via-white to-light-gray/50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b border-light-gray/50 shadow-professional">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo - Moved to far left, smaller size */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="cursor-pointer"
-              onClick={() => navigate("/")}
-            >
-              <Logo variant="main" size="sm" showText={true} />
-            </motion.div>
-
-            {/* Welcome Message - Centered */}
-            <div className="flex-1 text-center">
-              <h1 className="text-2xl font-bold text-dark-navy font-display">
-                Welcome back,{" "}
-                {profile?.full_name || user?.email?.split("@")[0] || "User"}!
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {getMotivationalMessage()}
-              </p>
+      <header className="border-b border-border/50 bg-card/30 backdrop-blur-xl sticky top-0 z-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center">
+              <Mic className="w-5 h-5 text-primary" />
             </div>
-
-            {/* Spacer for right alignment */}
-            <div className="w-24"></div>
-
-            <div className="flex items-center gap-4">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-10 w-10 rounded-full hover:bg-primary-blue/10"
-                  >
-                    <Avatar>
-                      <AvatarImage src={profile?.avatar_url} />
-                      <AvatarFallback className="bg-primary-blue text-white">
-                        {profile?.full_name?.charAt(0)?.toUpperCase() ||
-                          user?.email?.charAt(0)?.toUpperCase() ||
-                          "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="glass w-56">
-                  <DropdownMenuItem onClick={signOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <div>
+              <span className="font-display font-semibold text-lg text-foreground">Amplify Interview</span>
+              <p className="text-xs text-muted-foreground">AI-Powered Mock Interviews</p>
             </div>
+          </Link>
+
+          <div className="text-center hidden md:block">
+            <h1 className="font-display font-semibold text-foreground">
+              Welcome back, {profile?.full_name || user?.email?.split("@")[0] || "User"}!
+            </h1>
+            <p className="text-sm text-muted-foreground">{getMotivationalMessage()}</p>
           </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full hover:bg-primary/10 p-0"
+              >
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={profile?.avatar_url} />
+                  <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                    {profile?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium text-foreground">
+                  {profile?.full_name ||
+                    user?.email?.split("@")[0] ||
+                    "User"}
+                </p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => navigate("/dashboard")}
+                className="cursor-pointer"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={async () => {
+                  try {
+                    await signOut();
+                    navigate("/");
+                  } catch (error) {
+                    console.error("Error signing out:", error);
+                  }
+                }}
+                className="cursor-pointer text-red-600 focus:text-red-600"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 sm:mb-8"
+        >
           {stats.map((stat, index) => (
             <motion.div
               key={index}
-              {...createMotionVariant("slideUp")}
-              transition={{ delay: index * 0.1 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="stat-card"
             >
-              <Card
-                className={cn(
-                  DESIGN_SYSTEM.card.base,
-                  DESIGN_SYSTEM.card.hover,
-                  "p-6 group h-full flex flex-col"
+              <div className="flex items-start justify-between">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <stat.icon className="w-6 h-6 text-primary" />
+                </div>
+                {stat.badge && (
+                  <span className="badge-success">{stat.badge}</span>
                 )}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className={cn(
-                      "w-12 h-12 rounded-professional bg-gradient-to-br flex items-center justify-center shadow-professional",
-                      stat.color,
-                      DESIGN_SYSTEM.hover.scaleUp,
-                      DESIGN_SYSTEM.transitions.transform,
-                      DESIGN_SYSTEM.durations.normal
-                    )}
-                  >
-                    <stat.icon className="w-6 h-6 text-white" />
-                  </div>
-                  {stat.label === "Average Score" &&
-                    calculateAverageScore() > 0 && (
-                      <div
-                        className={`px-2 py-1 rounded-full text-xs font-medium border ${getScoreBadgeColor(
-                          calculateAverageScore()
-                        )}`}
-                      >
-                        {getReadinessLevel(calculateAverageScore())}
-                      </div>
-                    )}
-                </div>
-                <div className="flex-1 flex flex-col justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1 font-medium">
-                      {stat.label}
-                    </p>
-                    <p
-                      className={`text-3xl font-bold font-display ${
-                        stat.label === "Average Score"
-                          ? getScoreColor(calculateAverageScore())
-                          : "text-dark-navy"
-                      }`}
-                    >
-                      {typeof stat.value === "number" ? stat.value : stat.value}
-                    </p>
-                  </div>
-                  {stat.label === "Improvement" && stat.value !== "0%" && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      vs previous interviews
-                    </p>
-                  )}
-                </div>
-              </Card>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                <p className={`text-3xl font-display font-bold ${stat.color === 'primary' ? 'text-foreground' : stat.color === 'accent' ? 'text-accent' : stat.color === 'info' ? 'text-info' : 'text-warning'}`}>
+                  {stat.value}
+                </p>
+                {stat.subtitle && (
+                  <p className="text-xs text-muted-foreground">{stat.subtitle}</p>
+                )}
+              </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
 
-        {/* Quick Actions */}
+        {/* Action Buttons */}
         <motion.div
-          {...createMotionVariant("slideUp")}
-          transition={{ delay: 0.4 }}
-          className="flex flex-col md:flex-row gap-4 mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
         >
-          <Button
-            size="lg"
-            className={cn(
-              DESIGN_SYSTEM.button.primary,
-              "h-20 rounded-professional group flex-1"
-            )}
-            onClick={() => (window.location.href = "/interview/setup")}
-          >
-            <Mic
-              className={cn(
-                "w-6 h-6 mr-2",
-                DESIGN_SYSTEM.hover.scaleUp,
-                DESIGN_SYSTEM.transitions.transform
-              )}
-            />
-            Start New Interview
+          <Button variant="hero" size="xl" className="md:col-span-1 justify-start gap-3" asChild>
+            <Link to="/interview/setup">
+              <Sparkles className="w-5 h-5" />
+              Start New Interview
+            </Link>
           </Button>
-          <div className="flex flex-col md:flex-row gap-4 flex-1">
-            <Button
-              variant="outline"
-              size="lg"
-              className={cn(
-                DESIGN_SYSTEM.button.secondary,
-                "h-20 rounded-professional group flex-1"
-              )}
-              onClick={() => (window.location.href = "/dashboard/progress")}
-            >
-              <TrendingUp
-                className={cn(
-                  "w-6 h-6 mr-2",
-                  DESIGN_SYSTEM.hover.scaleUp,
-                  DESIGN_SYSTEM.transitions.transform
-                )}
-              />
+          <Button variant="glass" size="lg" className="justify-start gap-3" asChild>
+            <Link to="/dashboard/progress">
+              <TrendingUp className="w-5 h-5" />
               Progress
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className={cn(
-                DESIGN_SYSTEM.button.secondary,
-                "h-20 rounded-professional group flex-1"
-              )}
-              onClick={() =>
-                (window.location.href = "/dashboard/practice-questions")
-              }
-            >
-              <BookOpen
-                className={cn(
-                  "w-6 h-6 mr-2",
-                  DESIGN_SYSTEM.hover.scaleUp,
-                  DESIGN_SYSTEM.transitions.transform
-                )}
-              />
+            </Link>
+          </Button>
+          <Button variant="glass" size="lg" className="justify-start gap-3" asChild>
+            <Link to="/dashboard/practice-questions">
+              <MessageSquare className="w-5 h-5" />
               Practice Questions
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className={cn(
-                DESIGN_SYSTEM.button.secondary,
-                "h-20 rounded-professional group flex-1"
-              )}
-              onClick={() => (window.location.href = "/dashboard/insights")}
-            >
-              <Brain
-                className={cn(
-                  "w-6 h-6 mr-2",
-                  DESIGN_SYSTEM.hover.scaleUp,
-                  DESIGN_SYSTEM.transitions.transform
-                )}
-              />
+            </Link>
+          </Button>
+          <Button variant="glass" size="lg" className="justify-start gap-3" asChild>
+            <Link to="/dashboard/insights">
+              <Lightbulb className="w-5 h-5" />
               Insights
-            </Button>
-          </div>
+            </Link>
+          </Button>
         </motion.div>
 
         {/* Recent Sessions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="bg-white/90 backdrop-blur-sm p-6 rounded-professional shadow-professional border border-light-gray/50"
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="glass-card p-6"
         >
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-dark-navy font-display">
-                Recent Sessions
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {sessions.length}{" "}
-                {sessions.length === 1 ? "session" : "sessions"} found
-              </p>
+              <h2 className="font-display text-xl font-semibold text-foreground">Recent Sessions</h2>
+              <p className="text-sm text-muted-foreground">{sessions.length} sessions found</p>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  fetchSessions();
-                  fetchSummaries();
-                }}
-                className="bg-white/50 border-light-gray/50 hover:bg-primary-blue/10 hover:border-primary-blue/30"
-                title="Refresh sessions"
-              >
-                <RefreshCw className="h-4 w-4" />
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={handleRefresh}>
+                <RefreshCw className="w-4 h-4" />
               </Button>
-              <Button
-                variant={viewMode === "grid" ? "default" : "outline"}
-                size="icon"
-                onClick={() => setViewMode("grid")}
-                className="bg-white/50 border-light-gray/50 hover:bg-primary-blue/10 hover:border-primary-blue/30"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "list" ? "default" : "outline"}
-                size="icon"
-                onClick={() => setViewMode("list")}
-                className="bg-white/50 border-light-gray/50 hover:bg-primary-blue/10 hover:border-primary-blue/30"
-              >
-                <List className="h-4 w-4" />
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="w-4 h-4" />
               </Button>
             </div>
           </div>
 
           {sessions.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-primary-blue/10 rounded-professional flex items-center justify-center mx-auto mb-4">
-                <Video className="w-8 h-8 text-primary-blue" />
-              </div>
-              <p className="text-muted-foreground font-medium">
-                No interview sessions yet
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Start your first interview to see your progress here
-              </p>
+              <Video className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No interview sessions yet</p>
+              <p className="text-sm text-muted-foreground mt-2">Start your first interview to see your progress here</p>
             </div>
           ) : (
-            <div
-              className={`max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 ${
-                viewMode === "grid"
-                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                  : "space-y-4"
-              }`}
-              style={{
-                scrollbarWidth: "thin",
-                scrollbarColor: "#d1d5db #f3f4f6",
-              }}
-            >
-              {sessions.map((session, index) => {
-                // Find corresponding summary for this session
-                const sessionSummary = summaries.find(
-                  (summary) => summary.session_id === session.id
-                );
-                const sessionScore =
-                  sessionSummary?.average_score || session.session_score || 0;
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sessions.slice(0, 6).map((session, index) => {
+                const sessionSummary = summaries.find(summary => summary.session_id === session.id);
+                const sessionScore = sessionSummary?.average_score || session.session_score || 0;
+                const status = getReadinessLevel(sessionScore);
 
                 return (
                   <motion.div
                     key={session.id}
-                    {...createMotionVariant("slideUp")}
-                    transition={{ delay: index * 0.05 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.5 + index * 0.05 }}
+                    className="session-card group"
                   >
-                    <Card
-                      className={cn(
-                        DESIGN_SYSTEM.card.base,
-                        DESIGN_SYSTEM.card.hover,
-                        DESIGN_SYSTEM.card.interactive,
-                        "p-4 bg-white/80 group"
-                      )}
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 bg-primary-blue/10 rounded-professional">
-                            <Video className="w-4 h-4 text-primary-blue" />
-                          </div>
-                          <div>
-                            <Badge
-                              variant="secondary"
-                              className="mb-2 bg-light-gray/50 text-dark-navy border-0"
-                            >
-                              {session.interview_type}
-                            </Badge>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(
-                                session.created_at
-                              ).toLocaleDateString()}{" "}
-                              •{" "}
-                              {session.duration
-                                ? `${Math.round(session.duration / 60)} min`
-                                : "0 min"}
-                            </p>
-                          </div>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                          <Video className="w-5 h-5 text-primary" />
                         </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <div
-                            className={`px-3 py-1 rounded-full text-sm font-bold border ${getScoreBadgeColor(
-                              sessionScore
-                            )}`}
-                          >
-                            {sessionScore}%
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                sessionScore >= 80
-                                  ? "bg-accent-green"
-                                  : sessionScore >= 60
-                                  ? "bg-primary-blue"
-                                  : sessionScore >= 40
-                                  ? "bg-accent-orange"
-                                  : "bg-red-500"
-                              }`}
-                            />
-                            <span className="text-xs text-muted-foreground">
-                              {getReadinessLevel(sessionScore)}
-                            </span>
-                          </div>
+                        <div>
+                          <p className="font-medium text-foreground capitalize">{session.interview_type}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(session.created_at).toLocaleDateString()} • {session.duration ? `${Math.round(session.duration / 60)} min` : "0 min"}
+                          </p>
                         </div>
                       </div>
-
-                      {/* Progress bar */}
-                      <div className="mb-4">
-                        <div className="w-full bg-light-gray rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all duration-500 ${
-                              sessionScore >= 80
-                                ? "bg-accent-green"
-                                : sessionScore >= 60
-                                ? "bg-primary-blue"
-                                : sessionScore >= 40
-                                ? "bg-accent-orange"
-                                : "bg-red-500"
-                            }`}
-                            style={{ width: `${sessionScore}%` }}
-                          ></div>
-                        </div>
+                      <div className="text-right">
+                        <p className={`text-lg font-bold ${getScoreColor(sessionScore)}`}>{sessionScore}%</p>
+                        <span className={getStatusColor(status)}>{status}</span>
                       </div>
+                    </div>
 
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full group-hover:bg-primary-blue/10 text-primary-blue hover:text-primary-blue font-medium"
-                        onClick={() => handleViewDetails(session.id)}
-                      >
-                        View Details
-                        <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </Button>
-                    </Card>
+                    <div className="progress-bar mb-4">
+                      <div 
+                        className="progress-bar-fill" 
+                        style={{ width: `${sessionScore}%` }}
+                      />
+                    </div>
+
+                    <Button variant="ghost" size="sm" className="w-full justify-between group-hover:text-primary" onClick={() => navigate(`/results/${session.id}`)}>
+                      View Details
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
                   </motion.div>
                 );
               })}

@@ -329,7 +329,7 @@ const InterviewSession = () => {
                       {
                         interviewType: interviewType.id as any,
                         selectedRole: config.selectedField,
-                        useCustomQuestions: false, // This is user questions, not custom
+                        useCustomQuestions: false,
                       }
                     );
                   setClassifiedQuestions(classified);

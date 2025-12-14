@@ -152,14 +152,14 @@ const ProcessingInterview = () => {
         }
       }
 
-      console.log("🔍 Processing Interview - Duration:", {
+      console.log("Processing Interview - Duration:", {
         passedDuration: data.totalDuration,
         calculatedDuration: totalDuration,
         recordingStartTime: videoSegmentService.getRecordingStartTime(),
         recordingEndTime: Date.now(),
       });
 
-      console.log("🔍 Processing Interview - Question Segments:", {
+      console.log("Processing Interview - Question Segments:", {
         passedSegments: data.questionSegments?.length || 0,
         segments:
           data.questionSegments?.map((s: any) => ({
