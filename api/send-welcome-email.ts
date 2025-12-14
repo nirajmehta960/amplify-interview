@@ -17,26 +17,29 @@ const createWelcomeEmailHTML = (userName: string, dashboardUrl: string) => `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to ${APP_NAME}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0A0E1A;">
+<body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0A0E1A;">
   <div style="max-width: 600px; margin: 40px auto; background-color: #0F141F; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(28, 31, 42, 0.12);">
     
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #4FD1C7 0%, #38A169 100%); padding: 40px 32px; text-align: center;">
-      <h1 style="color: #0A0E1A; font-size: 32px; font-weight: 600; margin: 0 0 8px 0; letter-spacing: -0.025em;">${APP_NAME}</h1>
+      <h1 style="color: #0A0E1A; font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 600; margin: 0 0 8px 0; letter-spacing: -0.025em;">${APP_NAME}</h1>
       <p style="color: #0A0E1A; font-size: 16px; margin: 0; opacity: 0.9;">AI-Powered Interview Preparation</p>
     </div>
     
     <!-- Content -->
     <div style="padding: 40px 32px; text-align: center;">
-      <h2 style="color: #F7F9FC; font-size: 24px; font-weight: 600; margin: 0 0 16px 0;">Welcome, ${userName}!</h2>
+      <h2 style="color: #F7F9FC; font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 600; margin: 0 0 16px 0;">Welcome, ${userName}!</h2>
       
       <p style="color: #7A8A9F; font-size: 16px; margin: 0 0 24px 0; line-height: 1.6;">
         Thank you for joining ${APP_NAME}! We're excited to help you prepare for your next interview with AI-powered coaching and feedback.
       </p>
       
       <div style="background-color: #0F141F; border-radius: 12px; padding: 24px; margin: 32px 0; text-align: left; border: 1px solid #2A3142;">
-        <h3 style="color: #F7F9FC; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">What you can do:</h3>
+        <h3 style="color: #F7F9FC; font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">What you can do:</h3>
         <ul style="color: #7A8A9F; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
           <li>Practice mock interviews with AI-powered feedback</li>
           <li>Record and analyze your interview responses</li>
