@@ -1,16 +1,17 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Rounded square background matching header: rounded-xl, bg-primary/20, border-primary/30 -->
-  <rect x="2" y="2" width="28" height="28" rx="8" fill="rgba(79, 209, 199, 0.2)" stroke="rgba(79, 209, 199, 0.3)" stroke-width="1.5"/>
+  <!-- Rounded square container: matches header exactly - w-10 h-10 (40px) rounded-xl (12px) bg-primary/20 border-primary/30 -->
+  <!-- Scaled to 32px: 30px container with 9px radius -->
+  <rect x="1" y="1" width="30" height="30" rx="9" fill="rgba(79, 209, 199, 0.2)" stroke="rgba(79, 209, 199, 0.3)" stroke-width="1"/>
   
-  <!-- Lucide-react Mic icon - scaled to fit (original is 24x24, scaling to ~20x20 and centering) -->
-  <g transform="translate(6, 5)">
-    <!-- Microphone body -->
-    <path d="M10 0.5v9a3.5 3.5 0 0 1-7 0V0.5" stroke="#4FD1C7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    <!-- Microphone grill -->
-    <path d="M16 8.5v1.5a6 6 0 0 1-12 0v-1.5" stroke="#4FD1C7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    <!-- Microphone stand -->
-    <line x1="10" y1="16" x2="10" y2="19" stroke="#4FD1C7" stroke-width="1.8" stroke-linecap="round"/>
-    <!-- Microphone base -->
-    <line x1="6.5" y1="19" x2="13.5" y2="19" stroke="#4FD1C7" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- Exact lucide-react Mic icon - increased size for better visibility -->
+  <!-- Icon is 24x24 viewBox, scaling to 18px (0.75 scale) for better visibility -->
+  <!-- Center: (30-18)/2 = 6, plus 1px margin = 7 -->
+  <g transform="translate(7, 7) scale(0.75)">
+    <!-- Microphone body - exact path from lucide-react Mic icon -->
+    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" stroke="#4FD1C7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Microphone grill - exact path from lucide-react Mic icon -->
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="#4FD1C7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Microphone stand - exact line from lucide-react Mic icon -->
+    <line x1="12" y1="19" x2="12" y2="22" stroke="#4FD1C7" stroke-width="2.4" stroke-linecap="round"/>
   </g>
 </svg>

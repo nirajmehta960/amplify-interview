@@ -36,8 +36,6 @@ class QuestionClassificationService {
       useCustomQuestions: boolean;
     }
   ): Promise<ClassifiedQuestion[]> {
-    console.log("Smart classification with context:", context);
-
     // Scenario 1: Pre-selected interview type - respect user's choice
     if (context.interviewType !== "custom" && context.useCustomQuestions) {
       return this.classifyByPredefinedType(questions, context.interviewType);
@@ -68,10 +66,6 @@ class QuestionClassificationService {
     questions: string[],
     interviewType: "behavioral" | "technical" | "leadership"
   ): ClassifiedQuestion[] {
-    console.log(
-      `Classifying ${questions.length} questions as ${interviewType}`
-    );
-
     return questions.map((question, index) => ({
       id: `custom-${index + 1}`,
       text: question,
@@ -87,10 +81,6 @@ class QuestionClassificationService {
     questions: string[],
     selectedRole: string
   ): ClassifiedQuestion[] {
-    console.log(
-      `Classifying ${questions.length} questions for role: ${selectedRole}`
-    );
-
     const roleMapping = this.getRoleMapping(selectedRole);
 
     return questions.map((question, index) => ({
@@ -111,8 +101,6 @@ class QuestionClassificationService {
   private async classifyWithAI(
     questions: string[]
   ): Promise<ClassifiedQuestion[]> {
-    console.log(`AI classifying ${questions.length} custom questions`);
-
     const classifications = await Promise.all(
       questions.map((question, index) => this.classifyQuestion(question, index))
     );
@@ -132,8 +120,6 @@ class QuestionClassificationService {
    * Classify questions as general (fallback)
    */
   private classifyAsGeneral(questions: string[]): ClassifiedQuestion[] {
-    console.log(`Classifying ${questions.length} questions as general`);
-
     return questions.map((question, index) => ({
       id: `custom-${index + 1}`,
       text: question,
@@ -552,14 +538,6 @@ For analysis approach, choose the most appropriate evaluation method
         "Provide domain-specific feedback for each response"
       );
     }
-
-    console.log("Mixed domain analysis:", {
-      domainDistribution: domainCounts,
-      primaryDomain,
-      analysisStrategy,
-      primaryDomainPercentage: Math.round(primaryDomainPercentage),
-      recommendations,
-    });
 
     return {
       domainDistribution: domainCounts,

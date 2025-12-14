@@ -36,9 +36,7 @@ class DeepgramTranscriptionService {
   constructor() {
     this.apiKey = import.meta.env.VITE_DEEPGRAM_API_KEY || "";
     if (!this.apiKey) {
-      console.warn(
-        "VITE_DEEPGRAM_API_KEY not found in environment variables"
-      );
+      console.warn("VITE_DEEPGRAM_API_KEY not found in environment variables");
     }
   }
 
@@ -113,91 +111,133 @@ class DeepgramTranscriptionService {
   private async transcribeWithDeepgram(
     mediaBlob: Blob
   ): Promise<TranscriptionResult> {
-    const response = await fetch(
-      `${this.baseUrl}?model=nova-2&language=en&punctuate=true&diarize=false&smart_format=true&words=true&sentences=true&paragraphs=true`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Token ${this.apiKey}`,
-          // Do not force Content-Type; allow browser to set boundary/type for blob
-        },
-        body: mediaBlob,
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Deepgram API error:", response.status, errorText);
-
-      // Check for specific quota errors
-      if (response.status === 429) {
-        console.error("Deepgram API Quota Exceeded!");
-        console.error("Please check your Deepgram usage and billing");
-        console.error("Visit: https://console.deepgram.com/usage");
+    try {
+      if (!this.apiKey) {
+        throw new Error("Deepgram API key is not configured");
       }
 
-      throw new Error(
-        `Deepgram API error: ${response.statusText} - ${errorText}`
-      );
-    }
+      if (!mediaBlob || mediaBlob.size === 0) {
+        throw new Error("Invalid audio blob provided for transcription");
+      }
 
-    const result = await response.json();
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
 
-    // Extract transcription text from Deepgram response
-    const transcriptionText =
-      result.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
-    const confidence =
-      result.results?.channels?.[0]?.alternatives?.[0]?.confidence || 0.8;
-    const duration = result.metadata?.duration || 0;
-
-    // Extract word-level timestamps if present
-    const dgWords =
-      result.results?.channels?.[0]?.alternatives?.[0]?.words || [];
-    const words = Array.isArray(dgWords)
-      ? dgWords.map((w: any) => ({
-          word: w.word ?? "",
-          start: typeof w.start === "number" ? w.start : 0,
-          end: typeof w.end === "number" ? w.end : 0,
-          confidence:
-            typeof w.confidence === "number" ? w.confidence : undefined,
-        }))
-      : [];
-
-    // Extract sentence-level segments (prefer alt.sentences, fallback to paragraphs.sentences)
-    let sentences: { text: string; start: number; end: number }[] = [];
-    const alt = result.results?.channels?.[0]?.alternatives?.[0];
-    const sentList = alt?.sentences;
-    if (Array.isArray(sentList) && sentList.length) {
-      sentences = sentList.map((s: any) => ({
-        text: typeof s.text === "string" ? s.text.trim() : "",
-        start: typeof s.start === "number" ? s.start : 0,
-        end: typeof s.end === "number" ? s.end : 0,
-      }));
-    } else if (
-      alt?.paragraphs?.paragraphs &&
-      Array.isArray(alt.paragraphs.paragraphs)
-    ) {
-      for (const p of alt.paragraphs.paragraphs) {
-        if (Array.isArray(p.sentences)) {
-          for (const s of p.sentences) {
-            sentences.push({
-              text: typeof s.text === "string" ? s.text.trim() : "",
-              start: typeof s.start === "number" ? s.start : 0,
-              end: typeof s.end === "number" ? s.end : 0,
-            });
-          }
+      const response = await fetch(
+        `${this.baseUrl}?model=nova-2&language=en&punctuate=true&diarize=false&smart_format=true&words=true&sentences=true&paragraphs=true`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Token ${this.apiKey}`,
+            // Do not force Content-Type; allow browser to set boundary/type for blob
+          },
+          body: mediaBlob,
+          signal: controller.signal,
         }
-      }
-    }
+      );
 
-    return {
-      text: transcriptionText || "[No speech detected]",
-      language: "en",
-      duration: duration,
-      confidence: confidence,
-      words,
-      sentences,
-    };
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "Unknown error");
+        console.error("Deepgram API error:", response.status, errorText);
+
+        // Check for specific error types
+        if (response.status === 429) {
+          console.error("Deepgram API Quota Exceeded!");
+          console.error("Please check your Deepgram usage and billing");
+          console.error("Visit: https://console.deepgram.com/usage");
+          throw new Error(
+            "Deepgram API quota exceeded. Please check your usage and billing."
+          );
+        }
+
+        if (response.status === 401 || response.status === 403) {
+          throw new Error(
+            "Deepgram API authentication failed. Please check your API key."
+          );
+        }
+
+        if (response.status >= 500) {
+          throw new Error("Deepgram API server error. Please try again later.");
+        }
+
+        if (response.status === 400) {
+          throw new Error(`Invalid request to Deepgram API: ${errorText}`);
+        }
+
+        throw new Error(
+          `Deepgram API error (${response.status}): ${
+            errorText || response.statusText
+          }`
+        );
+      }
+
+      const result = await response.json().catch((parseError) => {
+        throw new Error(
+          "Failed to parse Deepgram API response. The response may be invalid."
+        );
+      });
+
+      // Extract transcription text from Deepgram response
+      const transcriptionText =
+        result.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
+      const confidence =
+        result.results?.channels?.[0]?.alternatives?.[0]?.confidence || 0.8;
+      const duration = result.metadata?.duration || 0;
+
+      // Extract word-level timestamps if present
+      const dgWords =
+        result.results?.channels?.[0]?.alternatives?.[0]?.words || [];
+      const words = Array.isArray(dgWords)
+        ? dgWords.map((w: any) => ({
+            word: w.word ?? "",
+            start: typeof w.start === "number" ? w.start : 0,
+            end: typeof w.end === "number" ? w.end : 0,
+            confidence:
+              typeof w.confidence === "number" ? w.confidence : undefined,
+          }))
+        : [];
+
+      // Extract sentence-level segments (prefer alt.sentences, fallback to paragraphs.sentences)
+      const sentences =
+        result.results?.channels?.[0]?.alternatives?.[0]?.sentences || [];
+
+      return {
+        text: transcriptionText,
+        confidence,
+        duration,
+        words,
+        sentences,
+      };
+    } catch (error: any) {
+      // Handle abort/timeout errors
+      if (error.name === "AbortError") {
+        throw new Error(
+          "Transcription request timed out. Please try again with a shorter audio file."
+        );
+      }
+
+      // Handle network errors
+      if (
+        error.message?.includes("network") ||
+        error.message?.includes("fetch") ||
+        error.name === "TypeError"
+      ) {
+        throw new Error(
+          "Network error: Unable to connect to Deepgram API. Please check your connection and try again."
+        );
+      }
+
+      // Re-throw if it's already a formatted error
+      if (error.message && error.message.startsWith("Deepgram")) {
+        throw error;
+      }
+
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   /**

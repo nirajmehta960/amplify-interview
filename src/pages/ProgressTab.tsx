@@ -82,46 +82,78 @@ const ProgressTab = () => {
     try {
       setLoading(true);
 
+      if (!user?.id) {
+        throw new Error("User ID is required");
+      }
+
       // Fetch interview summaries for progress analysis
       const { data: summaries, error: summariesError } = await supabase
         .from("interview_summary")
         .select("*")
-        .eq("user_id", user?.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: true });
 
       if (summariesError) {
         console.error("Error fetching summaries:", summariesError);
-        return;
+        if (summariesError.code === "PGRST301" || summariesError.message?.includes("network") || summariesError.message?.includes("fetch")) {
+          throw new Error("Network error: Unable to fetch summaries. Please check your connection.");
+        }
+        throw new Error(`Failed to fetch summaries: ${summariesError.message}`);
       }
 
       // Fetch interview sessions for timeline data
       const { data: sessions, error: sessionsError } = await supabase
         .from("interview_sessions")
         .select("*")
-        .eq("user_id", user?.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: true });
 
       if (sessionsError) {
         console.error("Error fetching sessions:", sessionsError);
-        return;
+        if (sessionsError.code === "PGRST301" || sessionsError.message?.includes("network") || sessionsError.message?.includes("fetch")) {
+          throw new Error("Network error: Unable to fetch sessions. Please check your connection.");
+        }
+        throw new Error(`Failed to fetch sessions: ${sessionsError.message}`);
       }
 
       // Fetch interview analysis for skill breakdown
       const { data: analyses, error: analysesError } = await supabase
         .from("interview_analysis")
         .select("*")
-        .eq("user_id", user?.id);
+        .eq("user_id", user.id);
 
       if (analysesError) {
         console.error("Error fetching analyses:", analysesError);
-        return;
+        if (analysesError.code === "PGRST301" || analysesError.message?.includes("network") || analysesError.message?.includes("fetch")) {
+          throw new Error("Network error: Unable to fetch analyses. Please check your connection.");
+        }
+        // Don't throw for analyses error - we can still show progress without it
+        console.warn("Analyses fetch failed, continuing without skill breakdown data");
       }
 
       // Process the data
-      const processedData = processProgressData(summaries, sessions, analyses);
+      const processedData = processProgressData(summaries || [], sessions || [], analyses || []);
       setProgressData(processedData);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching progress data:", error);
+      
+      // Set empty data on error to show empty state
+      setProgressData({
+        averageScore: 0,
+        improvementTrend: 0,
+        skillBreakdown: {
+          communication: 0,
+          content: 0,
+          confidence: 0,
+          structure: 0,
+        },
+        timeline: [],
+      });
+      
+      // Show user-friendly error message
+      if (error?.message?.includes("network") || error?.message?.includes("fetch") || error?.name === "TypeError") {
+        // Network error - could show toast notification if toast is available
+      }
     } finally {
       setLoading(false);
     }
@@ -227,11 +259,7 @@ const ProgressTab = () => {
       );
     }
 
-    // Debug logging to help identify data issues
-    console.log("Skill breakdown calculation:", {
-      communication: skillBreakdown.communication,
-      content: skillBreakdown.content,
-      confidence: skillBreakdown.confidence,
+    // Calculate skill breakdown
       structure: skillBreakdown.structure,
       analysesCount: analyses.length,
       confidenceScores: analyses.map((a) => a.confidence_score),

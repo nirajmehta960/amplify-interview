@@ -279,13 +279,6 @@ const InterviewSetup = () => {
           leadership: leadershipCount,
           custom: customCounts,
         });
-
-        console.log("Loaded question counts:", {
-          behavioral: behavioralCount,
-          technical: technicalCount,
-          leadership: leadershipCount,
-          custom: customCounts,
-        });
       } catch (error) {
         console.error("Error loading data:", error);
       }
@@ -606,11 +599,6 @@ const InterviewSetup = () => {
             : null,
         };
 
-        console.log(
-          "Navigating to interview session with data:",
-          serializableData
-        );
-
         // Store data in sessionStorage as fallback
         sessionStorage.setItem(
           "interviewConfig",
@@ -640,7 +628,10 @@ const InterviewSetup = () => {
     <div className="min-h-screen bg-background">
       <Helmet>
         <title>Set Up Your Interview - Amplify Interview</title>
-        <meta name="description" content="Choose your interview type and customize the experience to match your goals." />
+        <meta
+          name="description"
+          content="Choose your interview type and customize the experience to match your goals."
+        />
       </Helmet>
 
       {/* Header */}
@@ -651,8 +642,12 @@ const InterviewSetup = () => {
               <Mic className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <span className="font-display font-semibold text-lg text-foreground">Amplify Interview</span>
-              <p className="text-xs text-muted-foreground">AI-Powered Mock Interviews</p>
+              <span className="font-display font-semibold text-lg text-foreground">
+                Amplify Interview
+              </span>
+              <p className="text-xs text-muted-foreground">
+                AI-Powered Mock Interviews
+              </p>
             </div>
           </Link>
 
@@ -680,585 +675,642 @@ const InterviewSetup = () => {
             Set Up Your Interview
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto px-4 sm:px-0">
-            Choose your interview type and customize the experience to match your goals
+            Choose your interview type and customize the experience to match
+            your goals
           </p>
         </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-            {/* Interview Type Selection */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <Settings className="w-4 h-4 text-primary" />
-                </div>
-                <h2 className="font-display text-xl font-semibold text-foreground">Interview Type</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          {/* Interview Type Selection */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Settings className="w-4 h-4 text-primary" />
               </div>
+              <h2 className="font-display text-xl font-semibold text-foreground">
+                Interview Type
+              </h2>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {interviewTypes.map((type) => (
-                  <motion.button
-                    key={type.id}
-                    onClick={() => handleTypeSelect(type.id)}
-                    className={`glass-card p-5 text-left transition-all duration-200 ${
-                      selectedType === type.id
-                        ? "border-primary/50 bg-primary/10"
-                        : "hover:border-border/80"
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {interviewTypes.map((type) => (
+                <motion.button
+                  key={type.id}
+                  onClick={() => handleTypeSelect(type.id)}
+                  className={`glass-card p-5 text-left transition-all duration-200 ${
+                    selectedType === type.id
+                      ? "border-primary/50 bg-primary/10"
+                      : "hover:border-border/80"
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
                       selectedType === type.id
                         ? "bg-primary text-primary-foreground"
                         : "bg-secondary text-muted-foreground"
-                    }`}>
-                      <type.icon className="w-5 h-5" />
-                    </div>
-                    <h3 className="font-display font-semibold text-foreground mb-1">{type.name}</h3>
-                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{type.description}</p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      <span>{type.estimatedDuration}</span>
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
+                    }`}
+                  >
+                    <type.icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-display font-semibold text-foreground mb-1">
+                    {type.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                    {type.description}
+                  </p>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="w-3 h-3" />
+                    <span>{type.estimatedDuration}</span>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
 
-              {/* Selected Type Details */}
-              {selectedType && interviewTypes.find(t => t.id === selectedType) && (
+            {/* Selected Type Details */}
+            {selectedType &&
+              interviewTypes.find((t) => t.id === selectedType) && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/20"
                 >
                   <p className="text-sm text-muted-foreground">
-                    {interviewTypes.find(t => t.id === selectedType)?.details}
+                    {interviewTypes.find((t) => t.id === selectedType)?.details}
                   </p>
                   <div className="mt-3 flex items-center gap-2">
                     <span className="text-xs font-medium text-primary bg-primary/20 px-2.5 py-1 rounded-full">
                       {selectedType === "custom"
                         ? "Multiple domains available"
-                        : `${questionCounts[selectedType as "behavioral" | "technical" | "leadership"] || 0} questions`}
+                        : `${
+                            questionCounts[
+                              selectedType as
+                                | "behavioral"
+                                | "technical"
+                                | "leadership"
+                            ] || 0
+                          } questions`}
                     </span>
-                    <span className="text-xs text-muted-foreground">available</span>
+                    <span className="text-xs text-muted-foreground">
+                      available
+                    </span>
                   </div>
                 </motion.div>
               )}
-            </motion.div>
+          </motion.div>
 
-            {/* Configuration Section */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
-                  <Sliders className="w-4 h-4 text-accent" />
+          {/* Configuration Section */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+                <Sliders className="w-4 h-4 text-accent" />
+              </div>
+              <h2 className="font-display text-xl font-semibold text-foreground">
+                Configuration
+              </h2>
+            </div>
+
+            <div className="glass-card p-6 space-y-6">
+              {/* Question Source */}
+              <div>
+                <label className="text-sm font-medium text-foreground mb-3 block">
+                  Question Source
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={() => handleQuestionSourceChange("app")}
+                    className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                      !config.useUserQuestions
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Use App Default Questions
+                  </button>
+                  <button
+                    onClick={() => handleQuestionSourceChange("user")}
+                    className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                      config.useUserQuestions
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Use My Practice Questions
+                  </button>
                 </div>
-                <h2 className="font-display text-xl font-semibold text-foreground">Configuration</h2>
               </div>
 
-              <div className="glass-card p-6 space-y-6">
-                {/* Question Source */}
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-3 block">Question Source</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button
-                      onClick={() => handleQuestionSourceChange("app")}
-                      className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                        !config.useUserQuestions
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      Use App Default Questions
-                    </button>
-                    <button
-                      onClick={() => handleQuestionSourceChange("user")}
-                      className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                        config.useUserQuestions
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      Use My Practice Questions
-                    </button>
+              {/* Questions List */}
+              <div>
+                <label className="text-sm font-medium text-foreground mb-3 block">
+                  Select from App Questions
+                </label>
+                {!selectedType ? (
+                  <div className="p-8 text-center rounded-lg bg-secondary/50 border border-dashed border-border">
+                    <p className="text-sm text-muted-foreground">
+                      Please select an interview type first to view app
+                      questions.
+                    </p>
                   </div>
-                </div>
-
-                {/* Questions List */}
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-3 block">Select from App Questions</label>
-                  {!selectedType ? (
-                    <div className="p-8 text-center rounded-lg bg-secondary/50 border border-dashed border-border">
-                      <p className="text-sm text-muted-foreground">
-                        Please select an interview type first to view app questions.
-                      </p>
-                    </div>
-                  ) : selectedType === "custom" && !config.selectedField ? (
-                    <div className="p-8 text-center rounded-lg bg-secondary/50 border border-dashed border-border">
-                      <p className="text-sm text-muted-foreground">
-                        Please select a field first to view domain-specific questions.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {loadingAppQuestions ? (
-                        <div className="flex items-center justify-center p-4">
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          <span className="text-sm text-muted-foreground">
-                            Loading app questions...
-                          </span>
-                        </div>
-                      ) : appQuestions.length === 0 ? (
-                        <div className="text-center p-4 bg-muted rounded-lg">
-                          <p className="text-sm text-muted-foreground">
-                            No app questions found for {selectedType}{" "}
-                            interviews.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="max-h-60 overflow-y-auto space-y-2">
-                            {appQuestions.map((question) => (
-                              <div
-                                key={question.id}
-                                className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                                  selectedAppQuestions.includes(question.id)
-                                    ? "border-primary bg-primary/5"
-                                    : "border-border hover:border-primary/50"
-                                }`}
-                                onClick={() =>
-                                  handleAppQuestionToggle(question.id)
-                                }
-                              >
-                                <div className="flex items-start gap-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedAppQuestions.includes(
-                                      question.id
-                                    )}
-                                    onChange={() =>
-                                      handleAppQuestionToggle(question.id)
-                                    }
-                                    className="mt-1"
-                                  />
-                                  <div className="flex-1">
-                                    <p className="text-sm font-medium">
-                                      {question.text}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Badge
-                                        variant="outline"
-                                        className={`text-xs font-medium ${getCategoryColor(
-                                          question.category || selectedType
-                                        )}`}
-                                      >
-                                        {question.category || selectedType}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="text-sm text-muted-foreground">
-                            {selectedAppQuestions.length} of{" "}
-                            {config.questionCount} questions selected.
-                            {selectedAppQuestions.length <
-                              config.questionCount && (
-                              <span className="text-amber-600">
-                                {" "}
-                                Select{" "}
-                                {config.questionCount -
-                                  selectedAppQuestions.length}{" "}
-                                more questions.
-                              </span>
-                            )}
-                            {selectedAppQuestions.length ===
-                              config.questionCount && (
-                              <span className="text-green-600 font-medium">
-                                {" "}
-                                Ready to start interview!
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Custom Field Selection */}
-                {selectedType === "custom" && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-2"
-                  >
-                    <label className="text-sm font-medium text-foreground">Select Field</label>
-                    <Select
-                      value={config.selectedField}
-                      onValueChange={(value) => {
-                        setConfig((prev) => ({
-                          ...prev,
-                          selectedField: value,
-                          selectedUserQuestions: [],
-                        }));
-                        setSelectedAppQuestions([]);
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a field" />
-                      </SelectTrigger>
-                      <SelectContent className="glass-card">
-                        {availableFields.map((field) => (
-                          <SelectItem key={field.id} value={field.id}>
-                            {field.name} ({questionCounts.custom[field.id] || 0})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {config.selectedField && (
-                      <div className="mt-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                ) : selectedType === "custom" && !config.selectedField ? (
+                  <div className="p-8 text-center rounded-lg bg-secondary/50 border border-dashed border-border">
+                    <p className="text-sm text-muted-foreground">
+                      Please select a field first to view domain-specific
+                      questions.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {loadingAppQuestions ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        <span className="text-sm text-muted-foreground">
+                          Loading app questions...
+                        </span>
+                      </div>
+                    ) : appQuestions.length === 0 ? (
+                      <div className="text-center p-4 bg-muted rounded-lg">
                         <p className="text-sm text-muted-foreground">
-                          {questionCounts.custom[config.selectedField] || 0} questions available for{" "}
-                          {availableFields.find((f) => f.id === config.selectedField)?.name}
+                          No app questions found for {selectedType} interviews.
                         </p>
                       </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {/* Practice Questions for Custom Interview - Only show when field is selected */}
-                {config.useUserQuestions &&
-                  selectedType === "custom" &&
-                  config.selectedField && (
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">
-                        Select from Your Practice Questions
-                      </Label>
-                      {loadingUserQuestions ? (
-                        <div className="flex items-center justify-center p-4">
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          <span className="text-sm text-muted-foreground">
-                            Loading your questions...
-                          </span>
-                        </div>
-                      ) : userQuestions.length === 0 ? (
-                        <div className="text-center p-4 bg-muted rounded-lg">
-                          <p className="text-sm text-muted-foreground mb-2">
-                            No practice questions found for{" "}
-                            {availableFields.find(
-                              (f) => f.id === config.selectedField
-                            )?.name || config.selectedField}{" "}
-                            interviews.
-                          </p>
-                          <p className="text-xs text-muted-foreground mb-3">
-                            Create questions with the "
-                            {availableFields.find(
-                              (f) => f.id === config.selectedField
-                            )?.name || config.selectedField}
-                            " category in your practice questions.
-                          </p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              navigate("/dashboard/practice-questions")
-                            }
-                          >
-                            Go to Practice Questions
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="max-h-60 overflow-y-auto space-y-2">
-                            {userQuestions.map((question) => (
-                              <div
-                                key={question.id}
-                                className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                                  config.selectedUserQuestions.includes(
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="max-h-60 overflow-y-auto space-y-2">
+                          {appQuestions.map((question) => (
+                            <div
+                              key={question.id}
+                              className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                                selectedAppQuestions.includes(question.id)
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/50"
+                              }`}
+                              onClick={() =>
+                                handleAppQuestionToggle(question.id)
+                              }
+                            >
+                              <div className="flex items-start gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedAppQuestions.includes(
                                     question.id
-                                  )
-                                    ? "border-primary bg-primary/5"
-                                    : "border-border hover:border-primary/50"
-                                }`}
-                                onClick={() =>
-                                  handleUserQuestionToggle(question.id)
-                                }
-                              >
-                                <div className="flex items-start gap-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={config.selectedUserQuestions.includes(
-                                      question.id
-                                    )}
-                                    onChange={() =>
-                                      handleUserQuestionToggle(question.id)
-                                    }
-                                    className="mt-1"
-                                  />
-                                  <div className="flex-1">
-                                    <p className="text-sm font-medium">
-                                      {question.text}
-                                    </p>
-                                    {/* Only show category if it's different from selected field */}
-                                    {question.category !==
-                                      (availableFields.find(
-                                        (f) => f.id === config.selectedField
-                                      )?.name || config.selectedField) && (
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <Badge
-                                          variant="outline"
-                                          className={`text-xs font-medium ${getCategoryColor(
-                                            question.category
-                                          )}`}
-                                        >
-                                          {question.category}
-                                        </Badge>
-                                      </div>
-                                    )}
+                                  )}
+                                  onChange={() =>
+                                    handleAppQuestionToggle(question.id)
+                                  }
+                                  className="mt-1"
+                                />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">
+                                    {question.text}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-xs font-medium ${getCategoryColor(
+                                        question.category || selectedType
+                                      )}`}
+                                    >
+                                      {question.category || selectedType}
+                                    </Badge>
                                   </div>
                                 </div>
                               </div>
-                            ))}
-                          </div>
-
-                          <div className="text-sm text-muted-foreground">
-                            {config.selectedUserQuestions.length} of{" "}
-                            {config.questionCount} questions selected.
-                            {config.selectedUserQuestions.length <
-                              config.questionCount && (
-                              <span className="text-amber-600">
-                                {" "}
-                                Select{" "}
-                                {config.questionCount -
-                                  config.selectedUserQuestions.length}{" "}
-                                more questions.
-                              </span>
-                            )}
-                            {config.selectedUserQuestions.length ===
-                              config.questionCount && (
-                              <span className="text-green-600 font-medium">
-                                {" "}
-                                Ready to start interview!
-                              </span>
-                            )}
-                          </div>
+                            </div>
+                          ))}
                         </div>
-                      )}
+
+                        <div className="text-sm text-muted-foreground">
+                          {selectedAppQuestions.length} of{" "}
+                          {config.questionCount} questions selected.
+                          {selectedAppQuestions.length <
+                            config.questionCount && (
+                            <span className="text-amber-600">
+                              {" "}
+                              Select{" "}
+                              {config.questionCount -
+                                selectedAppQuestions.length}{" "}
+                              more questions.
+                            </span>
+                          )}
+                          {selectedAppQuestions.length ===
+                            config.questionCount && (
+                            <span className="text-green-600 font-medium">
+                              {" "}
+                              Ready to start interview!
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Custom Field Selection */}
+              {selectedType === "custom" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-2"
+                >
+                  <label className="text-sm font-medium text-foreground">
+                    Select Field
+                  </label>
+                  <Select
+                    value={config.selectedField}
+                    onValueChange={(value) => {
+                      setConfig((prev) => ({
+                        ...prev,
+                        selectedField: value,
+                        selectedUserQuestions: [],
+                      }));
+                      setSelectedAppQuestions([]);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a field" />
+                    </SelectTrigger>
+                    <SelectContent className="glass-card">
+                      {availableFields.map((field) => (
+                        <SelectItem key={field.id} value={field.id}>
+                          {field.name} ({questionCounts.custom[field.id] || 0})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {config.selectedField && (
+                    <div className="mt-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                      <p className="text-sm text-muted-foreground">
+                        {questionCounts.custom[config.selectedField] || 0}{" "}
+                        questions available for{" "}
+                        {
+                          availableFields.find(
+                            (f) => f.id === config.selectedField
+                          )?.name
+                        }
+                      </p>
                     </div>
                   )}
+                </motion.div>
+              )}
 
-                {/* App Questions for Custom Interview - Only show when field is selected */}
-                {!config.useUserQuestions &&
-                  selectedType === "custom" &&
-                  config.selectedField && (
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-3 block">Select from App Questions</label>
-                      {loadingAppQuestions ? (
-                        <div className="flex items-center justify-center p-4">
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          <span className="text-sm text-muted-foreground">
-                            Loading app questions...
-                          </span>
-                        </div>
-                      ) : appQuestions.length === 0 ? (
-                        <div className="text-center p-4 bg-muted rounded-lg">
-                          <p className="text-sm text-muted-foreground">
-                            No app questions found for {config.selectedField}{" "}
-                            interviews.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="max-h-60 overflow-y-auto space-y-2">
-                            {appQuestions.map((question) => (
-                              <div
-                                key={question.id}
-                                className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                                  selectedAppQuestions.includes(question.id)
-                                    ? "border-primary bg-primary/5"
-                                    : "border-border hover:border-primary/50"
-                                }`}
-                                onClick={() =>
-                                  handleAppQuestionToggle(question.id)
-                                }
-                              >
-                                <div className="flex items-start gap-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedAppQuestions.includes(
-                                      question.id
-                                    )}
-                                    onChange={() =>
-                                      handleAppQuestionToggle(question.id)
-                                    }
-                                    className="mt-1"
-                                  />
-                                  <div className="flex-1">
-                                    <p className="text-sm font-medium">
-                                      {question.text}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Badge
-                                        variant="outline"
-                                        className={`text-xs font-medium ${getCategoryColor(
-                                          question.category || selectedType
-                                        )}`}
-                                      >
-                                        {question.category || selectedType}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="text-sm text-muted-foreground">
-                            {selectedAppQuestions.length} of{" "}
-                            {config.questionCount} questions selected.
-                            {selectedAppQuestions.length <
-                              config.questionCount && (
-                              <span className="text-amber-600">
-                                {" "}
-                                Select{" "}
-                                {config.questionCount -
-                                  selectedAppQuestions.length}{" "}
-                                more questions.
-                              </span>
-                            )}
-                            {selectedAppQuestions.length ===
-                              config.questionCount && (
-                              <span className="text-green-600 font-medium">
-                                {" "}
-                                Ready to start interview!
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                {/* User Questions Selection - Only show when interview type is selected */}
-                {config.useUserQuestions && !selectedType && (
+              {/* Practice Questions for Custom Interview - Only show when field is selected */}
+              {config.useUserQuestions &&
+                selectedType === "custom" &&
+                config.selectedField && (
                   <div className="space-y-3">
                     <Label className="text-sm font-medium">
                       Select from Your Practice Questions
                     </Label>
-                    <div className="text-center p-4 bg-muted rounded-lg">
-                      <p className="text-sm text-muted-foreground">
-                        Please select an interview type first to view your
-                        practice questions.
-                      </p>
-                    </div>
+                    {loadingUserQuestions ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        <span className="text-sm text-muted-foreground">
+                          Loading your questions...
+                        </span>
+                      </div>
+                    ) : userQuestions.length === 0 ? (
+                      <div className="text-center p-4 bg-muted rounded-lg">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          No practice questions found for{" "}
+                          {availableFields.find(
+                            (f) => f.id === config.selectedField
+                          )?.name || config.selectedField}{" "}
+                          interviews.
+                        </p>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Create questions with the "
+                          {availableFields.find(
+                            (f) => f.id === config.selectedField
+                          )?.name || config.selectedField}
+                          " category in your practice questions.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            navigate("/dashboard/practice-questions")
+                          }
+                        >
+                          Go to Practice Questions
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="max-h-60 overflow-y-auto space-y-2">
+                          {userQuestions.map((question) => (
+                            <div
+                              key={question.id}
+                              className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                                config.selectedUserQuestions.includes(
+                                  question.id
+                                )
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/50"
+                              }`}
+                              onClick={() =>
+                                handleUserQuestionToggle(question.id)
+                              }
+                            >
+                              <div className="flex items-start gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={config.selectedUserQuestions.includes(
+                                    question.id
+                                  )}
+                                  onChange={() =>
+                                    handleUserQuestionToggle(question.id)
+                                  }
+                                  className="mt-1"
+                                />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">
+                                    {question.text}
+                                  </p>
+                                  {/* Only show category if it's different from selected field */}
+                                  {question.category !==
+                                    (availableFields.find(
+                                      (f) => f.id === config.selectedField
+                                    )?.name || config.selectedField) && (
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-xs font-medium ${getCategoryColor(
+                                          question.category
+                                        )}`}
+                                      >
+                                        {question.category}
+                                      </Badge>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="text-sm text-muted-foreground">
+                          {config.selectedUserQuestions.length} of{" "}
+                          {config.questionCount} questions selected.
+                          {config.selectedUserQuestions.length <
+                            config.questionCount && (
+                            <span className="text-amber-600">
+                              {" "}
+                              Select{" "}
+                              {config.questionCount -
+                                config.selectedUserQuestions.length}{" "}
+                              more questions.
+                            </span>
+                          )}
+                          {config.selectedUserQuestions.length ===
+                            config.questionCount && (
+                            <span className="text-green-600 font-medium">
+                              {" "}
+                              Ready to start interview!
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Practice Questions for Non-Custom Interviews - Only show when interview type is selected */}
-                {config.useUserQuestions &&
-                  selectedType &&
-                  selectedType !== "custom" && (
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium">
-                        Select from Your Practice Questions
-                      </Label>
-                      {loadingUserQuestions ? (
-                        <div className="flex items-center justify-center p-4">
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          <span className="text-sm text-muted-foreground">
-                            Loading your questions...
-                          </span>
-                        </div>
-                      ) : userQuestions.length === 0 ? (
-                        <div className="text-center p-4 bg-muted rounded-lg">
-                          <p className="text-sm text-muted-foreground mb-2">
-                            No practice questions found for {selectedType}{" "}
-                            interviews.
-                          </p>
-                          <p className="text-xs text-muted-foreground mb-3">
-                            Create questions with the "{selectedType}" category
-                            in your practice questions.
-                          </p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              navigate("/dashboard/practice-questions")
-                            }
-                          >
-                            Go to Practice Questions
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                          {userQuestions.map((question) => (
-                            <label
+              {/* App Questions for Custom Interview - Only show when field is selected */}
+              {!config.useUserQuestions &&
+                selectedType === "custom" &&
+                config.selectedField && (
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-3 block">
+                      Select from App Questions
+                    </label>
+                    {loadingAppQuestions ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        <span className="text-sm text-muted-foreground">
+                          Loading app questions...
+                        </span>
+                      </div>
+                    ) : appQuestions.length === 0 ? (
+                      <div className="text-center p-4 bg-muted rounded-lg">
+                        <p className="text-sm text-muted-foreground">
+                          No app questions found for {config.selectedField}{" "}
+                          interviews.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="max-h-60 overflow-y-auto space-y-2">
+                          {appQuestions.map((question) => (
+                            <div
                               key={question.id}
-                              className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all ${
-                                config.selectedUserQuestions.includes(question.id)
-                                  ? "bg-primary/10 border border-primary/30"
-                                  : "bg-secondary/50 border border-transparent hover:bg-secondary"
+                              className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                                selectedAppQuestions.includes(question.id)
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/50"
                               }`}
+                              onClick={() =>
+                                handleAppQuestionToggle(question.id)
+                              }
                             >
-                              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 ${
-                                config.selectedUserQuestions.includes(question.id)
-                                  ? "bg-primary border-primary"
-                                  : "border-muted-foreground/50"
-                              }`}>
-                                {config.selectedUserQuestions.includes(question.id) && (
-                                  <Check className="w-3 h-3 text-primary-foreground" />
-                                )}
+                              <div className="flex items-start gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedAppQuestions.includes(
+                                    question.id
+                                  )}
+                                  onChange={() =>
+                                    handleAppQuestionToggle(question.id)
+                                  }
+                                  className="mt-1"
+                                />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">
+                                    {question.text}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-xs font-medium ${getCategoryColor(
+                                        question.category || selectedType
+                                      )}`}
+                                    >
+                                      {question.category || selectedType}
+                                    </Badge>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex-1">
-                                <p className="text-sm text-foreground">{question.text}</p>
-                                {question.category.toLowerCase() !== selectedType && (
-                                  <span className="text-xs text-muted-foreground mt-1 inline-block px-2 py-0.5 bg-muted rounded">
-                                    {question.category}
-                                  </span>
-                                )}
-                              </div>
-                              <input
-                                type="checkbox"
-                                checked={config.selectedUserQuestions.includes(question.id)}
-                                onChange={() => handleUserQuestionToggle(question.id)}
-                                className="sr-only"
-                              />
-                            </label>
+                            </div>
                           ))}
                         </div>
-                      )}
-                      {selectedType && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {config.selectedUserQuestions.length} of {config.questionCount} questions selected.{" "}
-                          {config.selectedUserQuestions.length < config.questionCount && (
-                            <span className="text-primary">
-                              Select {config.questionCount - config.selectedUserQuestions.length} more questions.
+
+                        <div className="text-sm text-muted-foreground">
+                          {selectedAppQuestions.length} of{" "}
+                          {config.questionCount} questions selected.
+                          {selectedAppQuestions.length <
+                            config.questionCount && (
+                            <span className="text-amber-600">
+                              {" "}
+                              Select{" "}
+                              {config.questionCount -
+                                selectedAppQuestions.length}{" "}
+                              more questions.
                             </span>
                           )}
+                          {selectedAppQuestions.length ===
+                            config.questionCount && (
+                            <span className="text-green-600 font-medium">
+                              {" "}
+                              Ready to start interview!
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              {/* User Questions Selection - Only show when interview type is selected */}
+              {config.useUserQuestions && !selectedType && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">
+                    Select from Your Practice Questions
+                  </Label>
+                  <div className="text-center p-4 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      Please select an interview type first to view your
+                      practice questions.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Practice Questions for Non-Custom Interviews - Only show when interview type is selected */}
+              {config.useUserQuestions &&
+                selectedType &&
+                selectedType !== "custom" && (
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">
+                      Select from Your Practice Questions
+                    </Label>
+                    {loadingUserQuestions ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        <span className="text-sm text-muted-foreground">
+                          Loading your questions...
+                        </span>
+                      </div>
+                    ) : userQuestions.length === 0 ? (
+                      <div className="text-center p-4 bg-muted rounded-lg">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          No practice questions found for {selectedType}{" "}
+                          interviews.
                         </p>
-                      )}
-                    </div>
-                  )}
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Create questions with the "{selectedType}" category in
+                          your practice questions.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            navigate("/dashboard/practice-questions")
+                          }
+                        >
+                          Go to Practice Questions
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                        {userQuestions.map((question) => (
+                          <label
+                            key={question.id}
+                            className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                              config.selectedUserQuestions.includes(question.id)
+                                ? "bg-primary/10 border border-primary/30"
+                                : "bg-secondary/50 border border-transparent hover:bg-secondary"
+                            }`}
+                          >
+                            <div
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                                config.selectedUserQuestions.includes(
+                                  question.id
+                                )
+                                  ? "bg-primary border-primary"
+                                  : "border-muted-foreground/50"
+                              }`}
+                            >
+                              {config.selectedUserQuestions.includes(
+                                question.id
+                              ) && (
+                                <Check className="w-3 h-3 text-primary-foreground" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-foreground">
+                                {question.text}
+                              </p>
+                              {question.category.toLowerCase() !==
+                                selectedType && (
+                                <span className="text-xs text-muted-foreground mt-1 inline-block px-2 py-0.5 bg-muted rounded">
+                                  {question.category}
+                                </span>
+                              )}
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={config.selectedUserQuestions.includes(
+                                question.id
+                              )}
+                              onChange={() =>
+                                handleUserQuestionToggle(question.id)
+                              }
+                              className="sr-only"
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    {selectedType && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {config.selectedUserQuestions.length} of{" "}
+                        {config.questionCount} questions selected.{" "}
+                        {config.selectedUserQuestions.length <
+                          config.questionCount && (
+                          <span className="text-primary">
+                            Select{" "}
+                            {config.questionCount -
+                              config.selectedUserQuestions.length}{" "}
+                            more questions.
+                          </span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                )}
 
               {/* Duration */}
               <div>
-                <label className="text-sm font-medium text-foreground mb-3 block">Duration</label>
+                <label className="text-sm font-medium text-foreground mb-3 block">
+                  Duration
+                </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {durations.map((duration) => (
                     <button
                       key={duration}
-                      onClick={() => setConfig((prev) => ({ ...prev, duration }))}
+                      onClick={() =>
+                        setConfig((prev) => ({ ...prev, duration }))
+                      }
                       className={`py-2.5 rounded-lg text-sm font-medium transition-all ${
                         config.duration === duration
                           ? "bg-primary text-primary-foreground"
@@ -1274,7 +1326,9 @@ const InterviewSetup = () => {
               {/* Number of Questions */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-medium text-foreground">Number of Questions</label>
+                  <label className="text-sm font-medium text-foreground">
+                    Number of Questions
+                  </label>
                   <span className="text-sm font-medium text-primary bg-primary/20 px-2.5 py-1 rounded-lg">
                     {config.questionCount}
                   </span>

@@ -98,7 +98,41 @@ export class InterviewSessionService {
 
       if (error) {
         console.error("Error creating interview session:", error);
-        throw new Error(`Failed to create interview session: ${error.message}`);
+
+        // Handle specific error types
+        if (
+          error.code === "PGRST301" ||
+          error.message?.includes("network") ||
+          error.message?.includes("fetch")
+        ) {
+          throw new Error(
+            "Network error: Unable to create interview session. Please check your connection and try again."
+          );
+        }
+
+        if (error.code === "23505") {
+          throw new Error(
+            "A session with this ID already exists. Please try again."
+          );
+        }
+
+        if (error.code === "23503") {
+          throw new Error(
+            "Invalid user or interview type. Please refresh and try again."
+          );
+        }
+
+        throw new Error(
+          `Failed to create interview session: ${
+            error.message || "Unknown error"
+          }`
+        );
+      }
+
+      if (!session) {
+        throw new Error(
+          "Session was created but no data was returned. Please try again."
+        );
       }
 
       this.currentSessionId = session.id;
@@ -106,7 +140,6 @@ export class InterviewSessionService {
       // Save session ID to localStorage for recovery
       localStorage.setItem("current_interview_session_id", session.id);
 
-      console.log("Created interview session:", session.id);
       return { sessionId: session.id, questions };
     } catch (error) {
       console.error("Error in createInterviewSession:", error);
@@ -166,7 +199,26 @@ export class InterviewSessionService {
           useCustomQuestions,
           customQuestionsLength: customQuestions.length,
         });
-        throw new Error(`Failed to fetch questions: ${error.message}`);
+
+        // Handle specific error types
+        if (
+          error.code === "PGRST301" ||
+          error.message?.includes("network") ||
+          error.message?.includes("fetch")
+        ) {
+          throw new Error(
+            "Network error: Unable to fetch questions. Please check your connection and try again."
+          );
+        }
+
+        if (error.code === "PGRST116") {
+          // No rows returned - this is okay, return empty array
+          return [];
+        }
+
+        throw new Error(
+          `Failed to fetch questions: ${error.message || "Unknown error"}`
+        );
       }
 
       if (!data || data.length === 0) {
@@ -195,16 +247,6 @@ export class InterviewSessionService {
         updated_at: row.updated_at,
       }));
 
-      console.log(
-        `Fetched ${transformedQuestions.length} questions for ${interviewType}`
-      );
-      console.log(
-        "Questions fetched:",
-        transformedQuestions.map((q) => ({
-          question_id: q.question_id,
-          question_text: q.question_text.substring(0, 50) + "...",
-        }))
-      );
       return transformedQuestions;
     } catch (error) {
       console.error("Error in fetchQuestionsForInterview:", error);
@@ -287,13 +329,44 @@ export class InterviewSessionService {
 
       if (error) {
         console.error("Error saving question response:", error);
-        throw new Error(`Failed to save response: ${error.message}`);
+
+        // Handle specific error types
+        if (
+          error.code === "PGRST301" ||
+          error.message?.includes("network") ||
+          error.message?.includes("fetch")
+        ) {
+          throw new Error(
+            "Network error: Unable to save response. Please check your connection and try again."
+          );
+        }
+
+        if (error.code === "23503") {
+          throw new Error(
+            "Invalid session or question ID. The interview session may have been deleted."
+          );
+        }
+
+        if (error.code === "23505") {
+          throw new Error(
+            "This response has already been saved. Please continue with the next question."
+          );
+        }
+
+        throw new Error(
+          `Failed to save response: ${error.message || "Unknown error"}`
+        );
+      }
+
+      if (!data) {
+        throw new Error(
+          "Response was saved but no data was returned. Please try again."
+        );
       }
 
       // Also save to localStorage as backup
       this.saveResponseToLocalStorage(sessionId, response);
 
-      console.log("Saved question response:", data.id);
       return data.id;
     } catch (error) {
       console.error("Error in saveQuestionResponse:", error);
@@ -313,11 +386,6 @@ export class InterviewSessionService {
     try {
       // For user questions, we'll always create a new mapping to avoid URL encoding issues
       // The question text will be stored and can be retrieved later
-      console.log(
-        "Creating new question mapping for user question:",
-        questionText.substring(0, 50) + "..."
-      );
-
       // Create entry in interview_questions
       const { data: newQuestion, error: insertError } = await supabase
         .from("interview_questions")
@@ -335,12 +403,47 @@ export class InterviewSessionService {
 
       if (insertError) {
         console.error("Error creating question mapping:", insertError);
+
+        // Handle specific error types
+        if (
+          insertError.code === "PGRST301" ||
+          insertError.message?.includes("network") ||
+          insertError.message?.includes("fetch")
+        ) {
+          throw new Error(
+            "Network error: Unable to create question mapping. Please check your connection and try again."
+          );
+        }
+
+        if (insertError.code === "23505") {
+          // Question already exists, try to fetch it
+          const { data: existingQuestion } = await supabase
+            .from("interview_questions")
+            .select("question_id")
+            .eq("interview_type", "custom")
+            .eq("custom_domain", "product_manager")
+            .eq("category", "USER_QUESTION")
+            .ilike("question_text", questionText)
+            .single();
+
+          if (existingQuestion) {
+            return existingQuestion.question_id;
+          }
+        }
+
         throw new Error(
-          `Failed to create question mapping: ${insertError.message}`
+          `Failed to create question mapping: ${
+            insertError.message || "Unknown error"
+          }`
         );
       }
 
-      console.log("Created new question mapping:", newQuestion.question_id);
+      if (!newQuestion) {
+        throw new Error(
+          "Question mapping was created but no data was returned. Please try again."
+        );
+      }
+
       return newQuestion.question_id;
     } catch (error) {
       console.error("Error in getOrCreateQuestionIdForUserQuestion:", error);
@@ -366,15 +469,33 @@ export class InterviewSessionService {
 
       if (error) {
         console.error("Error completing interview session:", error);
-        throw new Error(`Failed to complete session: ${error.message}`);
+
+        // Handle specific error types
+        if (
+          error.code === "PGRST301" ||
+          error.message?.includes("network") ||
+          error.message?.includes("fetch")
+        ) {
+          throw new Error(
+            "Network error: Unable to complete session. Please check your connection and try again."
+          );
+        }
+
+        if (error.code === "PGRST116") {
+          throw new Error(
+            "Session not found. The interview session may have been deleted."
+          );
+        }
+
+        throw new Error(
+          `Failed to complete session: ${error.message || "Unknown error"}`
+        );
       }
 
       // Clear current session and localStorage
       this.currentSessionId = null;
       localStorage.removeItem("current_interview_session_id");
       localStorage.removeItem(`interview_responses_${sessionId}`);
-
-      console.log("Completed interview session:", sessionId);
     } catch (error) {
       console.error("Error in completeInterviewSession:", error);
       throw error;
@@ -397,7 +518,26 @@ export class InterviewSessionService {
 
       if (sessionError) {
         console.error("Error fetching session:", sessionError);
-        return null;
+
+        // Handle specific error types
+        if (
+          sessionError.code === "PGRST301" ||
+          sessionError.message?.includes("network") ||
+          sessionError.message?.includes("fetch")
+        ) {
+          throw new Error(
+            "Network error: Unable to fetch session. Please check your connection and try again."
+          );
+        }
+
+        if (sessionError.code === "PGRST116") {
+          // No session found
+          return null;
+        }
+
+        throw new Error(
+          `Failed to fetch session: ${sessionError.message || "Unknown error"}`
+        );
       }
 
       if (!session) {
@@ -413,6 +553,23 @@ export class InterviewSessionService {
 
       if (responsesError) {
         console.error("Error fetching responses:", responsesError);
+
+        // If it's a network error, throw it
+        if (
+          responsesError.code === "PGRST301" ||
+          responsesError.message?.includes("network") ||
+          responsesError.message?.includes("fetch")
+        ) {
+          throw new Error(
+            "Network error: Unable to fetch responses. Please check your connection and try again."
+          );
+        }
+
+        // For other errors, continue with empty responses array
+        console.warn(
+          "Continuing without responses due to error:",
+          responsesError.message
+        );
       }
 
       // Fetch questions (if question IDs are available)
@@ -432,6 +589,19 @@ export class InterviewSessionService {
 
         if (questionsError) {
           console.error("Error fetching questions:", questionsError);
+
+          // If it's a network error, throw it
+          if (
+            questionsError.code === "PGRST301" ||
+            questionsError.message?.includes("network") ||
+            questionsError.message?.includes("fetch")
+          ) {
+            throw new Error(
+              "Network error: Unable to fetch questions. Please check your connection and try again."
+            );
+          }
+
+          // For other errors, continue with empty questions array
           questions = [];
         } else {
           questions = questionsData || [];
@@ -464,11 +634,6 @@ export class InterviewSessionService {
           // Get the question IDs from the responses
           const responseQuestionIds =
             responses?.map((r) => r.question_id) || [];
-
-          console.log(
-            "User questions - responseQuestionIds:",
-            responseQuestionIds
-          );
 
           if (responseQuestionIds.length > 0) {
             const { data: questionsData, error: questionsError } =
@@ -703,8 +868,6 @@ export class InterviewSessionService {
     }
   ): Promise<ClassifiedQuestion[]> {
     try {
-      console.log("Smart classifying custom questions with context:", context);
-
       const classifiedQuestions =
         await questionClassificationService.classifyQuestionsSmart(
           customQuestions,
@@ -713,17 +876,6 @@ export class InterviewSessionService {
 
       // Store classified questions metadata in the session
       await this.storeClassifiedQuestions(sessionId, classifiedQuestions);
-
-      console.log("Custom questions classified:", classifiedQuestions.length);
-      console.log(
-        "Classification summary:",
-        classifiedQuestions.map((q) => ({
-          id: q.id,
-          type: q.classification.type,
-          userIntent: q.classification.userIntent,
-          confidence: q.classification.confidence,
-        }))
-      );
 
       return classifiedQuestions;
     } catch (error) {
@@ -774,8 +926,6 @@ export class InterviewSessionService {
 
       if (error) {
         console.error("Error storing classified questions:", error);
-      } else {
-        console.log("Classified questions metadata stored");
       }
     } catch (error) {
       console.error("Error storing classified questions metadata:", error);

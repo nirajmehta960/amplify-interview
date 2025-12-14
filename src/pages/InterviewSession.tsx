@@ -175,11 +175,6 @@ const InterviewSession = () => {
             config.selectedAppQuestions &&
             config.selectedAppQuestions.length > 0
           ) {
-            console.log(
-              "Loading selected app questions:",
-              config.selectedAppQuestions
-            );
-
             // Fetch the selected app questions from database
             const { data: appQuestions, error } = await supabase
               .from("interview_questions")
@@ -214,11 +209,6 @@ const InterviewSession = () => {
             config.selectedUserQuestions.length > 0 &&
             user?.id
           ) {
-            console.log(
-              "Loading selected practice questions:",
-              config.selectedUserQuestions
-            );
-
             const { userQuestionBankService } = await import(
               "../services/userQuestionBankService"
             );
@@ -238,7 +228,6 @@ const InterviewSession = () => {
           }
           // Fallback to general question loading
           else {
-            console.log("Loading questions using fallback method");
             allQuestions = await getQuestionsForInterview(
               interviewType.id,
               config.useCustomQuestions,
@@ -253,10 +242,6 @@ const InterviewSession = () => {
           // Limit questions to the configured count
           const limitedQuestions = allQuestions.slice(0, config.questionCount);
           setQuestions(limitedQuestions);
-
-          console.log(
-            `Loaded ${limitedQuestions.length} questions for ${interviewType.id}`
-          );
 
           // Create database session after questions are loaded
           if (user && config && interviewType) {
@@ -276,7 +261,6 @@ const InterviewSession = () => {
                   },
                 });
               setCurrentSessionId(sessionId);
-              console.log("Created database session:", sessionId);
 
               // Process custom questions for classification if using custom questions
               if (
@@ -285,9 +269,6 @@ const InterviewSession = () => {
                 config.customQuestions.length > 0
               ) {
                 try {
-                  console.log(
-                    "Processing custom questions for classification..."
-                  );
                   const classified =
                     await interviewSessionService.processCustomQuestions(
                       config.customQuestions,
@@ -299,10 +280,6 @@ const InterviewSession = () => {
                       }
                     );
                   setClassifiedQuestions(classified);
-                  console.log(
-                    "Custom questions classified:",
-                    classified.length
-                  );
                 } catch (error) {
                   console.error("Error classifying custom questions:", error);
                 }
@@ -315,10 +292,6 @@ const InterviewSession = () => {
                 config.selectedUserQuestions.length > 0
               ) {
                 try {
-                  console.log(
-                    "Processing user questions for classification..."
-                  );
-
                   // Get the actual question texts from the loaded questions
                   const userQuestionTexts = limitedQuestions.map((q) => q.text);
 
@@ -333,7 +306,6 @@ const InterviewSession = () => {
                       }
                     );
                   setClassifiedQuestions(classified);
-                  console.log("User questions classified:", classified.length);
                 } catch (error) {
                   console.error("Error classifying user questions:", error);
                 }
@@ -343,7 +315,6 @@ const InterviewSession = () => {
               // Generate a fallback session ID for local storage
               const fallbackSessionId = `session-${Date.now()}`;
               setCurrentSessionId(fallbackSessionId);
-              console.log("Using fallback session ID:", fallbackSessionId);
               // Don't show error toast here as interview can continue without database session
             }
           }
@@ -362,7 +333,6 @@ const InterviewSession = () => {
   // Initialize interview state from config and questions
   useEffect(() => {
     if (config && questions.length > 0) {
-      console.log("Initializing interview state from config:", config);
       setInterviewState((prev) => ({
         ...prev,
         totalQuestions: questions.length,
@@ -377,7 +347,6 @@ const InterviewSession = () => {
 
   useEffect(() => {
     if (videoRef.current && streamRef.current && !videoRef.current.srcObject) {
-      console.log("VideoRef became available, setting mediaStream");
       videoRef.current.srcObject = streamRef.current;
       videoRef.current.play().catch(console.error);
       setVideoElementReady(false); // Reset the flag
@@ -387,7 +356,6 @@ const InterviewSession = () => {
   // Retry setting video element when it becomes available
   useEffect(() => {
     if (videoElementReady && streamRef.current) {
-      console.log("Retrying video element setup after it became available");
       const retrySetVideoElement = () => {
         if (videoRef.current && streamRef.current) {
           videoRef.current.srcObject = streamRef.current;
@@ -414,9 +382,6 @@ const InterviewSession = () => {
       videoSegmentService.startQuestionSegment(
         currentQuestion.id,
         currentQuestion.text
-      );
-      console.log(
-        `Started tracking first question ${currentQuestion.id}: ${currentQuestion.text}`
       );
     }
   }, [interviewState.status, currentQuestion]);
@@ -470,8 +435,6 @@ const InterviewSession = () => {
       }, 10000); // 10 second timeout
 
       try {
-        console.log("Requesting camera access...");
-
         // Check if getUserMedia is supported
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           throw new Error("Camera access is not supported in this browser");
@@ -480,7 +443,6 @@ const InterviewSession = () => {
         // Try with ideal constraints first
         let mediaStream;
         try {
-          console.log("Trying ideal camera constraints...");
           mediaStream = await navigator.mediaDevices.getUserMedia({
             video: {
               width: { ideal: 1280 },
@@ -493,7 +455,6 @@ const InterviewSession = () => {
               sampleRate: 44100,
             },
           });
-          console.log("Ideal constraints successful");
         } catch (idealError) {
           console.warn(
             "Ideal constraints failed, trying basic constraints:",
@@ -504,13 +465,11 @@ const InterviewSession = () => {
             video: true,
             audio: true,
           });
-          console.log("Basic constraints successful");
         }
 
         // Clear loading state and timeout immediately after getting mediaStream
         clearTimeout(timeoutId);
         setVideoLoading(false);
-        console.log("MediaStream acquired, loading state cleared");
 
         // Store the mediaStream for video element when it's ready
         streamRef.current = mediaStream;
@@ -523,11 +482,9 @@ const InterviewSession = () => {
         const setVideoElement = () => {
           if (videoRef.current) {
             videoRef.current.srcObject = mediaStream;
-            console.log("Camera stream assigned to video element");
 
             // Add event listeners for video loading
             videoRef.current.onloadedmetadata = () => {
-              console.log("Video metadata loaded");
               setVideoLoading(false);
             };
 
@@ -540,7 +497,6 @@ const InterviewSession = () => {
             videoRef.current
               .play()
               .then(() => {
-                console.log("Video started playing successfully");
                 setVideoLoading(false);
               })
               .catch((error) => {
@@ -584,7 +540,6 @@ const InterviewSession = () => {
         // Start recording when camera is ready
         try {
           await startRecording();
-          console.log("Recording started successfully");
           // Mark recording start for precise transcript mapping
           videoSegmentService.markRecordingStart();
           // Ensure prep gap is 10s
@@ -618,9 +573,6 @@ const InterviewSession = () => {
         }
 
         // Real-time transcription not implemented - using Deepgram for post-processing
-        console.log(
-          "Real-time transcription not available - will transcribe after recording"
-        );
       } catch (error) {
         console.error("Error accessing media devices:", error);
         let errorMessage = "Unable to access camera or microphone.";
@@ -707,7 +659,6 @@ const InterviewSession = () => {
           currentQuestion.id,
           currentQuestion.text
         );
-        console.log(`Ended tracking for final question ${currentQuestion.id}`);
       }
 
       // Navigate to processing page immediately
@@ -743,7 +694,6 @@ const InterviewSession = () => {
         currentQuestion.id,
         currentQuestion.text
       );
-      console.log(`Ended tracking for question ${currentQuestion.id}`);
     }
 
     if (interviewState.currentQuestion < interviewState.totalQuestions) {
@@ -767,9 +717,6 @@ const InterviewSession = () => {
             nextQuestion.id,
             nextQuestion.text
           );
-          console.log(
-            `Started tracking question ${nextQuestion.id}: ${nextQuestion.text}`
-          );
         }
       }, 10000); // 10 seconds to honor prep gap and avoid overlap
     } else {
@@ -784,7 +731,6 @@ const InterviewSession = () => {
   const handleToggleCamera = () => {
     setInterviewState((prev) => {
       const newCameraOn = !prev.cameraOn;
-      console.log("Toggling camera:", prev.cameraOn, "->", newCameraOn);
       return { ...prev, cameraOn: newCameraOn };
     });
   };
@@ -794,7 +740,6 @@ const InterviewSession = () => {
     setVideoLoading(true);
 
     try {
-      console.log("Manual camera retry initiated...");
       // Try with ideal constraints first, fallback to basic if needed
       let mediaStream;
       try {
@@ -810,14 +755,11 @@ const InterviewSession = () => {
             sampleRate: 44100,
           },
         });
-        console.log("Ideal constraints successful");
       } catch (idealError) {
-        console.log("Ideal constraints failed, trying basic constraints");
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
         });
-        console.log("Basic constraints successful");
       }
 
       streamRef.current = mediaStream;

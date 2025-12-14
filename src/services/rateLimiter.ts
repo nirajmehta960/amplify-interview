@@ -55,9 +55,6 @@ export class RateLimiter {
         timestamp,
       });
 
-      console.log(
-        `Rate limiter: Queued request (${this.queue.length} in queue)`
-      );
       this.process();
     });
   }
@@ -69,8 +66,6 @@ export class RateLimiter {
     if (this.processing) return;
     this.processing = true;
 
-    console.log("Rate limiter: Starting queue processing");
-
     while (this.queue.length > 0) {
       const request = this.queue.shift()!;
 
@@ -79,7 +74,6 @@ export class RateLimiter {
         await this.waitIfNeeded();
 
         // Execute the request
-        console.log("Rate limiter: Executing request");
         const result = await request.fn();
         request.resolve(result);
 
@@ -93,7 +87,6 @@ export class RateLimiter {
     }
 
     this.processing = false;
-    console.log("Rate limiter: Queue processing completed");
   }
 
   /**
@@ -107,13 +100,11 @@ export class RateLimiter {
     if (timeSinceWindowStart >= 60000) {
       this.windowStartTime = now;
       this.requestCount = 0;
-      console.log("Rate limiter: Reset window");
     }
 
     // Check if we're at the rate limit
     if (this.requestCount >= this.config.requestsPerMinute) {
       const waitTime = 60000 - timeSinceWindowStart;
-      console.log(`Rate limiter: Rate limit reached, waiting ${waitTime}ms`);
       await this.sleep(waitTime);
 
       // Reset window after waiting
@@ -128,7 +119,6 @@ export class RateLimiter {
 
       if (timeSinceLastRequest < minInterval) {
         const waitTime = minInterval - timeSinceLastRequest;
-        console.log(`Rate limiter: Burst limit, waiting ${waitTime}ms`);
         await this.sleep(waitTime);
       }
     }
@@ -164,8 +154,6 @@ export class RateLimiter {
    * Clear the queue (emergency stop)
    */
   public clearQueue(): void {
-    console.log(`Rate limiter: Clearing ${this.queue.length} queued requests`);
-
     this.queue.forEach((request) => {
       request.reject(new Error("Rate limiter queue cleared"));
     });
@@ -179,7 +167,6 @@ export class RateLimiter {
    */
   public updateConfig(config: Partial<RateLimiterConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log("Rate limiter: Configuration updated", this.config);
   }
 }
 

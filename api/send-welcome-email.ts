@@ -19,70 +19,169 @@ const APP_NAME = process.env.APP_NAME;
 // Border: hsl(222 30% 18%) = #2A3142 (dark gray)
 // Muted foreground: hsl(215 20% 55%) = #7A8A9F (gray)
 
-const createWelcomeEmailHTML = (userName: string, dashboardUrl: string) => `
+const createWelcomeEmailHTML = (userName: string, dashboardUrl: string) => {
+  // Extract base URL from dashboardUrl for logo
+  const baseUrl = dashboardUrl.split("/").slice(0, 3).join("/");
+  const logoUrl = `${baseUrl}/logo-square.svg`;
+
+  return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Welcome to ${APP_NAME}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td {font-family: Arial, sans-serif !important;}
+  </style>
+  <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0A0E1A;">
-  <div style="max-width: 600px; margin: 40px auto; background: linear-gradient(135deg, rgba(15, 20, 31, 0.8) 0%, rgba(10, 14, 26, 0.6) 100%); border: 1px solid rgba(42, 49, 66, 0.5); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(79, 209, 199, 0.15);">
-    
-    <!-- Header with gradient -->
-    <div style="background: linear-gradient(135deg, #4FD1C7 0%, #38A169 100%); padding: 48px 32px; text-align: center; position: relative; overflow: hidden;">
-      <div style="position: absolute; top: -50%; right: -50%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(79, 209, 199, 0.15) 0%, transparent 70%); filter: blur(80px); pointer-events: none;"></div>
-      <h1 style="color: #0A0E1A; font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 700; margin: 0 0 8px 0; letter-spacing: -0.025em; position: relative; z-index: 1;">${APP_NAME}</h1>
-      <p style="color: #0A0E1A; font-size: 16px; margin: 0; opacity: 0.85; font-weight: 500; position: relative; z-index: 1;">AI-Powered Interview Preparation</p>
-    </div>
-    
-    <!-- Content -->
-    <div style="padding: 48px 32px; text-align: center;">
-      <h2 style="color: #F7F9FC; font-family: 'Outfit', sans-serif; font-size: 28px; font-weight: 600; margin: 0 0 20px 0; letter-spacing: -0.02em;">Welcome, ${userName}!</h2>
-      
-      <p style="color: #7A8A9F; font-size: 16px; margin: 0 0 32px 0; line-height: 1.6;">
-        Thank you for joining ${APP_NAME}! We're excited to help you prepare for your next interview with AI-powered coaching and feedback.
-      </p>
-      
-      <!-- Feature card with glass morphism effect -->
-      <div style="background: linear-gradient(135deg, rgba(15, 20, 31, 0.8) 0%, rgba(10, 14, 26, 0.6) 100%); border: 1px solid rgba(42, 49, 66, 0.5); border-radius: 12px; padding: 32px; margin: 32px 0; text-align: left; box-shadow: 0 4px 20px rgba(79, 209, 199, 0.1);">
-        <h3 style="color: #F7F9FC; font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 600; margin: 0 0 20px 0;">What you can do:</h3>
-        <ul style="color: #7A8A9F; font-size: 15px; margin: 0; padding-left: 24px; line-height: 2;">
-          <li style="margin-bottom: 8px;">Practice mock interviews with AI-powered feedback</li>
-          <li style="margin-bottom: 8px;">Record and analyze your interview responses</li>
-          <li style="margin-bottom: 8px;">Track your progress over time</li>
-          <li>Get personalized improvement suggestions</li>
-        </ul>
-      </div>
-      
-      <!-- CTA Button with gradient and glow -->
-      <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #4FD1C7 0%, #38A169 100%); color: #0A0E1A; padding: 16px 40px; border-radius: 12px; text-decoration: none; font-size: 16px; font-weight: 600; margin: 32px 0; box-shadow: 0 4px 20px rgba(79, 209, 199, 0.3), 0 0 40px rgba(79, 209, 199, 0.15); transition: all 0.3s ease;">
-        Get Started
-      </a>
-      
-      <p style="color: #7A8A9F; font-size: 14px; margin: 40px 0 0 0; line-height: 1.6;">
-        If you have any questions, feel free to reach out to our support team. We're here to help!
-      </p>
-    </div>
-    
-    <!-- Footer -->
-    <div style="background: rgba(15, 20, 31, 0.5); padding: 32px; text-align: center; border-top: 1px solid rgba(42, 49, 66, 0.5);">
-      <p style="color: #7A8A9F; font-size: 12px; margin: 0 0 8px 0;">
-        © ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.
-      </p>
-      <p style="color: #7A8A9F; font-size: 12px; margin: 0;">
-        This email was sent because you created an account with ${APP_NAME}.
-      </p>
-    </div>
-    
-  </div>
+<body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0A0E1A; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0A0E1A;">
+    <tr>
+      <td align="center" style="padding: 24px 16px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, rgba(15, 20, 31, 0.95) 0%, rgba(10, 14, 26, 0.9) 100%); border: 1px solid rgba(42, 49, 66, 0.5); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(79, 209, 199, 0.15);">
+          
+          <!-- Header matching website navbar -->
+          <tr>
+            <td style="background-color: #0A0E1A; padding: 32px 24px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <!-- Icon container matching header: w-10 h-10 rounded-xl bg-primary/20 border-primary/30 -->
+                        <td style="vertical-align: middle; padding-right: 12px;">
+                          <div style="width: 40px; height: 40px; border-radius: 12px; background-color: rgba(79, 209, 199, 0.2); border: 1px solid rgba(79, 209, 199, 0.3); display: inline-block; vertical-align: middle; position: relative;">
+                            <!-- Mic icon SVG - exact lucide-react Mic icon -->
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" stroke="#4FD1C7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                              <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="#4FD1C7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                              <line x1="12" y1="19" x2="12" y2="22" stroke="#4FD1C7" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                          </div>
+                        </td>
+                        <!-- Text content -->
+                        <td style="vertical-align: middle;">
+                          <h1 style="color: #F7F9FC; font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; margin: 0; line-height: 1.2;">${APP_NAME}</h1>
+                          <p style="color: #7A8A9F; font-size: 12px; margin: 2px 0 0 0; line-height: 1.4;">AI-Powered Mock Interviews</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px 24px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td align="center" style="padding-bottom: 20px;">
+                    <h2 style="color: #F7F9FC; font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 600; margin: 0; letter-spacing: -0.01em; line-height: 1.3;">Welcome, ${userName}!</h2>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-bottom: 24px;">
+                    <p style="color: #7A8A9F; font-size: 15px; margin: 0; line-height: 1.6; max-width: 520px;">Thank you for joining ${APP_NAME}! We're excited to help you prepare for your next interview with AI-powered coaching and feedback.</p>
+                  </td>
+                </tr>
+                
+                <!-- Feature card -->
+                <tr>
+                  <td style="padding-bottom: 24px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, rgba(15, 20, 31, 0.8) 0%, rgba(10, 14, 26, 0.6) 100%); border: 1px solid rgba(42, 49, 66, 0.5); border-radius: 10px; padding: 20px;">
+                      <tr>
+                        <td>
+                          <h3 style="color: #F7F9FC; font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; margin: 0 0 16px 0; line-height: 1.3;">What you can do:</h3>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                              <td style="color: #7A8A9F; font-size: 14px; line-height: 1.7; padding: 4px 0;">
+                                <span style="color: #4FD1C7; margin-right: 8px;">•</span> Practice mock interviews with AI-powered feedback
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="color: #7A8A9F; font-size: 14px; line-height: 1.7; padding: 4px 0;">
+                                <span style="color: #4FD1C7; margin-right: 8px;">•</span> Record and analyze your interview responses
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="color: #7A8A9F; font-size: 14px; line-height: 1.7; padding: 4px 0;">
+                                <span style="color: #4FD1C7; margin-right: 8px;">•</span> Track your progress over time
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="color: #7A8A9F; font-size: 14px; line-height: 1.7; padding: 4px 0;">
+                                <span style="color: #4FD1C7; margin-right: 8px;">•</span> Get personalized improvement suggestions
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                
+                <!-- CTA Button -->
+                <tr>
+                  <td align="center" style="padding-bottom: 24px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td align="center" style="background: linear-gradient(135deg, #4FD1C7 0%, #38A169 100%); border-radius: 8px; box-shadow: 0 4px 16px rgba(79, 209, 199, 0.3);">
+                          <a href="${dashboardUrl}" style="display: inline-block; color: #0A0E1A; text-decoration: none; font-size: 15px; font-weight: 600; padding: 14px 32px; line-height: 1.5;">Get Started</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                
+                <!-- Support text -->
+                <tr>
+                  <td align="center" style="padding-bottom: 8px;">
+                    <p style="color: #7A8A9F; font-size: 13px; margin: 0; line-height: 1.5;">If you have any questions, feel free to reach out to our support team.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background: rgba(15, 20, 31, 0.5); padding: 20px 24px; text-align: center; border-top: 1px solid rgba(42, 49, 66, 0.5);">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td align="center" style="padding-bottom: 6px;">
+                    <p style="color: #7A8A9F; font-size: 11px; margin: 0; line-height: 1.4;">© ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center">
+                    <p style="color: #7A8A9F; font-size: 11px; margin: 0; line-height: 1.4;">This email was sent because you created an account with ${APP_NAME}.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
 `;
+};
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers

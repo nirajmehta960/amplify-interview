@@ -206,8 +206,6 @@ export function InterviewProvider({ children }: { children: ReactNode }) {
           questions,
         },
       });
-
-      console.log("Interview session created locally:", sessionId);
     } catch (error) {
       console.error("Error creating session:", error);
       dispatch({
@@ -231,8 +229,6 @@ export function InterviewProvider({ children }: { children: ReactNode }) {
       );
 
       dispatch({ type: "ADD_RESPONSE", payload: response });
-
-      console.log("Response saved:", response.questionId);
     } catch (error) {
       console.error("Error saving response:", error);
       dispatch({
@@ -268,8 +264,6 @@ export function InterviewProvider({ children }: { children: ReactNode }) {
       );
 
       dispatch({ type: "COMPLETE_SESSION" });
-
-      console.log("Interview session completed locally");
     } catch (error) {
       console.error("Error completing session:", error);
       dispatch({
@@ -325,8 +319,6 @@ export function InterviewProvider({ children }: { children: ReactNode }) {
           sessionData,
         },
       });
-
-      console.log("Resumed interview session:", sessionId);
     } catch (error) {
       console.error("Error resuming session:", error);
       dispatch({
