@@ -458,8 +458,8 @@ const Dashboard = () => {
       {/* Header */}
       <header className="border-b border-border/50 bg-card/30 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 sm:gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
               <Mic className="w-5 h-5 text-primary" />
             </div>
             <div>

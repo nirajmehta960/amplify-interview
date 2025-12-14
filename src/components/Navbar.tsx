@@ -139,7 +139,7 @@ const Navbar = () => {
                     >
                       <Avatar>
                         <AvatarImage src={profile?.avatar_url} />
-                        <AvatarFallback className="bg-primary-blue text-white">
+                        <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                           {profile?.full_name?.charAt(0)?.toUpperCase() ||
                             user?.email?.charAt(0)?.toUpperCase() ||
                             "U"}
@@ -149,12 +149,14 @@ const Navbar = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="px-3 py-2">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         {profile?.full_name ||
                           user?.email?.split("@")[0] ||
                           "User"}
                       </p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {user.email}
+                      </p>
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -246,19 +248,21 @@ const Navbar = () => {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={profile?.avatar_url} />
-                        <AvatarFallback className="bg-primary-blue text-white text-sm">
+                        <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
                           {profile?.full_name?.charAt(0)?.toUpperCase() ||
                             user?.email?.charAt(0)?.toUpperCase() ||
                             "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-foreground">
                           {profile?.full_name ||
                             user?.email?.split("@")[0] ||
                             "User"}
                         </p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {user.email}
+                        </p>
                       </div>
                     </div>
                     <Button

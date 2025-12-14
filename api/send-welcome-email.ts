@@ -20,9 +20,11 @@ const APP_NAME = process.env.APP_NAME;
 // Muted foreground: hsl(215 20% 55%) = #7A8A9F (gray)
 
 const createWelcomeEmailHTML = (userName: string, dashboardUrl: string) => {
-  // Extract base URL from dashboardUrl for logo
-  const baseUrl = dashboardUrl.split("/").slice(0, 3).join("/");
-  const logoUrl = `${baseUrl}/logo-square.svg`;
+  // Base64-encoded SVG logo for email compatibility
+  // Many email clients don't support external SVG images or block them
+  // Using inline base64-encoded SVG ensures maximum compatibility
+  const logoBase64 =
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB4PSI1IiB5PSI1IiB3aWR0aD0iMzAiIGhlaWdodD0iMzAiIHJ4PSIxMiIgZmlsbD0icmdiYSg3OSwgMjA5LCAxOTksIDAuMikiIHN0cm9rZT0icmdiYSg3OSwgMjA5LCAxOTksIDAuMykiIHN0cm9rZS13aWR0aD0iMSIvPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEyLCAxMikgc2NhbGUoMC43NSkiPgogICAgPHBhdGggZD0iTTEyIDJhMyAzIDAgMCAwLTMgM3Y3YTMgMyAwIDAgMCA2IDBWNWEzIDMgMCAwIDAtMy0zWiIgc3Ryb2tlPSIjNEZEMUM3IiBzdHJva2Utd2lkdGg9IjIuNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+CiAgICA8cGF0aCBkPSJNMTkgMTB2MmE3IDcgMCAwIDEtMTQgMHYtMiIgc3Ryb2tlPSIjNEZEMUM3IiBzdHJva2Utd2lkdGg9IjIuNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBmaWxsPSJub25lIi8+CiAgICA8bGluZSB4MT0iMTIiIHkxPSIxOSIgeDI9IjEyIiB5Mj0iMjIiIHN0cm9rZT0iIzRGRDFDNyIgc3Ryb2tlLXdpZHRoPSIyLjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDwvZz4KPC9zdmc+";
 
   return `
 <!DOCTYPE html>
@@ -55,15 +57,11 @@ const createWelcomeEmailHTML = (userName: string, dashboardUrl: string) => {
                   <td>
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <!-- Icon container matching header: w-10 h-10 rounded-xl bg-primary/20 border-primary/30 -->
+                        <!-- Logo image container matching header: w-10 h-10 rounded-xl bg-primary/20 border-primary/30 -->
                         <td style="vertical-align: middle; padding-right: 12px;">
-                          <div style="width: 40px; height: 40px; border-radius: 12px; background-color: rgba(79, 209, 199, 0.2); border: 1px solid rgba(79, 209, 199, 0.3); display: inline-block; vertical-align: middle; position: relative;">
-                            <!-- Mic icon SVG - exact lucide-react Mic icon -->
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-                              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" stroke="#4FD1C7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                              <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="#4FD1C7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                              <line x1="12" y1="19" x2="12" y2="22" stroke="#4FD1C7" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
+                          <div style="width: 40px; height: 40px; border-radius: 12px; background-color: rgba(79, 209, 199, 0.2); border: 1px solid rgba(79, 209, 199, 0.3); display: inline-block; vertical-align: middle; overflow: hidden; position: relative;">
+                            <!-- Logo image - using base64-encoded SVG for email client compatibility -->
+                            <img src="${logoBase64}" alt="${APP_NAME} Logo" width="40" height="40" style="display: block; width: 40px; height: 40px; object-fit: contain;" />
                           </div>
                         </td>
                         <!-- Text content -->
