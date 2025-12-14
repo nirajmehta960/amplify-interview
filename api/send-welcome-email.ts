@@ -22,12 +22,13 @@ const createWelcomeEmailHTML = (userName: string, dashboardUrl: string) => `
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0A0E1A;">
-  <div style="max-width: 600px; margin: 40px auto; background-color: #0F141F; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(28, 31, 42, 0.12);">
+  <div style="max-width: 600px; margin: 40px auto; background: linear-gradient(135deg, rgba(15, 20, 31, 0.8) 0%, rgba(10, 14, 26, 0.6) 100%); border: 1px solid rgba(42, 49, 66, 0.5); border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(79, 209, 199, 0.15);">
     
-    <!-- Header -->
-    <div style="background: linear-gradient(135deg, #4FD1C7 0%, #38A169 100%); padding: 40px 32px; text-align: center;">
-      <h1 style="color: #0A0E1A; font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 600; margin: 0 0 8px 0; letter-spacing: -0.025em;">${APP_NAME}</h1>
-      <p style="color: #0A0E1A; font-size: 16px; margin: 0; opacity: 0.9;">AI-Powered Interview Preparation</p>
+    <!-- Header with gradient -->
+    <div style="background: linear-gradient(135deg, #4FD1C7 0%, #38A169 100%); padding: 40px 32px; text-align: center; position: relative; overflow: hidden;">
+      <div style="position: absolute; top: -50%; right: -50%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(79, 209, 199, 0.15) 0%, transparent 70%); filter: blur(80px); pointer-events: none;"></div>
+      <h1 style="color: #0A0E1A; font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 600; margin: 0 0 8px 0; letter-spacing: -0.025em; position: relative; z-index: 1;">${APP_NAME}</h1>
+      <p style="color: #0A0E1A; font-size: 16px; margin: 0; opacity: 0.9; position: relative; z-index: 1;">AI-Powered Interview Preparation</p>
     </div>
     
     <!-- Content -->
@@ -38,7 +39,8 @@ const createWelcomeEmailHTML = (userName: string, dashboardUrl: string) => `
         Thank you for joining ${APP_NAME}! We're excited to help you prepare for your next interview with AI-powered coaching and feedback.
       </p>
       
-      <div style="background-color: #0F141F; border-radius: 12px; padding: 24px; margin: 32px 0; text-align: left; border: 1px solid #2A3142;">
+      <!-- Feature card with glass morphism effect -->
+      <div style="background: linear-gradient(135deg, rgba(15, 20, 31, 0.8) 0%, rgba(10, 14, 26, 0.6) 100%); border: 1px solid rgba(42, 49, 66, 0.5); border-radius: 12px; padding: 24px; margin: 32px 0; text-align: left; box-shadow: 0 4px 20px rgba(79, 209, 199, 0.1);">
         <h3 style="color: #F7F9FC; font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600; margin: 0 0 16px 0;">What you can do:</h3>
         <ul style="color: #7A8A9F; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
           <li>Practice mock interviews with AI-powered feedback</li>
@@ -48,7 +50,8 @@ const createWelcomeEmailHTML = (userName: string, dashboardUrl: string) => `
         </ul>
       </div>
       
-      <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #4FD1C7 0%, #38A169 100%); color: #0A0E1A; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-size: 16px; font-weight: 600; margin: 24px 0; box-shadow: 0 4px 12px rgba(56, 113, 194, 0.3);">
+      <!-- CTA Button with gradient and glow -->
+      <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #4FD1C7 0%, #38A169 100%); color: #0A0E1A; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-size: 16px; font-weight: 600; margin: 24px 0; box-shadow: 0 4px 20px rgba(79, 209, 199, 0.3), 0 0 40px rgba(79, 209, 199, 0.15); transition: all 0.3s ease;">
         Get Started
       </a>
       
@@ -58,7 +61,7 @@ const createWelcomeEmailHTML = (userName: string, dashboardUrl: string) => `
     </div>
     
     <!-- Footer -->
-    <div style="background-color: #0F141F; padding: 24px 32px; text-align: center; border-top: 1px solid #2A3142;">
+    <div style="background: rgba(15, 20, 31, 0.5); padding: 24px 32px; text-align: center; border-top: 1px solid rgba(42, 49, 66, 0.5);">
       <p style="color: #7A8A9F; font-size: 12px; margin: 0 0 8px 0;">
         © ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.
       </p>
