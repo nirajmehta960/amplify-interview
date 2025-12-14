@@ -13,7 +13,7 @@ export interface QuestionClassification {
   analysisApproach: "star" | "technical" | "leadership" | "general";
   keywords: string[];
   expectedSkills: string[];
-  userIntent?: "predefined" | "ai_classified" | "role_based"; // How this classification was determined
+  userIntent?: "predefined" | "ai_classified" | "role_based";
   confidence?: number; // Confidence score for AI classification
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { Link, useNavigate, useLocation, useParams } from "react-router-dom";
 import { localVideoStorageService } from "@/services/localVideoStorageService";
 import { localInterviewStorageService } from "@/services/localInterviewStorageService";
 import { interviewSessionService } from "@/services/interviewSessionService";
@@ -30,11 +31,14 @@ import {
   Award,
   ArrowRight,
   Sparkles,
+  ArrowLeft,
+  Trophy,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge, badgeVariants } from "@/components/ui/badge";
-import Logo from "@/components/Logo";
 import { Progress } from "@/components/ui/progress";
 import {
   ResponsiveContainer,
@@ -42,7 +46,7 @@ import {
   Line,
   XAxis,
   YAxis,
-  Tooltip as ReTooltip,
+  Tooltip,
   CartesianGrid,
   RadarChart,
   PolarGrid,
@@ -145,6 +149,7 @@ const InterviewResults = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const [chartType, setChartType] = useState<"line" | "bar">("line");
+  const [expandedQuestions, setExpandedQuestions] = useState<string[]>([]);
 
   // Helper function to get interview type display name
   const getInterviewTypeDisplay = (sessionData: any): string => {
@@ -245,10 +250,7 @@ const InterviewResults = () => {
     sessionData: any
   ) => {
     try {
-      console.log(
-        "🔍 UNIFIED: Fetching AI analysis data for session:",
-        sessionId
-      );
+      console.log("Fetching AI analysis data for session:", sessionId);
       const { aiAnalysisService } = await import(
         "../services/aiAnalysisService"
       );
@@ -264,10 +266,7 @@ const InterviewResults = () => {
 
         // Update individual question responses with analysis scores
         if (analyses.length > 0) {
-          console.log(
-            "🔧 UNIFIED: Starting analysis mapping - analyses.length:",
-            analyses.length
-          );
+          console.log("Starting analysis mapping, analyses.length:", analyses.length);
 
           // Prefer mapping by interview_response_id, then fallback to question_id
           const byResponseId = new Map<string, any>();
@@ -293,29 +292,20 @@ const InterviewResults = () => {
               let analysis = null;
               if (rid && byResponseId.has(rid)) {
                 analysis = byResponseId.get(rid);
-                console.log(
-                  `🔍 UNIFIED: Found analysis by response ID: ${rid}`
-                );
+                console.log(`Found analysis by response ID: ${rid}`);
               } else if (byQuestionId.has(qid)) {
                 analysis = byQuestionId.get(qid);
-                console.log(
-                  `🔍 UNIFIED: Found analysis by question ID: ${qid}`
-                );
+                console.log(`Found analysis by question ID: ${qid}`);
               } else {
                 // Fallback: try to match by index if we have the same number of analyses and responses
                 if (idx < analyses.length) {
                   analysis = analyses[idx];
-                  console.log(
-                    `🔍 UNIFIED: Fallback - using analysis by index ${idx}`
-                  );
+                  console.log(`Fallback - using analysis by index ${idx}`);
                 } else {
-                  console.log(
-                    `🔍 UNIFIED: No analysis found for response ID: ${rid}, question ID: ${qid}`
-                  );
+                  console.log(`No analysis found for response ID: ${rid}, question ID: ${qid}`);
                 }
               }
 
-              // Debug logs removed - issue fixed
 
               if (analysis) {
                 return {
@@ -348,25 +338,19 @@ const InterviewResults = () => {
             }
           );
 
-          console.log(
-            "🔍 UNIFIED: Final mapped responses:",
-            sessionData.questionResponses.map((r: any) => ({
-              questionId: r.questionId,
-              responseId: r.responseId,
-              strengths: r.strengths,
-              improvements: r.improvements,
-              actionable_feedback: r.actionable_feedback,
-              improved_example: r.improved_example,
-            }))
-          );
+          console.log("Final mapped responses:", sessionData.questionResponses.map((r: any) => ({
+            questionId: r.questionId,
+            responseId: r.responseId,
+            strengths: r.strengths,
+            improvements: r.improvements,
+            actionable_feedback: r.actionable_feedback,
+            improved_example: r.improved_example,
+          })));
         }
       }
     } catch (analysisError) {
-      console.error(
-        "❌ UNIFIED: Could not fetch AI analysis data:",
-        analysisError
-      );
-      console.error("❌ UNIFIED: Analysis error details:", {
+      console.error("Could not fetch AI analysis data:", analysisError);
+      console.error("Analysis error details:", {
         message: analysisError.message,
         stack: analysisError.stack,
         sessionId: sessionId,
@@ -396,7 +380,7 @@ const InterviewResults = () => {
         const hasLocationState = !!(location.state as any)?.sessionId;
         const hasUrlParams = !!sessionIdFromParams || !!sessionIdFromUrl;
 
-        console.log("🔍 Loading scenario detection:", {
+        console.log("Loading scenario detection:", {
           hasLocationState,
           hasUrlParams,
           sessionIdFromParams,
@@ -410,7 +394,7 @@ const InterviewResults = () => {
         // SCENARIO 1: Post-Interview Results (Direct Navigation)
         if (hasLocationState && !hasUrlParams) {
           console.log(
-            "📊 SCENARIO 1: Post-Interview Results (Direct Navigation)"
+            "SCENARIO 1: Post-Interview Results (Direct Navigation)"
           );
           sessionData = location.state as any;
           finalSessionId = sessionData.sessionId;
@@ -418,13 +402,13 @@ const InterviewResults = () => {
         }
         // SCENARIO 2: Historical Session View (View Details)
         else if (hasUrlParams && !hasLocationState) {
-          console.log("📊 SCENARIO 2: Historical Session View (View Details)");
+          console.log("SCENARIO 2: Historical Session View (View Details)");
           finalSessionId = sessionIdFromParams || sessionIdFromUrl;
 
           if (finalSessionId) {
             try {
               console.log(
-                "🔍 Fetching session data from database:",
+                "Fetching session data from database:",
                 finalSessionId
               );
               const dbSessionData =
@@ -485,14 +469,14 @@ const InterviewResults = () => {
         // SCENARIO 3: Both location state and URL params present (prioritize URL params)
         else if (hasLocationState && hasUrlParams) {
           console.log(
-            "📊 SCENARIO 3: Both present - prioritizing URL params (Historical View)"
+            "SCENARIO 3: Both present - prioritizing URL params (Historical View)"
           );
           finalSessionId = sessionIdFromParams || sessionIdFromUrl;
 
           if (finalSessionId) {
             try {
               console.log(
-                "🔍 Fetching session data from database:",
+                "Fetching session data from database:",
                 finalSessionId
               );
               const dbSessionData =
@@ -552,7 +536,7 @@ const InterviewResults = () => {
         }
         // FALLBACK: Try local storage
         else {
-          console.log("📊 FALLBACK: Trying local storage");
+          console.log("FALLBACK: Trying local storage");
           const fallbackSessionId =
             sessionIdFromParams ||
             sessionIdFromUrl ||
@@ -615,7 +599,7 @@ const InterviewResults = () => {
         if (finalSessionId) {
           try {
             console.log(
-              "🔍 Attempting to fetch AI analysis data for session:",
+              "Attempting to fetch AI analysis data for session:",
               finalSessionId
             );
             const { aiAnalysisService } = await import(
@@ -640,7 +624,7 @@ const InterviewResults = () => {
               // Update individual question responses with analysis scores
               if (analyses.length > 0) {
                 console.log(
-                  "🔧 STARTING ANALYSIS MAPPING - analyses.length:",
+                  "Starting analysis mapping, analyses.length:",
                   analyses.length
                 );
 
@@ -758,10 +742,10 @@ const InterviewResults = () => {
             }
           } catch (analysisError) {
             console.error(
-              "❌ Could not fetch AI analysis data:",
+              "Could not fetch AI analysis data:",
               analysisError
             );
-            console.error("❌ Analysis error details:", {
+            console.error("Analysis error details:", {
               message: analysisError.message,
               stack: analysisError.stack,
               sessionId: finalSessionId,
@@ -1087,7 +1071,6 @@ const InterviewResults = () => {
             videoData?.metadata?.format || "unknown",
             "format - conversion may be needed for optimal playback"
           );
-          // Note: We'll keep the original video for now and let users choose
         }
 
         // Create result from real data
@@ -1325,30 +1308,30 @@ const InterviewResults = () => {
   const getTierBadge = (score: number): { label: string; classes: string } => {
     if (score >= 90)
       return {
-        label: "Exceptional 🏆",
+        label: "Exceptional",
         classes:
           "bg-gradient-to-r from-accent-green to-accent-green/80 text-white",
       };
     if (score >= 80)
       return {
-        label: "Excellent ⭐",
+        label: "Excellent",
         classes:
           "bg-gradient-to-r from-primary-blue to-primary-blue/80 text-white",
       };
     if (score >= 70)
       return {
-        label: "Strong 💪",
+        label: "Strong",
         classes:
           "bg-gradient-to-r from-accent-green to-accent-green/80 text-white",
       };
     if (score >= 60)
       return {
-        label: "Developing 📈",
+        label: "Developing",
         classes:
           "bg-gradient-to-r from-accent-orange to-accent-orange/80 text-white",
       };
     return {
-      label: "Building 🎯",
+      label: "Building",
       classes: "bg-gradient-to-r from-accent-orange to-red-500 text-white",
     };
   };
@@ -1464,539 +1447,487 @@ const InterviewResults = () => {
   };
 
   const markerColor = (score: number) => {
-    if (score >= 80) return "bg-green-500";
-    if (score >= 60) return "bg-yellow-500";
-    if (score >= 40) return "bg-orange-500";
+    if (score >= 85) return "bg-emerald-500";
+    if (score >= 70) return "bg-primary";
+    if (score >= 50) return "bg-yellow-500";
     return "bg-red-500";
+  };
+
+  // Helper functions for new design
+  const getScoreBadge = (score: number) => {
+    if (score >= 85) return { label: "Excellent", variant: "default" as const };
+    if (score >= 70) return { label: "Good", variant: "secondary" as const };
+    if (score >= 50) return { label: "Fair", variant: "outline" as const };
+    return { label: "Needs Work", variant: "destructive" as const };
+  };
+
+  const getReadinessBadge = (level: string) => {
+    switch (level?.toLowerCase()) {
+      case "ready":
+        return {
+          label: "Ready",
+          className: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+        };
+      case "almost":
+      case "almost ready":
+        return {
+          label: "Almost Ready",
+          className: "bg-primary/20 text-primary border-primary/30",
+        };
+      default:
+        return {
+          label: "Needs Practice",
+          className: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+        };
+    }
+  };
+
+  const toggleQuestion = (id: string) => {
+    setExpandedQuestions((prev) =>
+      prev.includes(id) ? prev.filter((q) => q !== id) : [...prev, id]
+    );
+  };
+
+  // Format date for new design
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch (error) {
+      return dateString;
+    }
   };
 
   if (!result) return null;
 
-  return (
-    <div className="min-h-screen bg-light-gray">
-      {/* Header */}
-      <div className="bg-white border-b border-light-gray">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            {/* Logo - Moved to far left, smaller size */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="cursor-pointer"
-              onClick={() => navigate("/")}
-            >
-              <Logo variant="main" size="sm" showText={true} />
-            </motion.div>
+  const scoreBadge = getScoreBadge(result.overallScore);
+  const readinessBadge = getReadinessBadge(result.readinessLevel || "ready");
 
-            {/* Title - Centered */}
-            <div className="flex-1 text-center">
-              <h1 className="text-3xl font-bold text-dark-navy font-display">
+  // Prepare performance data for chart
+  const performanceData = result.responses.map((r, idx) => ({
+    question: `Q${idx + 1}`,
+    score: r.score || 0,
+  }));
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Interview Results - Amplify Interview</title>
+        <meta
+          name="description"
+          content="View your interview analytics, performance scores, and improvement suggestions."
+        />
+      </Helmet>
+
+      {/* Header */}
+      <header className="border-b border-border/50 bg-card/30 backdrop-blur-xl sticky top-0 z-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex items-center justify-between">
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-xs sm:text-sm hidden sm:inline">Back</span>
+            </Link>
+            <div className="text-center flex-1">
+              <h1 className="text-base sm:text-lg md:text-xl font-display font-bold text-foreground">
                 Interview Analytics
               </h1>
-              <p className="text-muted-foreground mt-1">
-                {getInterviewTypeDisplay(result.sessionData || {})} •{" "}
-                {formatInterviewDateTime(result.completionTime)}
+              <p className="text-xs text-muted-foreground hidden sm:block">
+                {getInterviewTypeDisplay(result.sessionData || {})} Mock Interview • {formatDate(result.completionTime)}
               </p>
             </div>
-
-            {/* Spacer for right alignment */}
-            <div className="w-32"></div>
-            <div className="flex items-center gap-3"></div>
+            <div className="w-12 sm:w-20 md:w-32" />
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto px-6 py-8">
-        {/* Score Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Overall Score */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-primary-blue/10 rounded-professional">
-                  <Target className="w-6 h-6 text-primary-blue" />
-                </div>
-                <Badge
-                  className={`${
-                    getTierBadge(result.overallScore).classes.includes(
-                      "accent-green"
-                    )
-                      ? "bg-accent-green"
-                      : getTierBadge(result.overallScore).classes.includes(
-                          "primary-blue"
-                        )
-                      ? "bg-primary-blue"
-                      : "bg-accent-orange"
-                  } text-white`}
-                >
-                  {getTierBadge(result.overallScore).label.split(" ")[0]}
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Overall Score
-                </h3>
-                <div className="flex items-baseline gap-2">
-                  <span
-                    className={`text-3xl font-bold ${getScoreColor(
-                      result.overallScore
-                    )}`}
-                  >
-                    {displayedScore}
-                  </span>
-                  <span className="text-muted-foreground">/100</span>
-                </div>
-                <div className="flex items-center gap-1 text-sm">
-                  <TrendingUp className="w-4 h-4 text-accent-green" />
-                  <span className="text-accent-green font-medium">
-                    Great performance!
-                  </span>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-
-          {/* Duration */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-accent-orange/10 rounded-professional">
-                  <Clock className="w-6 h-6 text-accent-orange" />
-                </div>
-                <Badge className="bg-accent-orange text-white">Complete</Badge>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Duration
-                </h3>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-dark-navy">
-                    {result.duration > 0 && isFinite(result.duration)
-                      ? `${Math.floor(result.duration / 60)}m ${Math.round(
-                          result.duration % 60
-                        )}s`
-                      : "0m 0s"}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Interview length
-                </p>
-              </div>
-            </Card>
-          </motion.div>
-
-          {/* Questions */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-accent-green/10 rounded-professional">
-                  <MessageSquare className="w-6 h-6 text-accent-green" />
-                </div>
-                <Badge className="bg-accent-green text-white">Complete</Badge>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Questions
-                </h3>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-dark-navy">
-                    {result.responses.length}
-                  </span>
-                </div>
-                <Progress value={100} className="h-2" />
-              </div>
-            </Card>
-          </motion.div>
-
-          {/* Readiness */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-500/10 rounded-professional">
-                  <Award className="w-6 h-6 text-purple-500" />
-                </div>
-                <Badge className="bg-primary-blue text-white">Ready</Badge>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Readiness Level
-                </h3>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-dark-navy">
-                    {result.readinessLevel || "Ready"}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Interview readiness
-                </p>
-              </div>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Quick Insights Row */}
+        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+        {/* Stats Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mb-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-accent-green/10 rounded-professional">
-                  <Sparkles className="w-5 h-5 text-accent-green" />
+          {/* Overall Score */}
+          <div className="glass-card p-6 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Trophy className="w-6 h-6 text-primary" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-dark-navy">
-                    Your Superpower
-                  </h3>
-                  <p className="text-xs text-muted-foreground">Top Strength</p>
-                </div>
+                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                  {scoreBadge.label}
+                </Badge>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {result.strengths?.[0] || "Clear communication"}
+              <p className="text-sm text-muted-foreground mb-1">Overall Score</p>
+              <div className="flex items-baseline gap-1">
+                <span
+                  className={`text-4xl font-display font-bold ${
+                    result.overallScore >= 85
+                      ? "text-emerald-400"
+                      : result.overallScore >= 70
+                      ? "text-primary"
+                      : result.overallScore >= 50
+                      ? "text-yellow-400"
+                      : "text-red-400"
+                  }`}
+                >
+                  {displayedScore}
+                </span>
+                <span className="text-muted-foreground">/100</span>
+              </div>
+              <p className="text-sm text-emerald-400 mt-2 flex items-center gap-1">
+                <TrendingUp className="w-4 h-4" />
+                Great performance!
               </p>
-            </Card>
+            </div>
+          </div>
 
-            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-accent-orange/10 rounded-professional">
-                  <Target className="w-5 h-5 text-accent-orange" />
+          {/* Duration */}
+          <div className="glass-card p-6 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-orange-400" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-dark-navy">
-                    Focus On
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Improvement Area
-                  </p>
-                </div>
+                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
+                  Complete
+                </Badge>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {result.improvements?.[0] || "Tighter structure"}
+              <p className="text-sm text-muted-foreground mb-1">Duration</p>
+              <p className="text-4xl font-display font-bold text-foreground">
+                {result.duration > 0 && isFinite(result.duration)
+                  ? `${Math.floor(result.duration / 60)}m ${Math.round(result.duration % 60)}s`
+                  : "0m 0s"}
               </p>
-            </Card>
+              <p className="text-sm text-muted-foreground mt-2">Interview length</p>
+            </div>
+          </div>
 
-            <Card className="p-6 bg-white rounded-professional shadow-professional border-0 hover:shadow-professional-lg transition-all duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-primary-blue/10 rounded-professional">
-                  <ArrowRight className="w-5 h-5 text-primary-blue" />
+          {/* Questions */}
+          <div className="glass-card p-6 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <MessageSquare className="w-6 h-6 text-blue-400" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-dark-navy">
-                    Your Next Move
-                  </h3>
-                  <p className="text-xs text-muted-foreground">Action Step</p>
-                </div>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                  Complete
+                </Badge>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {result.nextSteps?.[0] ||
-                  "Practice STAR examples for recent projects"}
+              <p className="text-sm text-muted-foreground mb-1">Questions</p>
+              <p className="text-4xl font-display font-bold text-foreground">
+                {result.responses.length}
               </p>
-            </Card>
+              <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-400 rounded-full"
+                  style={{
+                    width: `${(result.responses.length / (result.responses.length || 1)) * 100}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Readiness Level */}
+          <div className="glass-card p-6 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <Target className="w-6 h-6 text-emerald-400" />
+                </div>
+                <Badge className={readinessBadge.className}>
+                  {readinessBadge.label}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mb-1">Readiness Level</p>
+              <p className="text-4xl font-display font-bold text-foreground capitalize">
+                {result.readinessLevel || "ready"}
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">Interview readiness</p>
+            </div>
           </div>
         </motion.div>
 
-        {/* Video Player and Performance Trend - Horizontal Layout */}
+        {/* Insights Row */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="mb-8"
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Video Player */}
-            <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary-blue/10 rounded-professional">
-                      <Play className="w-5 h-5 text-primary-blue" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-dark-navy font-display">
-                        Your Interview Recording
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        Watch your interview performance and review your
-                        responses
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-accent-green text-white">
-                      Complete
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {totalDuration > 0 && isFinite(totalDuration)
-                        ? `${Math.floor(totalDuration / 60)}m ${Math.round(
-                            totalDuration % 60
-                          )}s`
-                        : "0m 0s"}
-                    </span>
-                  </div>
+          {/* Superpower */}
+          <div className="glass-card p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Your Superpower</h3>
+                <p className="text-xs text-muted-foreground">Top Strength</p>
+              </div>
+            </div>
+            <p className="text-sm text-foreground/80">
+              {result.strengths?.[0] || "Clear communication"}
+            </p>
+          </div>
+
+          {/* Focus Area */}
+          <div className="glass-card p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500/30 to-red-500/30 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-orange-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Focus On</h3>
+                <p className="text-xs text-muted-foreground">Improvement Area</p>
+              </div>
+            </div>
+            <p className="text-sm text-foreground/80">
+              {result.improvements?.[0] || "Tighter structure"}
+            </p>
+          </div>
+
+          {/* Next Step */}
+          <div className="glass-card p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/30 to-cyan-500/30 flex items-center justify-center">
+                <ArrowRight className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Your Next Move</h3>
+                <p className="text-xs text-muted-foreground">Action Step</p>
+              </div>
+            </div>
+            <p className="text-sm text-foreground/80">
+              {result.nextSteps?.[0] || result.recommendations?.[0] || "Practice STAR examples for recent projects"}
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Video and Chart Row */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6"
+        >
+          {/* Video Recording */}
+          <div className="glass-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Play className="w-5 h-5 text-primary" />
+                <div>
+                  <h3 className="font-semibold text-foreground">
+                    Your Interview Recording
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Watch your performance and review your responses
+                  </p>
                 </div>
-                <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
-                  {!videoUrl ? (
-                    // Show error message when video is not available
-                    <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                  Complete
+                </Badge>
+                {totalDuration > 0 && isFinite(totalDuration) && (
+                  <span className="text-sm text-muted-foreground">
+                    {Math.floor(totalDuration / 60)}m {Math.round(totalDuration % 60)}s
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Video Player Placeholder */}
+            <div className="relative aspect-video bg-black/50 rounded-xl overflow-hidden mb-4 group cursor-pointer">
+              {!videoUrl ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
+                    <AlertCircle className="w-8 h-8 text-red-400" />
+                  </div>
+                  <p className="text-white font-medium">Video Not Available</p>
+                  <p className="text-white/60 text-sm mt-2">
+                    This interview was recorded locally and is not accessible in production.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {isConverting && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
                       <div className="text-center text-white">
-                        <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4 mx-auto">
-                          <AlertCircle className="w-8 h-8 text-red-400" />
-                        </div>
-                        <h3 className="text-xl font-semibold mb-2">
-                          Video Not Available
-                        </h3>
-                        <p className="text-white/70">
-                          This interview was recorded locally and is not
-                          accessible in production.
-                        </p>
+                        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                        <p className="text-sm">Converting video to MP4...</p>
                       </div>
                     </div>
-                  ) : (
-                    <>
-                      {isConverting &&
-                        (() => {
-                          const videoFormat =
-                            result?.videoMetadata?.format || "video/webm";
-                          const isMP4 = isMP4Format(videoFormat);
-
-                          // Only show conversion overlay if we're actually converting (not MP4)
-                          if (!isMP4) {
-                            return (
-                              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
-                                <div className="text-center text-white">
-                                  <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                                  <p className="text-sm">
-                                    Converting video to MP4...
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        })()}
-
-                      {/* Black overlay with play button when video is not playing */}
-                      {!videoPlaying && !isConverting && (
-                        <div
-                          className="absolute inset-0 bg-black flex items-center justify-center cursor-pointer z-20"
-                          onClick={() => {
-                            if (videoRef.current) {
-                              videoRef.current.play();
-                              setVideoPlaying(true);
-                            }
-                          }}
-                        >
-                          <div className="text-center text-white">
-                            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
-                              <Play className="w-8 h-8 text-white ml-1" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-2">
-                              Interview Recording
-                            </h3>
-                            <p className="text-white/70">Click to play</p>
-                          </div>
-                        </div>
-                      )}
-                    </>
                   )}
 
-                  {videoUrl && (
-                    <video
-                      controls
-                      className="w-full h-full"
-                      src={seekableVideoUrl || videoUrl}
-                      poster=""
-                      preload="metadata"
-                      ref={videoRef}
-                      onTimeUpdate={(e) =>
-                        setCurrentTime(
-                          (e.target as HTMLVideoElement).currentTime
-                        )
-                      }
-                      onRateChange={(e) =>
-                        setPlaybackRate(
-                          (e.target as HTMLVideoElement).playbackRate
-                        )
-                      }
-                      onPlay={() => setVideoPlaying(true)}
-                      onPause={() => setVideoPlaying(false)}
-                      style={{ display: videoPlaying ? "block" : "none" }}
+                  {!videoPlaying && !isConverting && (
+                    <div
+                      className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer z-20"
+                      onClick={() => {
+                        if (videoRef.current) {
+                          videoRef.current.play();
+                          setVideoPlaying(true);
+                        }
+                      }}
                     >
-                      Your browser does not support the video tag.
-                    </video>
+                      <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                        <Play className="w-8 h-8 text-white ml-1" />
+                      </div>
+                      <p className="text-white mt-4 font-medium">Interview Recording</p>
+                      <p className="text-white/60 text-sm">Click to play</p>
+                    </div>
                   )}
-                </div>
-                {/* Playback controls */}
-                {videoUrl && (
-                  <div className="flex gap-2 items-center flex-wrap">
-                    {(() => {
-                      const videoFormat =
-                        result?.videoMetadata?.format || "video/webm";
-                      const isMP4 = isMP4Format(videoFormat);
-                      const formatName = getFormatDisplayName(videoFormat);
-                      const fileExtension = getFileExtension(videoFormat);
 
-                      // Debug: Download button logic (disabled)
-                      // console.log("Download button logic:", {
-                      //   videoFormat,
-                      //   isMP4,
-                      //   formatName,
-                      //   fileExtension,
-                      //   result: result,
-                      //   videoMetadata: result?.videoMetadata,
-                      // });
+                  <video
+                    controls
+                    className="w-full h-full"
+                    src={seekableVideoUrl || videoUrl}
+                    poster=""
+                    preload="metadata"
+                    ref={videoRef}
+                    onTimeUpdate={(e) =>
+                      setCurrentTime((e.target as HTMLVideoElement).currentTime)
+                    }
+                    onRateChange={(e) =>
+                      setPlaybackRate((e.target as HTMLVideoElement).playbackRate)
+                    }
+                    onPlay={() => setVideoPlaying(true)}
+                    onPause={() => setVideoPlaying(false)}
+                    style={{ display: videoPlaying ? "block" : "none" }}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </>
+              )}
+            </div>
 
-                      if (isMP4) {
-                        // Video is already MP4 - show single download button
-                        return (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const link = document.createElement("a");
-                              link.href = videoUrl;
-                              link.download = `interview-${result.id}.${fileExtension}`;
-                              link.click();
-                            }}
-                            className="flex items-center gap-2"
-                          >
-                            <Download className="h-4 w-4" />
-                            Download {formatName}
-                          </Button>
-                        );
-                      } else {
-                        // Video is not MP4 - show both options
-                        return (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const link = document.createElement("a");
-                                link.href = videoUrl;
-                                link.download = `interview-${result.id}.${fileExtension}`;
-                                link.click();
-                              }}
-                              className="flex items-center gap-2"
-                            >
-                              <Download className="h-4 w-4" />
-                              Download {formatName}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={async () => {
-                                if (!videoUrl) return;
+            {/* Controls */}
+            {videoUrl && (() => {
+                const videoFormat = result?.videoMetadata?.format || "video/webm";
+                const isMP4 = isMP4Format(videoFormat);
+                const formatName = getFormatDisplayName(videoFormat);
+                const fileExtension = getFileExtension(videoFormat);
 
-                                // console.log("MP4 conversion button clicked - starting conversion");
-                                try {
-                                  setIsConverting(true);
-                                  toast({
-                                    title: "Converting Video",
-                                    description:
-                                      "Converting to MP4 format for better compatibility...",
-                                  });
-
-                                  // Get the original video blob
-                                  const response = await fetch(videoUrl);
-                                  const videoBlob = await response.blob();
-
-                                  // Convert to MP4
-                                  const mp4Blob =
-                                    await videoConversionService.convertWebMToMP4(
-                                      videoBlob
-                                    );
-
-                                  // Download MP4
-                                  const link = document.createElement("a");
-                                  link.href = URL.createObjectURL(mp4Blob);
-                                  link.download = `interview-${result.id}.mp4`;
-                                  link.click();
-
-                                  toast({
-                                    title: "Download Complete",
-                                    description:
-                                      "MP4 video downloaded successfully!",
-                                  });
-                                } catch (error) {
-                                  console.error(
-                                    "MP4 conversion failed:",
-                                    error
-                                  );
-                                  toast({
-                                    title: "Conversion Failed",
-                                    description:
-                                      "Failed to convert to MP4. Please try downloading the WebM version.",
-                                    variant: "destructive",
-                                  });
-                                } finally {
-                                  setIsConverting(false);
-                                }
-                              }}
-                              disabled={isConverting}
-                              className="flex items-center gap-2"
-                            >
-                              <Download className="h-4 w-4" />
-                              {isConverting ? "Converting..." : "Download MP4"}
-                            </Button>
-                          </>
-                        );
-                      }
-                    })()}
-
-                    {/* Speed controls */}
-                    <div className="ml-auto flex items-center gap-1">
-                      {[0.75, 1, 1.25, 1.5].map((rate) => (
+                return (
+                  <div className="flex items-center justify-between mb-4">
+                    {isMP4 ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          const link = document.createElement("a");
+                          link.href = videoUrl;
+                          link.download = `interview-${result.id}.${fileExtension}`;
+                          link.click();
+                        }}
+                      >
+                        <Download className="w-4 h-4" />
+                        Download {formatName}
+                      </Button>
+                    ) : (
+                      <>
                         <Button
-                          key={rate}
-                          variant={
-                            playbackRate === rate ? "default" : "outline"
-                          }
+                          variant="ghost"
                           size="sm"
+                          className="gap-2"
+                          onClick={() => {
+                            const link = document.createElement("a");
+                            link.href = videoUrl;
+                            link.download = `interview-${result.id}.${fileExtension}`;
+                            link.click();
+                          }}
+                        >
+                          <Download className="w-4 h-4" />
+                          Download {formatName}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-2"
+                          onClick={async () => {
+                            if (!videoUrl) return;
+                            try {
+                              setIsConverting(true);
+                              toast({
+                                title: "Converting Video",
+                                description: "Converting to MP4 format for better compatibility...",
+                              });
+
+                              const response = await fetch(videoUrl);
+                              const videoBlob = await response.blob();
+                              const mp4Blob = await videoConversionService.convertWebMToMP4(videoBlob);
+
+                              const link = document.createElement("a");
+                              link.href = URL.createObjectURL(mp4Blob);
+                              link.download = `interview-${result.id}.mp4`;
+                              link.click();
+
+                              toast({
+                                title: "Download Complete",
+                                description: "MP4 video downloaded successfully!",
+                              });
+                            } catch (error) {
+                              console.error("MP4 conversion failed:", error);
+                              toast({
+                                title: "Conversion Failed",
+                                description: "Failed to convert to MP4. Please try downloading the WebM version.",
+                                variant: "destructive",
+                              });
+                            } finally {
+                              setIsConverting(false);
+                            }
+                          }}
+                          disabled={isConverting}
+                        >
+                          <Download className="w-4 h-4" />
+                          {isConverting ? "Converting..." : "Download MP4"}
+                        </Button>
+                      </>
+                    )}
+                    <div className="flex items-center gap-1">
+                      {["0.75x", "1x", "1.25x", "1.5x"].map((speed) => (
+                        <Button
+                          key={speed}
+                          variant={playbackRate === parseFloat(speed) ? "default" : "ghost"}
+                          size="sm"
+                          className="h-8 px-2 text-xs"
                           onClick={() => {
                             if (videoRef.current) {
-                              videoRef.current.playbackRate = rate;
-                              setPlaybackRate(rate);
+                              videoRef.current.playbackRate = parseFloat(speed);
+                              setPlaybackRate(parseFloat(speed));
                             }
                           }}
                         >
-                          {rate}x
+                          {speed}
                         </Button>
                       ))}
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
+                        className="h-8 px-2 text-xs"
                         onClick={async () => {
                           try {
-                            if (
-                              videoRef.current &&
-                              (document as any).pictureInPictureEnabled
-                            ) {
+                            if (videoRef.current && (document as any).pictureInPictureEnabled) {
                               if ((document as any).pictureInPictureElement) {
                                 await (document as any).exitPictureInPicture();
                               } else {
-                                await (
-                                  videoRef.current as any
-                                ).requestPictureInPicture();
+                                await (videoRef.current as any).requestPictureInPicture();
                               }
                             }
                           } catch {}
@@ -2006,893 +1937,335 @@ const InterviewResults = () => {
                       </Button>
                     </div>
                   </div>
-                )}
+                );
+              })()}
 
-                {/* Chapter timeline */}
-                {videoUrl && chapters.length > 0 && totalDuration > 0 && (
-                  <div className="mt-4">
-                    <div className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4" /> Chapters
-                      <span className="ml-auto text-xs">
-                        {Math.floor(currentTime)}s / {Math.floor(totalDuration)}
-                        s
-                      </span>
+              {/* Chapters */}
+              {videoUrl && chapters.length > 0 && totalDuration > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Chapters</span>
                     </div>
-                    <div className="relative h-4 w-full bg-muted rounded overflow-hidden">
-                      {chapters.map((ch, i) => (
-                        <button
-                          key={i}
-                          title={`Q${ch.index}: ${ch.question}`}
-                          onClick={() => seekTo(ch.start)}
-                          style={{
-                            left: `${(ch.start / totalDuration) * 100}%`,
-                            width: `${(ch.duration / totalDuration) * 100}%`,
-                          }}
-                          className={`absolute top-0 h-full ${markerColor(
-                            ch.score
-                          )} hover:opacity-80 transition-opacity`}
-                        />
-                      ))}
-                      {/* Playhead */}
-                      <div
-                        className="absolute top-0 bottom-0 w-0.5 bg-black/60 dark:bg-white/60"
-                        style={{
-                          left: `${(currentTime / totalDuration) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      {chapters.map((ch, i) => (
-                        <span
-                          key={i}
-                          className="truncate"
-                          style={{
-                            width: `${(ch.duration / totalDuration) * 100}%`,
-                          }}
-                        >
-                          Q{ch.index}
-                        </span>
-                      ))}
-                    </div>
+                    <span className="text-muted-foreground">
+                      {Math.floor(currentTime)}s / {Math.floor(totalDuration)}s
+                    </span>
                   </div>
-                )}
-              </div>
-            </Card>
+                  <div className="relative h-4 w-full bg-muted rounded overflow-hidden">
+                    {chapters.map((ch, i) => (
+                      <button
+                        key={i}
+                        title={`Q${ch.index}: ${ch.question}`}
+                        onClick={() => seekTo(ch.start)}
+                        style={{
+                          left: `${(ch.start / totalDuration) * 100}%`,
+                          width: `${(ch.duration / totalDuration) * 100}%`,
+                        }}
+                        className={`absolute top-0 h-full ${markerColor(ch.score)} hover:opacity-80 transition-opacity`}
+                      />
+                    ))}
+                    {/* Playhead */}
+                    <div
+                      className="absolute top-0 bottom-0 w-0.5 bg-black/60 dark:bg-white/60"
+                      style={{
+                        left: `${(currentTime / totalDuration) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    {chapters.map((ch, i) => (
+                      <span
+                        key={i}
+                        className="truncate"
+                        style={{
+                          width: `${(ch.duration / totalDuration) * 100}%`,
+                        }}
+                      >
+                        Q{ch.index}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Performance Trend */}
-            <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
+            <div className="glass-card p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary-blue/10 rounded-professional">
-                    <BarChart3 className="w-5 h-5 text-primary-blue" />
-                  </div>
-                  <h3 className="text-xl font-bold text-dark-navy font-display">
-                    Performance Trend
-                  </h3>
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">Performance Trend</h3>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
+                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+                  <Button
+                    variant={chartType === "bar" ? "default" : "ghost"}
+                    size="sm"
+                    className="h-7 text-xs"
                     onClick={() => setChartType("bar")}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      chartType === "bar"
-                        ? "bg-primary-blue text-white"
-                        : "bg-light-gray text-muted-foreground hover:bg-light-gray/80"
-                    }`}
                   >
-                    <BarChart3 className="w-4 h-4" />
+                    <BarChart3 className="w-3 h-3 mr-1" />
                     Bar
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant={chartType === "line" ? "default" : "ghost"}
+                    size="sm"
+                    className="h-7 text-xs"
                     onClick={() => setChartType("line")}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      chartType === "line"
-                        ? "bg-primary-blue text-white"
-                        : "bg-light-gray text-muted-foreground hover:bg-light-gray/80"
-                    }`}
                   >
-                    <TrendingUp className="w-4 h-4" />
+                    <TrendingUp className="w-3 h-3 mr-1" />
                     Line
-                  </button>
+                  </Button>
                 </div>
               </div>
-              <div className="h-80">
+
+              <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   {chartType === "line" ? (
-                    <LineChart
-                      data={result.responses.map((r, i) => ({
-                        name: `Q${i + 1}`,
-                        score: r.score,
-                      }))}
-                      margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#F5F7FA" />
+                    <LineChart data={performanceData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis
-                        dataKey="name"
-                        stroke="#64748B"
-                        tick={{
-                          fontSize: result.responses.length > 10 ? 10 : 12,
-                        }}
-                        interval={
-                          result.responses.length > 10 ? "preserveStartEnd" : 0
-                        }
+                        dataKey="question"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
                       />
-                      <YAxis domain={[0, 100]} stroke="#64748B" />
-                      <ReTooltip
+                      <YAxis
+                        domain={[0, 100]}
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                      />
+                      <Tooltip
                         contentStyle={{
-                          backgroundColor: "white",
-                          border: "1px solid #F5F7FA",
-                          borderRadius: "12px",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          color: "hsl(var(--foreground))",
                         }}
                       />
                       <Line
                         type="monotone"
                         dataKey="score"
-                        stroke="#3871C2"
+                        stroke="hsl(var(--primary))"
                         strokeWidth={3}
-                        dot={{ r: 5, fill: "#3871C2" }}
+                        dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 6 }}
+                        activeDot={{ r: 8 }}
                       />
                     </LineChart>
                   ) : (
-                    <BarChart
-                      data={result.responses.map((r, i) => ({
-                        name: `Q${i + 1}`,
-                        score: r.score,
-                      }))}
-                      margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#F5F7FA" />
+                    <BarChart data={performanceData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis
-                        dataKey="name"
-                        stroke="#64748B"
-                        tick={{
-                          fontSize: result.responses.length > 10 ? 10 : 12,
-                        }}
-                        interval={
-                          result.responses.length > 10 ? "preserveStartEnd" : 0
-                        }
+                        dataKey="question"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
                       />
-                      <YAxis domain={[0, 100]} stroke="#64748B" />
-                      <ReTooltip
+                      <YAxis
+                        domain={[0, 100]}
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                      />
+                      <Tooltip
                         contentStyle={{
-                          backgroundColor: "white",
-                          border: "1px solid #F5F7FA",
-                          borderRadius: "12px",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          color: "hsl(var(--foreground))",
                         }}
                       />
                       <Bar
                         dataKey="score"
-                        fill="#3871C2"
+                        fill="hsl(var(--primary))"
                         radius={[4, 4, 0, 0]}
                       />
                     </BarChart>
                   )}
                 </ResponsiveContainer>
               </div>
-            </Card>
+            </div>
+        </motion.div>
+
+        {/* Response Transcriptions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="glass-card p-6"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <MessageSquare className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold text-foreground text-lg">Response Transcriptions</h3>
+          </div>
+
+          <div className="space-y-3">
+            {result.responses.map((response, index) => {
+              const questionId = response.id || `q${index}`;
+              const isExpanded = expandedQuestions.includes(questionId);
+              const score = response.score || 0;
+              
+              return (
+                <div
+                  key={questionId}
+                  className="border border-border/50 rounded-xl overflow-hidden bg-card/30"
+                >
+                  <button
+                    onClick={() => toggleQuestion(questionId)}
+                    className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <Badge
+                        className={
+                          score >= 85
+                            ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                            : score >= 70
+                            ? "bg-primary/20 text-primary border-primary/30"
+                            : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                        }
+                      >
+                        Q{index + 1}
+                      </Badge>
+                      <span className="text-foreground text-left">{response.question}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span
+                        className={`font-semibold ${
+                          score >= 85
+                            ? "text-emerald-400"
+                            : score >= 70
+                            ? "text-primary"
+                            : score >= 50
+                            ? "text-yellow-400"
+                            : "text-red-400"
+                        }`}
+                      >
+                        {score}%
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </div>
+                  </button>
+
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="px-4 pb-4 space-y-4"
+                    >
+                      <div className="bg-muted/30 rounded-lg p-4">
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                          Your Response
+                        </h4>
+                        <p className="text-foreground/80 text-sm leading-relaxed">
+                          {response.answer || "No response available"}
+                        </p>
+                      </div>
+                      {response.actionable_feedback && (
+                        <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
+                          <h4 className="text-sm font-medium text-primary mb-2 flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4" />
+                            AI Feedback
+                          </h4>
+                          <p className="text-foreground/80 text-sm">{response.actionable_feedback}</p>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </motion.div>
 
-        {/* Response Transcriptions - Full Width */}
+        {/* Readiness Assessment & Improvement Roadmap */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9 }}
-          className="mb-8"
+          transition={{ delay: 0.4 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         >
-          <Card className="p-6 bg-white rounded-professional shadow-professional border-0">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-accent-orange/10 rounded-professional">
-                <MessageSquare className="w-5 h-5 text-accent-orange" />
+          {/* Readiness Assessment */}
+          <div className="glass-card p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Target className="w-5 h-5 text-primary" />
               </div>
-              <h3 className="text-xl font-bold text-dark-navy font-display">
-                Response Transcriptions
-              </h3>
-            </div>
-            <Accordion type="single" collapsible className="space-y-4">
-              {result.responses.map((response, index) => (
-                <AccordionItem key={response.id} value={`item-${index}`}>
-                  <AccordionTrigger className="text-left hover:no-underline">
-                    <div className="flex items-center justify-between w-full pr-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            index === 0
-                              ? "bg-primary-blue text-white"
-                              : index === 1
-                              ? "bg-accent-green text-white"
-                              : "bg-accent-orange text-white"
-                          }`}
-                        >
-                          Q{index + 1}
-                        </div>
-                        <span className="font-medium line-clamp-1">
-                          {response.question}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`font-bold text-lg ${getScoreColor(
-                            response.score
-                          )}`}
-                        >
-                          {response.score}%
-                        </span>
-                      </div>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-6 pt-6">
-                    <Tabs defaultValue="response" className="w-full">
-                      {/* Improved Tab Design with Better Alignment */}
-                      <TabsList className="flex w-full mb-6 bg-gray-100 p-1 rounded-lg border border-gray-200">
-                        <TabsTrigger
-                          value="response"
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200 hover:text-blue-600/80 rounded-md relative"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                          <span className="whitespace-nowrap">
-                            Your Response
-                          </span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="analysis"
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200 hover:text-blue-600/80 rounded-md relative"
-                        >
-                          <BarChart3 className="w-4 h-4" />
-                          <span className="whitespace-nowrap">
-                            Detailed Analysis
-                          </span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="feedback"
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200 hover:text-blue-600/80 rounded-md relative"
-                        >
-                          <Lightbulb className="w-4 h-4" />
-                          <span className="whitespace-nowrap">Feedback</span>
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="coach"
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-200 hover:text-blue-600/80 rounded-md relative"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                          <span className="whitespace-nowrap">AI Coach</span>
-                        </TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="response" className="space-y-6">
-                        {/* Response Quality Badge */}
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`px-3 py-1 rounded-full text-sm font-medium ${
-                              response.duration < 45
-                                ? "bg-red-100 text-red-700"
-                                : response.duration > 180
-                                ? "bg-orange-100 text-orange-700"
-                                : "bg-green-100 text-green-700"
-                            }`}
-                          >
-                            {response.duration < 45
-                              ? "Too Short"
-                              : response.duration > 180
-                              ? "Too Long"
-                              : "Appropriate"}
-                          </div>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Clock className="w-4 h-4" />
-                            <span>{response.duration}s duration</span>
-                          </div>
-                        </div>
-
-                        {/* Response Text */}
-                        <div className="bg-gradient-to-br from-light-gray/30 to-white p-6 rounded-professional border border-light-gray/50">
-                          <div className="flex items-start gap-3 mb-4">
-                            <div className="p-2 bg-primary-blue/10 rounded-professional">
-                              <MessageSquare className="w-4 h-4 text-primary-blue" />
-                            </div>
-                            <div>
-                              <h4 className="font-semibold text-dark-navy mb-1">
-                                Your Response
-                              </h4>
-                              <p className="text-sm text-muted-foreground">
-                                Transcribed from your interview
-                              </p>
-                            </div>
-                          </div>
-                          <p className="text-sm text-dark-navy leading-relaxed bg-white p-4 rounded-lg border border-light-gray/30">
-                            {response.answer}
-                          </p>
-                        </div>
-
-                        {/* Performance Metrics Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="bg-white p-4 rounded-professional border border-light-gray/50 hover:shadow-professional transition-shadow">
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className="p-2 bg-blue-100 rounded-lg">
-                                <Timer className="w-4 h-4 text-blue-600" />
-                              </div>
-                              <span className="text-sm font-medium text-dark-navy">
-                                Duration
-                              </span>
-                            </div>
-                            <p className="text-2xl font-bold text-primary-blue">
-                              {response.duration}s
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Response length
-                            </p>
-                          </div>
-
-                          <div className="bg-white p-4 rounded-professional border border-light-gray/50 hover:shadow-professional transition-shadow">
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className="p-2 bg-orange-100 rounded-lg">
-                                <Mic className="w-4 h-4 text-orange-600" />
-                              </div>
-                              <span className="text-sm font-medium text-dark-navy">
-                                Fillers
-                              </span>
-                            </div>
-                            <p className="text-2xl font-bold text-accent-orange">
-                              {response.fillerWords}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Filler words used
-                            </p>
-                          </div>
-
-                          <div className="bg-white p-4 rounded-professional border border-light-gray/50 hover:shadow-professional transition-shadow">
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className="p-2 bg-green-100 rounded-lg">
-                                <TrendingUp className="w-4 h-4 text-green-600" />
-                              </div>
-                              <span className="text-sm font-medium text-dark-navy">
-                                Speaking Pace
-                              </span>
-                            </div>
-                            <p className="text-2xl font-bold text-accent-green">
-                              {response.speakingPace}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Words per minute
-                            </p>
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="analysis" className="space-y-6">
-                        {/* Skill Breakdown Header */}
-                        <div className="flex items-center gap-3 mb-6">
-                          <div className="p-2 bg-primary-blue/10 rounded-professional">
-                            <BarChart3 className="w-5 h-5 text-primary-blue" />
-                          </div>
-                          <div>
-                            <h4 className="text-lg font-bold text-dark-navy">
-                              Skill Breakdown
-                            </h4>
-                            <p className="text-sm text-muted-foreground">
-                              Detailed performance analysis
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-8">
-                          {/* Communication Skills */}
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-2 mb-4">
-                              <div className="p-1 bg-blue-100 rounded">
-                                <MessageSquare className="w-4 h-4 text-blue-600" />
-                              </div>
-                              <h5 className="text-lg font-semibold text-dark-navy">
-                                Communication
-                              </h5>
-                            </div>
-
-                            <div className="space-y-4">
-                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium text-dark-navy">
-                                    Clarity
-                                  </span>
-                                  <span className="font-bold text-primary-blue">
-                                    {response.communication_scores?.clarity
-                                      ? Math.round(
-                                          response.communication_scores.clarity
-                                        )
-                                      : Math.round(
-                                          (response.confidence || 0.8) * 100
-                                        )}
-                                    %
-                                  </span>
-                                </div>
-                                <div className="w-full bg-light-gray rounded-full h-2">
-                                  <div
-                                    className="bg-primary-blue h-2 rounded-full transition-all duration-500"
-                                    style={{
-                                      width: `${
-                                        response.communication_scores?.clarity
-                                          ? Math.round(
-                                              response.communication_scores
-                                                .clarity
-                                            )
-                                          : Math.round(
-                                              (response.confidence || 0.8) * 100
-                                            )
-                                      }%`,
-                                    }}
-                                  ></div>
-                                </div>
-                              </div>
-
-                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium text-dark-navy">
-                                    Structure
-                                  </span>
-                                  <span className="font-bold text-accent-green">
-                                    {response.communication_scores?.structure
-                                      ? Math.round(
-                                          response.communication_scores
-                                            .structure
-                                        )
-                                      : Math.round((response.score / 12) * 100)}
-                                    %
-                                  </span>
-                                </div>
-                                <div className="w-full bg-light-gray rounded-full h-2">
-                                  <div
-                                    className="bg-accent-green h-2 rounded-full transition-all duration-500"
-                                    style={{
-                                      width: `${
-                                        response.communication_scores?.structure
-                                          ? Math.round(
-                                              response.communication_scores
-                                                .structure
-                                            )
-                                          : Math.round(
-                                              (response.score / 12) * 100
-                                            )
-                                      }%`,
-                                    }}
-                                  ></div>
-                                </div>
-                              </div>
-
-                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium text-dark-navy">
-                                    Conciseness
-                                  </span>
-                                  <span className="font-bold text-accent-orange">
-                                    {response.communication_scores?.conciseness
-                                      ? Math.round(
-                                          response.communication_scores
-                                            .conciseness
-                                        )
-                                      : Math.round(7 * 10)}
-                                    %
-                                  </span>
-                                </div>
-                                <div className="w-full bg-light-gray rounded-full h-2">
-                                  <div
-                                    className="bg-accent-orange h-2 rounded-full transition-all duration-500"
-                                    style={{
-                                      width: `${
-                                        response.communication_scores
-                                          ?.conciseness
-                                          ? Math.round(
-                                              response.communication_scores
-                                                .conciseness
-                                            )
-                                          : Math.round(7 * 10)
-                                      }%`,
-                                    }}
-                                  ></div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Content Skills */}
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-2 mb-4">
-                              <div className="p-1 bg-green-100 rounded">
-                                <Target className="w-4 h-4 text-green-600" />
-                              </div>
-                              <h5 className="text-lg font-semibold text-dark-navy">
-                                Content
-                              </h5>
-                            </div>
-
-                            <div className="space-y-4">
-                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium text-dark-navy">
-                                    Relevance
-                                  </span>
-                                  <span className="font-bold text-primary-blue">
-                                    {response.content_scores?.relevance
-                                      ? Math.round(
-                                          response.content_scores.relevance
-                                        )
-                                      : Math.round(response.score)}
-                                    %
-                                  </span>
-                                </div>
-                                <div className="w-full bg-light-gray rounded-full h-2">
-                                  <div
-                                    className="bg-primary-blue h-2 rounded-full transition-all duration-500"
-                                    style={{
-                                      width: `${
-                                        response.content_scores?.relevance
-                                          ? Math.round(
-                                              response.content_scores.relevance
-                                            )
-                                          : Math.round(response.score)
-                                      }%`,
-                                    }}
-                                  ></div>
-                                </div>
-                              </div>
-
-                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium text-dark-navy">
-                                    Depth
-                                  </span>
-                                  <span className="font-bold text-accent-green">
-                                    {response.content_scores?.depth
-                                      ? Math.round(
-                                          response.content_scores.depth
-                                        )
-                                      : Math.round(7 * 10)}
-                                    %
-                                  </span>
-                                </div>
-                                <div className="w-full bg-light-gray rounded-full h-2">
-                                  <div
-                                    className="bg-accent-green h-2 rounded-full transition-all duration-500"
-                                    style={{
-                                      width: `${
-                                        response.content_scores?.depth
-                                          ? Math.round(
-                                              response.content_scores.depth
-                                            )
-                                          : Math.round(7 * 10)
-                                      }%`,
-                                    }}
-                                  ></div>
-                                </div>
-                              </div>
-
-                              <div className="bg-white p-4 rounded-professional border border-light-gray/50">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium text-dark-navy">
-                                    Specificity
-                                  </span>
-                                  <span className="font-bold text-accent-orange">
-                                    {response.content_scores?.specificity
-                                      ? Math.round(
-                                          response.content_scores.specificity
-                                        )
-                                      : Math.round(7 * 10)}
-                                    %
-                                  </span>
-                                </div>
-                                <div className="w-full bg-light-gray rounded-full h-2">
-                                  <div
-                                    className="bg-accent-orange h-2 rounded-full transition-all duration-500"
-                                    style={{
-                                      width: `${
-                                        response.content_scores?.specificity
-                                          ? Math.round(
-                                              response.content_scores
-                                                .specificity
-                                            )
-                                          : Math.round(7 * 10)
-                                      }%`,
-                                    }}
-                                  ></div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="feedback" className="space-y-6">
-                        <div className="grid lg:grid-cols-2 gap-6">
-                          {/* What Worked */}
-                          <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-professional border border-green-200/50">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="p-2 bg-green-100 rounded-professional">
-                                <CheckCircle className="w-5 h-5 text-green-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-green-700">
-                                  What Worked
-                                </h4>
-                                <p className="text-sm text-green-600">
-                                  Your strengths in this response
-                                </p>
-                              </div>
-                            </div>
-                            <div className="space-y-3">
-                              {response.strengths &&
-                              response.strengths.length > 0 ? (
-                                response.strengths
-                                  .slice(0, 3)
-                                  .map((strength, i) => (
-                                    <div
-                                      key={i}
-                                      className="flex items-start gap-3 p-3 bg-white/70 rounded-lg border border-green-200/30"
-                                    >
-                                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                                      <p className="text-sm text-green-800 leading-relaxed">
-                                        {strength}
-                                      </p>
-                                    </div>
-                                  ))
-                              ) : (
-                                <div className="p-4 bg-white/70 rounded-lg border border-green-200/30">
-                                  <p className="text-sm text-green-700 italic text-center">
-                                    No specific strengths identified for this
-                                    question.
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Growth Opportunities */}
-                          <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-professional border border-orange-200/50">
-                            <div className="flex items-center gap-3 mb-4">
-                              <div className="p-2 bg-orange-100 rounded-professional">
-                                <Lightbulb className="w-5 h-5 text-orange-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-orange-700">
-                                  Growth Opportunities
-                                </h4>
-                                <p className="text-sm text-orange-600">
-                                  Areas for improvement
-                                </p>
-                              </div>
-                            </div>
-                            <div className="space-y-3">
-                              {response.improvements &&
-                              response.improvements.length > 0 ? (
-                                response.improvements
-                                  .slice(0, 3)
-                                  .map((improvement, i) => (
-                                    <div
-                                      key={i}
-                                      className="flex items-start gap-3 p-3 bg-white/70 rounded-lg border border-orange-200/30"
-                                    >
-                                      <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
-                                      <p className="text-sm text-orange-800 leading-relaxed">
-                                        {improvement}
-                                      </p>
-                                    </div>
-                                  ))
-                              ) : (
-                                <div className="p-4 bg-white/70 rounded-lg border border-orange-200/30">
-                                  <p className="text-sm text-orange-700 italic text-center">
-                                    No specific improvements identified for this
-                                    question.
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="coach" className="space-y-6">
-                        {/* AI Coach Feedback */}
-                        <div className="bg-gradient-to-br from-primary-blue/5 to-primary-blue/10 p-6 rounded-professional border-l-4 border-primary-blue">
-                          <div className="flex items-start gap-3 mb-4">
-                            <div className="p-2 bg-primary-blue/20 rounded-professional">
-                              <Sparkles className="w-5 h-5 text-primary-blue" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-dark-navy mb-2">
-                                AI Coach Feedback
-                              </h4>
-                              <p className="text-sm text-muted-foreground leading-relaxed">
-                                {response.actionable_feedback ||
-                                  "Keep refining structure and metrics for stronger impact."}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Your Next Response */}
-                        <div className="bg-gradient-to-br from-accent-green/5 to-accent-green/10 p-6 rounded-professional border border-accent-green/20">
-                          <div className="flex items-start gap-3 mb-4">
-                            <div className="p-2 bg-accent-green/20 rounded-professional">
-                              <Lightbulb className="w-5 h-5 text-accent-green" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-dark-navy mb-2">
-                                Your Next Response
-                              </h4>
-                              <p className="text-sm text-muted-foreground mb-1">
-                                Here's an improved version:
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="bg-white p-4 rounded-lg border border-accent-green/20 mb-4">
-                            <p className="text-sm text-dark-navy leading-relaxed">
-                              {response.improved_example ||
-                                "For example: Emphasize actions and measurable outcomes using the STAR method to tighten your narrative."}
-                            </p>
-                          </div>
-
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="rounded-professional"
-                              onClick={() => {
-                                navigator.clipboard.writeText(
-                                  response.improved_example || ""
-                                );
-                                // You could add a toast notification here
-                              }}
-                            >
-                              <Edit className="w-4 h-4 mr-2" />
-                              Copy Example
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="rounded-professional"
-                              onClick={() => {
-                                // Add functionality to save as template
-                              }}
-                            >
-                              <Target className="w-4 h-4 mr-2" />
-                              Save as Template
-                            </Button>
-                          </div>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </Card>
-        </motion.div>
-
-        {/* Comprehensive Feedback & Action Plan */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="mt-8 grid lg:grid-cols-2 gap-8"
-        >
-          <Card className="p-6 bg-white rounded-professional shadow-professional border-0 h-full flex flex-col">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-accent-green/10 rounded-professional">
-                <Target className="w-5 h-5 text-accent-green" />
-              </div>
-              <h3 className="text-xl font-bold text-dark-navy font-display">
+              <h3 className="font-semibold text-foreground text-lg">
                 Your Readiness Assessment
               </h3>
             </div>
-            <div className="flex items-center gap-4 mb-4">
-              <Badge
-                className={`${
-                  getTierBadge(result.overallScore).classes.includes(
-                    "accent-green"
-                  )
-                    ? "bg-accent-green"
-                    : getTierBadge(result.overallScore).classes.includes(
-                        "primary-blue"
-                      )
-                    ? "bg-primary-blue"
-                    : "bg-accent-orange"
-                } text-white`}
-              >
-                {result.readinessLevel || "Assessment Ready"}
-              </Badge>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {result.insights?.[0] ||
-                "Consistent structure and relevant examples. Keep refining metrics and conciseness for even stronger impact."}
+            <Badge className={`${readinessBadge.className} mb-4`}>
+              {readinessBadge.label}
+            </Badge>
+            <p className="text-foreground/70 text-sm leading-relaxed">
+              {result.insights?.[0] || result.recommendations?.[0] || "Your interview performance shows strong potential. Continue practicing to improve consistency and depth in your responses."}
             </p>
-          </Card>
+          </div>
 
-          <Card className="p-6 bg-white rounded-professional shadow-professional border-0 h-full flex flex-col">
+          {/* Improvement Roadmap */}
+          <div className="glass-card p-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-primary-blue/10 rounded-professional">
-                <Lightbulb className="w-5 h-5 text-primary-blue" />
+              <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                <Lightbulb className="w-5 h-5 text-yellow-400" />
               </div>
-              <h3 className="text-xl font-bold text-dark-navy font-display">
+              <h3 className="font-semibold text-foreground text-lg">
                 Your Improvement Roadmap
               </h3>
             </div>
-            <div className="flex-1 flex flex-col">
-              <div className="space-y-4 flex-1">
-                {(result.nextSteps && result.nextSteps.length > 0
-                  ? result.nextSteps
-                  : [
-                      "Draft 2 STAR stories with quantifiable results",
-                      "Practice concise openings under 30 seconds",
-                      "Collect metrics for 2 recent projects",
-                    ]
-                ).map((step, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-3 p-4 bg-light-gray rounded-professional hover:bg-light-gray/80 transition-colors"
-                  >
-                    <div className="w-6 h-6 rounded-full bg-primary-blue flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-0.5">
-                      {i + 1}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-dark-navy">
-                        {step}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 p-4 bg-gradient-to-r from-primary-blue/10 to-accent-green/10 border border-primary-blue/20 rounded-professional">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary-blue" />
-                  <p className="text-sm font-medium text-dark-navy">
-                    <span className="text-primary-blue font-semibold">
-                      Estimated practice time:
-                    </span>{" "}
-                    <span className="text-accent-green font-bold">
-                      {result.estimatedPracticeTime || "~30–45 minutes"}
+
+            <div className="space-y-3">
+              {(result.improvements || result.recommendations || []).slice(0, 7).map((item: string, index: number) => (
+                <div key={index} className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-xs font-semibold text-primary">
+                      {index + 1}
                     </span>
-                  </p>
+                  </div>
+                  <p className="text-foreground/80 text-sm">{item}</p>
+                </div>
+              ))}
+            </div>
+
+            {result.estimatedPracticeTime && (
+              <div className="mt-6 bg-emerald-500/10 rounded-lg p-4 border border-emerald-500/20">
+                <div className="flex items-center gap-2 text-emerald-400">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm font-medium">
+                    Estimated practice time:{" "}
+                    <span className="text-emerald-300">{result.estimatedPracticeTime}</span>
+                  </span>
                 </div>
               </div>
-            </div>
-          </Card>
+            )}
+          </div>
         </motion.div>
 
-        {/* Bottom CTA */}
+        {/* CTA Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.1 }}
-          className="mt-8"
+          transition={{ delay: 0.5 }}
+          className="glass-card p-8 text-center"
         >
-          <Card className="p-8 bg-white rounded-professional shadow-professional border-0 text-center">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-2xl font-bold text-dark-navy font-display mb-2">
-                  Ready to level up?
-                </h3>
-                <p className="text-muted-foreground">
-                  Continue your interview preparation journey
-                </p>
-              </div>
-              <div className="flex items-center justify-center gap-4 flex-wrap">
-                <Button
-                  onClick={handleScheduleAnother}
-                  className="bg-primary-blue hover:bg-primary-blue/90 text-white rounded-professional px-8 py-3"
-                >
-                  <Calendar className="w-4 h-4 mr-2" /> Schedule Another
-                  Interview
-                </Button>
-                <Button
-                  onClick={handleViewRecommendations}
-                  variant="outline"
-                  className="rounded-professional px-6 py-3"
-                >
-                  View All My Interviews
-                </Button>
-              </div>
-            </div>
-          </Card>
+          <h3 className="text-2xl font-display font-bold text-foreground mb-2">
+            Ready to level up?
+          </h3>
+          <p className="text-muted-foreground mb-6">
+            Continue your interview preparation journey
+          </p>
+          <div className="flex items-center justify-center gap-4">
+            <Button variant="hero" size="lg" className="gap-2" onClick={() => navigate("/interview/setup")}>
+              <Calendar className="w-5 h-5" />
+              Schedule Another Interview
+            </Button>
+            <Button variant="outline" size="lg" onClick={() => navigate("/dashboard")}>
+              View All My Interviews
+            </Button>
+          </div>
         </motion.div>
-      </div>
+      </main>
     </div>
   );
 };

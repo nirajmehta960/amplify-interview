@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 // Removed InterviewProvider import - using direct configuration flow
@@ -23,24 +24,27 @@ import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ModernAnalyticsDashboard from "./pages/ModernAnalyticsDashboard";
 import AnalyticsDemo from "./pages/AnalyticsDemo";
 import ProgressTab from "./pages/ProgressTab";
+import Progress from "./pages/Progress";
 import InsightsTab from "./pages/InsightsTab";
+import Insights from "./pages/Insights";
 import SessionReview from "./pages/SessionReview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <AuthProvider>
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          <AuthProvider>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
@@ -86,7 +90,7 @@ const App = () => (
               path="/dashboard/progress"
               element={
                 <ProtectedRoute>
-                  <ProgressTab />
+                  <Progress />
                 </ProtectedRoute>
               }
             />
@@ -94,7 +98,7 @@ const App = () => (
               path="/dashboard/insights"
               element={
                 <ProtectedRoute>
-                  <InsightsTab />
+                  <Insights />
                 </ProtectedRoute>
               }
             />
@@ -150,12 +154,13 @@ const App = () => (
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-      <Analytics />
-      <SpeedInsights />
-    </TooltipProvider>
-  </QueryClientProvider>
+          </AuthProvider>
+        </BrowserRouter>
+        <Analytics />
+        <SpeedInsights />
+      </TooltipProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;

@@ -1,110 +1,98 @@
+@import url('@fontsource/outfit/400.css');
+@import url('@fontsource/outfit/500.css');
+@import url('@fontsource/outfit/600.css');
+@import url('@fontsource/outfit/700.css');
+@import url('@fontsource/inter/400.css');
+@import url('@fontsource/inter/500.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    /* Big Interview Inspired Color Palette */
-    --background: 0 0% 100%; /* White #FFFFFF */
-    --foreground: 220 25% 11%; /* Dark Navy #1C1F2A */
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
 
-    --card: 220 25% 97%; /* Light Gray #F5F7FA */
-    --card-foreground: 220 25% 11%; /* Dark Navy #1C1F2A */
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 100%; /* White #FFFFFF */
-    --popover-foreground: 220 25% 11%; /* Dark Navy #1C1F2A */
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 214 60% 50%; /* Primary Blue #3871C2 */
-    --primary-foreground: 0 0% 100%; /* White #FFFFFF */
+    --primary: 174 72% 56%;
+    --primary-foreground: 222 47% 6%;
 
-    --secondary: 220 25% 11%; /* Dark Navy #1C1F2A */
-    --secondary-foreground: 0 0% 100%; /* White #FFFFFF */
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 220 25% 97%; /* Light Gray #F5F7FA */
-    --muted-foreground: 220 15% 45%; /* Medium Gray */
+    --muted: 222 30% 18%;
+    --muted-foreground: 215 20% 55%;
 
-    --accent: 142 76% 36%; /* Accent Green #3AB54A */
-    --accent-foreground: 0 0% 100%; /* White #FFFFFF */
+    --accent: 160 60% 45%;
+    --accent-foreground: 210 40% 98%;
 
-    /* Additional Accent Colors */
-    --accent-orange: 35 100% 65%; /* Accent Orange #FFA94D */
-    --accent-orange-foreground: 0 0% 100%; /* White #FFFFFF */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
 
-    --destructive: 0 84% 60%; /* Keep existing red for errors */
-    --destructive-foreground: 0 0% 100%;
+    --border: 222 30% 18%;
+    --input: 222 30% 14%;
+    --ring: 174 72% 56%;
 
-    --border: 220 25% 97%; /* Light Gray #F5F7FA */
-    --input: 220 25% 97%; /* Light Gray #F5F7FA */
-    --ring: 214 60% 50%; /* Primary Blue #3871C2 */
+    --radius: 0.75rem;
 
-    --radius: 1rem; /* 16px rounded corners */
+    /* Custom tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(174 72% 56%) 0%, hsl(160 60% 45%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(222 47% 8%) 0%, hsl(222 47% 4%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(222 47% 10% / 0.8) 0%, hsl(222 47% 6% / 0.6) 100%);
+    --glass-border: hsl(222 30% 25% / 0.5);
+    --glass-bg: hsl(222 47% 10% / 0.6);
+    --glow-primary: 0 0 60px hsl(174 72% 56% / 0.3);
+    --glow-subtle: 0 0 40px hsl(174 72% 56% / 0.15);
 
-    /* Big Interview Professional Gradients */
-    --gradient-primary: linear-gradient(
-      135deg,
-      hsl(214 60% 50%),
-      /* Primary Blue */ hsl(214 60% 45%) /* Slightly darker blue */
-    );
-    --gradient-hero: linear-gradient(
-      180deg,
-      hsl(220 25% 97% / 0.8),
-      /* Light Gray */ hsl(0 0% 100% / 0.9) /* White */
-    );
-    --gradient-card: linear-gradient(
-      135deg,
-      hsl(0 0% 100% / 0.9),
-      /* White */ hsl(220 25% 97% / 0.7) /* Light Gray */
-    );
+    /* Status colors */
+    --success: 160 60% 45%;
+    --warning: 38 92% 50%;
+    --info: 217 91% 60%;
 
-    /* Professional Glass effects */
-    --glass-bg: hsl(0 0% 100% / 0.8);
-    --glass-border: hsl(220 25% 97% / 0.5);
-
-    /* Professional Shadows */
-    --shadow-sm: 0 2px 8px hsl(220 25% 11% / 0.06);
-    --shadow-md: 0 8px 24px hsl(220 25% 11% / 0.08);
-    --shadow-lg: 0 16px 48px hsl(220 25% 11% / 0.12);
-
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 174 72% 56%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 222 30% 14%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 174 72% 56%;
   }
 
   .dark {
-    /* Dark mode with Big Interview colors */
-    --background: 220 25% 11%; /* Dark Navy #1C1F2A */
-    --foreground: 0 0% 98%; /* White */
-
-    --card: 220 25% 15%; /* Slightly lighter navy */
-    --card-foreground: 0 0% 98%; /* White */
-
-    --popover: 220 25% 15%; /* Slightly lighter navy */
-    --popover-foreground: 0 0% 98%; /* White */
-
-    --primary: 214 60% 50%; /* Primary Blue #3871C2 */
-    --primary-foreground: 0 0% 100%; /* White */
-
-    --secondary: 220 25% 15%; /* Slightly lighter navy */
-    --secondary-foreground: 0 0% 98%; /* White */
-
-    --muted: 220 15% 20%; /* Darker gray */
-    --muted-foreground: 220 15% 65%; /* Lighter gray */
-
-    --accent: 142 76% 36%; /* Accent Green #3AB54A */
-    --accent-foreground: 0 0% 100%; /* White */
-
-    --destructive: 0 63% 31%; /* Keep existing red for errors */
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 220 15% 20%; /* Darker gray */
-    --input: 220 15% 20%; /* Darker gray */
-    --ring: 214 60% 50%; /* Primary Blue #3871C2 */
-
-    --glass-bg: hsl(220 25% 15% / 0.8);
-    --glass-border: hsl(220 15% 20% / 0.5);
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 174 72% 56%;
+    --primary-foreground: 222 47% 6%;
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 30% 18%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 160 60% 45%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 30% 18%;
+    --input: 222 30% 14%;
+    --ring: 174 72% 56%;
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 174 72% 56%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 222 30% 14%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 174 72% 56%;
   }
 }
 
@@ -113,95 +101,147 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-  }
-
   html {
     scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl;
+    background: var(--gradient-card);
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300;
+  }
+
+  .glass-card-hover:hover {
+    @apply border-primary/30;
+    box-shadow: var(--glow-subtle);
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--gradient-primary);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, hsl(174 72% 56% / 0.15) 0%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+  }
+
+  .stat-card {
+    @apply glass-card p-6 space-y-3;
+  }
+
+  .session-card {
+    @apply glass-card-hover p-5 cursor-pointer;
+  }
+
+  .nav-link {
+    @apply text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm font-medium;
+  }
+
+  .nav-link-active {
+    @apply text-foreground;
+  }
+
+  .badge-success {
+    @apply bg-accent/20 text-accent border border-accent/30 text-xs px-2.5 py-0.5 rounded-full font-medium;
+  }
+
+  .badge-warning {
+    @apply bg-warning/20 text-warning border border-warning/30 text-xs px-2.5 py-0.5 rounded-full font-medium;
+  }
+
+  .badge-info {
+    @apply bg-info/20 text-info border border-info/30 text-xs px-2.5 py-0.5 rounded-full font-medium;
+  }
+
+  .progress-bar {
+    @apply h-1.5 rounded-full bg-muted overflow-hidden;
+  }
+
+  .progress-bar-fill {
+    @apply h-full rounded-full transition-all duration-500;
+    background: var(--gradient-primary);
   }
 }
 
 @layer utilities {
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
+  .animate-fade-up {
+    animation: fadeUp 0.6s ease-out forwards;
   }
 
-  .gradient-text {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .animate-fade-up-delay-1 {
+    animation: fadeUp 0.6s ease-out 0.1s forwards;
+    opacity: 0;
   }
 
-  .animate-gradient {
-    background-size: 200% 200%;
-    animation: gradient 8s ease infinite;
+  .animate-fade-up-delay-2 {
+    animation: fadeUp 0.6s ease-out 0.2s forwards;
+    opacity: 0;
   }
 
-  /* Big Interview Professional Utility Classes */
-  .bg-primary-blue {
-    background-color: hsl(214 60% 50%); /* #3871C2 */
+  .animate-fade-up-delay-3 {
+    animation: fadeUp 0.6s ease-out 0.3s forwards;
+    opacity: 0;
   }
 
-  .bg-accent-green {
-    background-color: hsl(142 76% 36%); /* #3AB54A */
-  }
-
-  .bg-accent-orange {
-    background-color: hsl(35 100% 65%); /* #FFA94D */
-  }
-
-  .bg-dark-navy {
-    background-color: hsl(220 25% 11%); /* #1C1F2A */
-  }
-
-  .bg-light-gray {
-    background-color: hsl(220 25% 97%); /* #F5F7FA */
-  }
-
-  .text-primary-blue {
-    color: hsl(214 60% 50%); /* #3871C2 */
-  }
-
-  .text-accent-green {
-    color: hsl(142 76% 36%); /* #3AB54A */
-  }
-
-  .text-accent-orange {
-    color: hsl(35 100% 65%); /* #FFA94D */
-  }
-
-  .text-dark-navy {
-    color: hsl(220 25% 11%); /* #1C1F2A */
-  }
-
-  .shadow-professional {
-    box-shadow: 0 4px 12px hsl(220 25% 11% / 0.08);
-  }
-
-  .shadow-professional-lg {
-    box-shadow: 0 8px 24px hsl(220 25% 11% / 0.12);
-  }
-
-  .rounded-professional {
-    border-radius: 1rem; /* 16px */
-  }
-
-  .rounded-professional-lg {
-    border-radius: 1.5rem; /* 24px */
-  }
-
-  @keyframes gradient {
-    0%,
-    100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
+  .animate-glow-pulse {
+    animation: glowPulse 3s ease-in-out infinite;
   }
 }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+

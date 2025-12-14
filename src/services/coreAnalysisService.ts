@@ -300,7 +300,7 @@ export async function analyzeInterviewSession(
   sessionId: string
 ): Promise<SessionAnalysisResult> {
   try {
-    // Get classified questions for this session
+    // Get classified questions
     const { supabase } = await import("../integrations/supabase/client");
     const { data: session, error } = await supabase
       .from("interview_sessions")

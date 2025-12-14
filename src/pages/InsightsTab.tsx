@@ -127,7 +127,7 @@ const InsightsTab = () => {
       const sessions = sessionsResult.data || [];
       const analyses = analysesResult.data || [];
 
-      console.log("🔍 INSIGHTS DATA VERIFICATION:", {
+      console.log("INSIGHTS DATA VERIFICATION:", {
         summaries: summaries.length,
         sessions: sessions.length,
         analyses: analyses.length,
@@ -137,7 +137,7 @@ const InsightsTab = () => {
       });
 
       const processedData = processInsightsData(summaries, sessions, analyses);
-      console.log("📊 PROCESSED INSIGHTS DATA:", processedData);
+      console.log("PROCESSED INSIGHTS DATA:", processedData);
       setInsightsData(processedData);
     } catch (error) {
       console.error("Error fetching insights data:", error);
@@ -410,7 +410,7 @@ const InsightsTab = () => {
           strengthCounts[normalizedStrength] =
             (strengthCounts[normalizedStrength] || 0) + 1;
 
-          // Also track the score associated with this strength
+          // Track score for this strength
           if (!strengthScores[normalizedStrength]) {
             strengthScores[normalizedStrength] = [];
           }
@@ -454,7 +454,7 @@ const InsightsTab = () => {
           improvementCounts[normalizedImprovement] =
             (improvementCounts[normalizedImprovement] || 0) + 1;
 
-          // Track the score associated with this improvement area
+          // Track score for this improvement area
           if (!improvementScores[normalizedImprovement]) {
             improvementScores[normalizedImprovement] = [];
           }

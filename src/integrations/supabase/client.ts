@@ -29,10 +29,8 @@ export const supabase = createClient<Database>(
       storage: localStorage,
       persistSession: true,
       autoRefreshToken: true,
-      // Use VITE_APP_URL in production for redirect URLs
-      redirectTo: import.meta.env.VITE_APP_URL
-        ? `${import.meta.env.VITE_APP_URL}/dashboard`
-        : typeof window !== "undefined"
+      // redirectTo is a fallback - the value passed in signInWithOAuth options takes precedence
+      redirectTo: typeof window !== "undefined"
         ? `${window.location.origin}/dashboard`
         : undefined,
     },

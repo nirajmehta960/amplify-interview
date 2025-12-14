@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Mic, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,9 +40,18 @@ const SignIn = () => {
       const { error } = await signIn(validated.email, validated.password);
 
       if (error) {
+        // Handle specific error cases for better UX
+        let errorMessage = error.message;
+        
+        if (error.message?.includes("Invalid login credentials") || error.message?.includes("Invalid password")) {
+          errorMessage = "Invalid email or password. Please check your credentials or try signing in with Google.";
+        } else if (error.message?.includes("Email not confirmed")) {
+          errorMessage = "Please verify your email address before signing in. Check your inbox for a confirmation link.";
+        }
+
         toast({
           title: "Sign in failed",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive",
         });
       }
@@ -59,134 +69,147 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-secondary/5 to-background p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        <div className="glass p-8 rounded-2xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">
-              Sign in to continue your interview practice
-            </p>
-          </div>
+    <>
+      <Helmet>
+        <title>Sign In - Amplify Interview</title>
+        <meta name="description" content="Sign in to continue your interview practice." />
+      </Helmet>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                />
+      <div className="min-h-screen flex relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(222_30%_18%/0.3)_1px,transparent_1px),linear-gradient(to_bottom,hsl(222_30%_18%/0.3)_1px,transparent_1px)] bg-[size:60px_60px]" />
+        <div className="hero-glow top-1/4 left-1/4 animate-glow-pulse" />
+        <div className="hero-glow bottom-1/4 right-1/4 animate-glow-pulse" style={{ animationDelay: '1.5s' }} />
+
+        {/* Main content */}
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-6 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full max-w-md px-4 sm:px-0"
+          >
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-3 mb-8 justify-center">
+              <div className="w-12 h-12 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center">
+                <Mic className="w-6 h-6 text-primary" />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
+              <div>
+                <span className="font-display font-semibold text-xl text-foreground">Amplify Interview</span>
+                <p className="text-xs text-muted-foreground">AI-Powered Mock Interviews</p>
               </div>
-            </div>
+            </Link>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="remember"
-                  checked={rememberMe}
-                  onCheckedChange={(checked) =>
-                    setRememberMe(checked as boolean)
-                  }
-                />
-                <label
-                  htmlFor="remember"
-                  className="text-sm cursor-pointer text-muted-foreground"
-                >
-                  Remember me
-                </label>
+            {/* Card */}
+            <div className="glass-card p-8">
+              <div className="text-center mb-8">
+                <h1 className="font-display text-2xl font-bold text-foreground mb-2">
+                  Welcome Back
+                </h1>
+                <p className="text-muted-foreground">
+                  Sign in to continue your interview practice
+                </p>
               </div>
-              <Link
-                to="/auth/forgot-password"
-                className="text-sm text-primary hover:underline font-medium"
-              >
-                Forgot password?
-              </Link>
-            </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-              size="lg"
-              disabled={isLoading}
-            >
-              {isLoading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Email</label>
+                  <div className="relative">
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-11"
+                      required
+                    />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  </div>
+                </div>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Password</label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-11 pr-11"
+                      required
+                    />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      id="remember"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm text-muted-foreground">Remember me</span>
+                  </label>
+                  <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
+
+                <Button variant="hero" size="lg" className="w-full" type="submit" disabled={isLoading}>
+                  {isLoading ? "Signing in..." : "Sign In"}
+                  {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}
+                </Button>
+              </form>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-3 text-muted-foreground">Or continue with</span>
+                </div>
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
 
-            <div className="mt-4">
               <Button
-                type="button"
                 variant="outline"
-                className="glass w-full"
+                size="lg"
+                className="w-full"
+                type="button"
                 onClick={async () => {
                   setIsGoogleLoading(true);
                   try {
                     const { error } = await signInWithGoogle();
                     if (error) {
-                      toast({
-                        title: "Sign in failed",
-                        description: error.message || "Failed to sign in with Google",
-                        variant: "destructive",
-                      });
+                      // Don't show error toast if redirect is happening (OAuth flow will handle it)
+                      if (!error.message?.includes("already registered")) {
+                        toast({
+                          title: "Sign in failed",
+                          description: error.message || "Failed to sign in with Google. If you have an account with this email, you can also sign in with your password.",
+                          variant: "destructive",
+                        });
+                      }
+                      // Reset loading state on error
+                      setIsGoogleLoading(false);
                     }
+                    // Note: On success, the OAuth flow will redirect, so we don't need to navigate manually
+                    // Loading state will remain true during redirect, which is fine
                   } catch (error) {
                     toast({
                       title: "Sign in failed",
-                      description: "An unexpected error occurred",
+                      description: "An unexpected error occurred. Please try again.",
                       variant: "destructive",
                     });
-                  } finally {
                     setIsGoogleLoading(false);
                   }
                 }}
@@ -236,21 +259,18 @@ const SignIn = () => {
                   </>
                 )}
               </Button>
-            </div>
-          </div>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            Don't have an account?{" "}
-            <Link
-              to="/auth/signup"
-              className="text-primary hover:underline font-medium"
-            >
-              Sign up
-            </Link>
-          </p>
+              <p className="text-center text-sm text-muted-foreground mt-6">
+                Don't have an account?{" "}
+                <Link to="/auth/signup" className="text-primary hover:underline font-medium">
+                  Sign up
+                </Link>
+              </p>
+            </div>
+          </motion.div>
         </div>
-      </motion.div>
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -58,7 +58,7 @@ export class InterviewSessionService {
     data: CreateSessionData
   ): Promise<{ sessionId: string; questions: InterviewQuestion[] }> {
     try {
-      // First, fetch questions for this interview type
+      // Fetch questions for this interview type
       // Respect user's question count configuration
       const questions = await this.fetchQuestionsForInterview(
         data.interviewType,
@@ -252,7 +252,7 @@ export class InterviewSessionService {
     response: QuestionResponse
   ): Promise<string> {
     try {
-      // Check if this is a user question (UUID) or app question (number)
+      // Check if user question (UUID) or app question (number)
       const isUserQuestion =
         typeof response.questionId === "string" &&
         response.questionId.includes("-"); // UUIDs contain hyphens
@@ -318,7 +318,7 @@ export class InterviewSessionService {
         questionText.substring(0, 50) + "..."
       );
 
-      // Create a new entry in interview_questions for this user question
+      // Create entry in interview_questions
       const { data: newQuestion, error: insertError } = await supabase
         .from("interview_questions")
         .insert({
@@ -460,13 +460,13 @@ export class InterviewSessionService {
         );
 
         if (isUserQuestions) {
-          // For user questions, we need to fetch the specific questions used in this session
+          // Fetch specific user questions used in this session
           // Get the question IDs from the responses
           const responseQuestionIds =
             responses?.map((r) => r.question_id) || [];
 
           console.log(
-            "🔍 User questions - responseQuestionIds:",
+            "User questions - responseQuestionIds:",
             responseQuestionIds
           );
 

@@ -46,7 +46,7 @@ class CostTrackingService {
   ): Promise<void> {
     try {
       // Usage is already tracked in interview_analysis table
-      // This method is for additional tracking if needed
+      // Additional tracking method
       console.log(
         `Tracked usage: ${modelUsed}, ${
           inputTokens + outputTokens
@@ -54,7 +54,7 @@ class CostTrackingService {
       );
     } catch (error) {
       console.error("Error tracking usage:", error);
-      // Don't throw error as this is supplementary tracking
+      // Don't throw error - supplementary tracking only
     }
   }
 

@@ -145,7 +145,6 @@ export const getQuestionsForInterviewFromDB = async (
 ): Promise<Question[]> => {
   if (useCustomQuestions && customQuestions.length > 0) {
     // For custom questions, we'll classify them and store metadata
-    // This will be handled in the interview session service
     return customQuestions.map((question, index) => ({
       id: `custom-${index + 1}`,
       text: question,

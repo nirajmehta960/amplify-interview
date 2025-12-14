@@ -86,7 +86,7 @@ export const useVideoRecording = (): VideoRecordingState &
       console.log("Video tracks:", videoTracks.length);
 
       if (audioTracks.length === 0) {
-        console.warn("⚠️ No audio tracks found in stream! Trying fallback...");
+        console.warn("No audio tracks found in stream! Trying fallback...");
 
         // Try fallback with basic audio settings
         try {
@@ -135,7 +135,7 @@ export const useVideoRecording = (): VideoRecordingState &
       });
 
       if (audioTracks.length === 0) {
-        console.warn("⚠️ No audio tracks found in stream! Trying fallback...");
+        console.warn("No audio tracks found in stream! Trying fallback...");
 
         // Try fallback with basic audio settings
         try {
@@ -190,7 +190,7 @@ export const useVideoRecording = (): VideoRecordingState &
       // Verify MediaRecorder supports audio
       if (mediaRecorder.mimeType && !mediaRecorder.mimeType.includes("opus")) {
         console.warn(
-          "⚠️ MediaRecorder MIME type doesn't include audio codec:",
+          "MediaRecorder MIME type doesn't include audio codec:",
           mediaRecorder.mimeType
         );
       }

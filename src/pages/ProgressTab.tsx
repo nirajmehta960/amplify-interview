@@ -293,7 +293,7 @@ const ProgressTab = () => {
         description: "Complete your first mock interview",
         achieved: summaries.length > 0,
         date: summaries.length > 0 ? summaries[0].created_at : undefined,
-        icon: "🎯",
+        icon: "",
         points: 10,
       },
       {
@@ -301,7 +301,7 @@ const ProgressTab = () => {
         description: "Complete 3 interviews",
         achieved: summaries.length >= 3,
         date: summaries.length >= 3 ? summaries[2].created_at : undefined,
-        icon: "🔥",
+        icon: "",
         points: 25,
       },
       {
@@ -309,7 +309,7 @@ const ProgressTab = () => {
         description: "Achieve an average score of 80 or higher",
         achieved: averageScore >= 80,
         date: summaries.find((s) => (s.average_score || 0) >= 80)?.created_at,
-        icon: "⭐",
+        icon: "",
         points: 50,
       },
       {
@@ -317,7 +317,7 @@ const ProgressTab = () => {
         description: "Achieve 'Interview Ready' status",
         achieved: summaries.some((s) => s.readiness_level === "ready"),
         date: summaries.find((s) => s.readiness_level === "ready")?.created_at,
-        icon: "🚀",
+        icon: "",
         points: 75,
       },
       {
@@ -325,7 +325,7 @@ const ProgressTab = () => {
         description: "Complete 10 interviews",
         achieved: summaries.length >= 10,
         date: summaries.length >= 10 ? summaries[9].created_at : undefined,
-        icon: "🏆",
+        icon: "",
         points: 100,
       },
       {
@@ -333,7 +333,7 @@ const ProgressTab = () => {
         description: "Achieve a perfect score (95+)",
         achieved: summaries.some((s) => (s.average_score || 0) >= 95),
         date: summaries.find((s) => (s.average_score || 0) >= 95)?.created_at,
-        icon: "💎",
+        icon: "",
         points: 150,
       },
       {
@@ -353,7 +353,7 @@ const ProgressTab = () => {
             );
           });
         })?.created_at,
-        icon: "💬",
+        icon: "",
         points: 75,
       },
       {
@@ -373,7 +373,7 @@ const ProgressTab = () => {
             );
           });
         })?.created_at,
-        icon: "📚",
+        icon: "",
         points: 75,
       },
       {
@@ -383,15 +383,15 @@ const ProgressTab = () => {
         date: summaries.find((s) => {
           return analyses.some((a) => (a.confidence_score || 0) >= 90);
         })?.created_at,
-        icon: "💪",
+        icon: "",
         points: 75,
       },
       {
         title: "Streak Master",
         description: "Complete 5 interviews in 5 days",
         achieved: practiceConsistency.longestStreak >= 5,
-        date: undefined, // This would need more complex calculation
-        icon: "⚡",
+        date: undefined,
+        icon: "",
         points: 100,
       },
       {
@@ -401,7 +401,7 @@ const ProgressTab = () => {
           (score) => score >= 80
         ),
         date: undefined,
-        icon: "🎭",
+        icon: "",
         points: 125,
       },
       {
@@ -413,7 +413,7 @@ const ProgressTab = () => {
           const prevScore = summaries[index - 1]?.average_score || 0;
           return (s.average_score || 0) - prevScore >= 20;
         })?.created_at,
-        icon: "📈",
+        icon: "",
         points: 100,
       },
     ];
@@ -678,13 +678,13 @@ const ProgressTab = () => {
                     </div>
                     {milestone.achieved && milestone.date && (
                       <p className="text-xs text-green-600 font-medium">
-                        ✅ Achieved:{" "}
+                        Achieved:{" "}
                         {new Date(milestone.date).toLocaleDateString()}
                       </p>
                     )}
                     {!milestone.achieved && (
                       <p className="text-xs text-gray-500">
-                        🔒 Keep practicing to unlock this achievement
+                        Keep practicing to unlock this achievement
                       </p>
                     )}
                   </div>

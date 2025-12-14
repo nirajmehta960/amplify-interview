@@ -58,7 +58,7 @@ const AnalyticsDemo: React.FC = () => {
           className="bg-white rounded-professional shadow-professional p-8 mb-8"
         >
           <h2 className="text-xl font-bold text-dark-navy font-display mb-4">
-            🎨 Design Features Showcase
+            Design Features Showcase
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-3">
@@ -118,7 +118,7 @@ const AnalyticsDemo: React.FC = () => {
           className="bg-white rounded-professional shadow-professional p-8 mb-8"
         >
           <h2 className="text-xl font-bold text-dark-navy font-display mb-4">
-            📊 Component Showcase
+            Component Showcase
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
