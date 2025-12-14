@@ -93,54 +93,96 @@ const InsightsTab = () => {
     try {
       setLoading(true);
 
+      if (!user?.id) {
+        throw new Error("User ID is required");
+      }
+
       // Fetch all relevant data
       const [summariesResult, sessionsResult, analysesResult] =
         await Promise.all([
-          supabase
-            .from("interview_summary")
-            .select("*")
-            .eq("user_id", user?.id),
+          supabase.from("interview_summary").select("*").eq("user_id", user.id),
           supabase
             .from("interview_sessions")
             .select("*")
-            .eq("user_id", user?.id),
+            .eq("user_id", user.id),
           supabase
             .from("interview_analysis")
             .select("*")
-            .eq("user_id", user?.id),
+            .eq("user_id", user.id),
         ]);
 
-      if (
-        summariesResult.error ||
-        sessionsResult.error ||
-        analysesResult.error
-      ) {
-        console.error("Error fetching insights data:", {
-          summaries: summariesResult.error,
-          sessions: sessionsResult.error,
-          analyses: analysesResult.error,
-        });
-        return;
+      // Check for errors and handle them appropriately
+      const errors: string[] = [];
+
+      if (summariesResult.error) {
+        console.error("Error fetching summaries:", summariesResult.error);
+        if (
+          summariesResult.error.code === "PGRST301" ||
+          summariesResult.error.message?.includes("network") ||
+          summariesResult.error.message?.includes("fetch")
+        ) {
+          throw new Error(
+            "Network error: Unable to fetch insights data. Please check your connection."
+          );
+        }
+        errors.push(`Summaries: ${summariesResult.error.message}`);
+      }
+
+      if (sessionsResult.error) {
+        console.error("Error fetching sessions:", sessionsResult.error);
+        if (
+          sessionsResult.error.code === "PGRST301" ||
+          sessionsResult.error.message?.includes("network") ||
+          sessionsResult.error.message?.includes("fetch")
+        ) {
+          throw new Error(
+            "Network error: Unable to fetch insights data. Please check your connection."
+          );
+        }
+        errors.push(`Sessions: ${sessionsResult.error.message}`);
+      }
+
+      if (analysesResult.error) {
+        console.error("Error fetching analyses:", analysesResult.error);
+        if (
+          analysesResult.error.code === "PGRST301" ||
+          analysesResult.error.message?.includes("network") ||
+          analysesResult.error.message?.includes("fetch")
+        ) {
+          throw new Error(
+            "Network error: Unable to fetch insights data. Please check your connection."
+          );
+        }
+        // Don't throw for analyses - we can show insights without it
+        console.warn("Analyses fetch failed, continuing without analysis data");
+      }
+
+      // If we have critical errors, throw
+      if (errors.length > 0 && summariesResult.error && sessionsResult.error) {
+        throw new Error(`Failed to fetch insights: ${errors.join(", ")}`);
       }
 
       const summaries = summariesResult.data || [];
       const sessions = sessionsResult.data || [];
       const analyses = analysesResult.data || [];
 
-      console.log("INSIGHTS DATA VERIFICATION:", {
-        summaries: summaries.length,
-        sessions: sessions.length,
-        analyses: analyses.length,
-        summaryData: summaries.slice(0, 2), // Show first 2 summaries
-        analysisData: analyses.slice(0, 2), // Show first 2 analyses
-        sessionData: sessions.slice(0, 2), // Show first 2 sessions
+      const processedData = processInsightsData(summaries, sessions, analyses);
+      setInsightsData(processedData);
+    } catch (error: any) {
+      console.error("Error fetching insights data:", error);
+
+      // Set empty data on error
+      setInsightsData({
+        totalInterviews: 0,
+        averageScore: 0,
+        bestTimeOfDay: "Morning",
+        improvementTrend: "stable",
+        strengths: [],
+        areasForImprovement: [],
+        recentSessions: [],
       });
 
-      const processedData = processInsightsData(summaries, sessions, analyses);
-      console.log("PROCESSED INSIGHTS DATA:", processedData);
-      setInsightsData(processedData);
-    } catch (error) {
-      console.error("Error fetching insights data:", error);
+      // Error is logged, user will see empty state
     } finally {
       setLoading(false);
     }

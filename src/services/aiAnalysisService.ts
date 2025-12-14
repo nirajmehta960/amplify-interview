@@ -617,9 +617,6 @@ class AIAnalysisService {
           // Get the created summary
           const summary = await this.getSummaryBySession(sessionId);
           if (summary) {
-            console.log(
-              `Session summary created: ${summary.readiness_level} (${summary.readiness_score}%)`
-            );
             return summary;
           }
         }
@@ -1242,16 +1239,6 @@ class AIAnalysisService {
           actionable_feedback: analysis.actionable_feedback || "",
           improved_example: analysis.improved_example || "",
         };
-
-        console.log("Parsed analysis:", {
-          id: parsed.id,
-          interview_response_id: parsed.interview_response_id,
-          question_id: parsed.question_id,
-          parsedStrengths: parsed.strengths,
-          parsedImprovements: parsed.improvements,
-          parsedActionableFeedback: parsed.actionable_feedback,
-          parsedImprovedExample: parsed.improved_example,
-        });
 
         return parsed;
       });

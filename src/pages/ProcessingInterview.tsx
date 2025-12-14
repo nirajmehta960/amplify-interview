@@ -152,24 +152,6 @@ const ProcessingInterview = () => {
         }
       }
 
-      console.log("Processing Interview - Duration:", {
-        passedDuration: data.totalDuration,
-        calculatedDuration: totalDuration,
-        recordingStartTime: videoSegmentService.getRecordingStartTime(),
-        recordingEndTime: Date.now(),
-      });
-
-      console.log("Processing Interview - Question Segments:", {
-        passedSegments: data.questionSegments?.length || 0,
-        segments:
-          data.questionSegments?.map((s: any) => ({
-            id: s.questionId,
-            startTime: s.startTime,
-            endTime: s.endTime,
-            duration: s.duration,
-          })) || [],
-      });
-
       // Process video for transcription
       let questionResponses = [];
       let transcriptionResult;

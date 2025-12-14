@@ -57,8 +57,6 @@ export async function sendWelcomeEmail({
   const endpoint = `${apiUrl}/api/send-welcome-email`;
 
   try {
-    console.log("Sending welcome email to:", email, "via endpoint:", endpoint);
-    
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -73,13 +71,13 @@ export async function sendWelcomeEmail({
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.error || `HTTP error! status: ${response.status}`;
+      const errorMessage =
+        errorData.error || `HTTP error! status: ${response.status}`;
       console.error("Welcome email API error:", errorMessage, errorData);
       throw new Error(errorMessage);
     }
 
     const result = await response.json();
-    console.log("Welcome email sent successfully:", result);
     return {};
   } catch (error: any) {
     // Log error for debugging but don't throw - we don't want to block signup if email fails

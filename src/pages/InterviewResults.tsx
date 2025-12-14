@@ -250,7 +250,6 @@ const InterviewResults = () => {
     sessionData: any
   ) => {
     try {
-      console.log("Fetching AI analysis data for session:", sessionId);
       const { aiAnalysisService } = await import(
         "../services/aiAnalysisService"
       );
@@ -266,8 +265,6 @@ const InterviewResults = () => {
 
         // Update individual question responses with analysis scores
         if (analyses.length > 0) {
-          console.log("Starting analysis mapping, analyses.length:", analyses.length);
-
           // Prefer mapping by interview_response_id, then fallback to question_id
           const byResponseId = new Map<string, any>();
           const byQuestionId = new Map<number, any>();
@@ -292,20 +289,14 @@ const InterviewResults = () => {
               let analysis = null;
               if (rid && byResponseId.has(rid)) {
                 analysis = byResponseId.get(rid);
-                console.log(`Found analysis by response ID: ${rid}`);
               } else if (byQuestionId.has(qid)) {
                 analysis = byQuestionId.get(qid);
-                console.log(`Found analysis by question ID: ${qid}`);
               } else {
                 // Fallback: try to match by index if we have the same number of analyses and responses
                 if (idx < analyses.length) {
                   analysis = analyses[idx];
-                  console.log(`Fallback - using analysis by index ${idx}`);
-                } else {
-                  console.log(`No analysis found for response ID: ${rid}, question ID: ${qid}`);
                 }
               }
-
 
               if (analysis) {
                 return {
@@ -337,15 +328,6 @@ const InterviewResults = () => {
               };
             }
           );
-
-          console.log("Final mapped responses:", sessionData.questionResponses.map((r: any) => ({
-            questionId: r.questionId,
-            responseId: r.responseId,
-            strengths: r.strengths,
-            improvements: r.improvements,
-            actionable_feedback: r.actionable_feedback,
-            improved_example: r.improved_example,
-          })));
         }
       }
     } catch (analysisError) {
@@ -380,37 +362,20 @@ const InterviewResults = () => {
         const hasLocationState = !!(location.state as any)?.sessionId;
         const hasUrlParams = !!sessionIdFromParams || !!sessionIdFromUrl;
 
-        console.log("Loading scenario detection:", {
-          hasLocationState,
-          hasUrlParams,
-          sessionIdFromParams,
-          sessionIdFromUrl,
-          locationState: !!(location.state as any),
-        });
-
         let sessionData: any = null;
         let finalSessionId: string | null = null;
 
         // SCENARIO 1: Post-Interview Results (Direct Navigation)
         if (hasLocationState && !hasUrlParams) {
-          console.log(
-            "SCENARIO 1: Post-Interview Results (Direct Navigation)"
-          );
           sessionData = location.state as any;
           finalSessionId = sessionData.sessionId;
-          console.log("Using session data from location.state:", sessionData);
         }
         // SCENARIO 2: Historical Session View (View Details)
         else if (hasUrlParams && !hasLocationState) {
-          console.log("SCENARIO 2: Historical Session View (View Details)");
           finalSessionId = sessionIdFromParams || sessionIdFromUrl;
 
           if (finalSessionId) {
             try {
-              console.log(
-                "Fetching session data from database:",
-                finalSessionId
-              );
               const dbSessionData =
                 await interviewSessionService.fetchInterviewSession(
                   finalSessionId
@@ -444,10 +409,6 @@ const InterviewResults = () => {
                     }
                   ),
                 };
-                console.log(
-                  "Successfully loaded session data from database:",
-                  sessionData
-                );
               } else {
                 console.error("No database session found for:", finalSessionId);
                 setError("Session not found in database.");
@@ -468,17 +429,10 @@ const InterviewResults = () => {
         }
         // SCENARIO 3: Both location state and URL params present (prioritize URL params)
         else if (hasLocationState && hasUrlParams) {
-          console.log(
-            "SCENARIO 3: Both present - prioritizing URL params (Historical View)"
-          );
           finalSessionId = sessionIdFromParams || sessionIdFromUrl;
 
           if (finalSessionId) {
             try {
-              console.log(
-                "Fetching session data from database:",
-                finalSessionId
-              );
               const dbSessionData =
                 await interviewSessionService.fetchInterviewSession(
                   finalSessionId
@@ -512,10 +466,6 @@ const InterviewResults = () => {
                     }
                   ),
                 };
-                console.log(
-                  "Successfully loaded session data from database:",
-                  sessionData
-                );
               } else {
                 console.error("No database session found for:", finalSessionId);
                 setError("Session not found in database.");
@@ -536,7 +486,6 @@ const InterviewResults = () => {
         }
         // FALLBACK: Try local storage
         else {
-          console.log("FALLBACK: Trying local storage");
           const fallbackSessionId =
             sessionIdFromParams ||
             sessionIdFromUrl ||
@@ -549,10 +498,6 @@ const InterviewResults = () => {
               if (storedData) {
                 sessionData = storedData;
                 finalSessionId = fallbackSessionId;
-                console.log(
-                  "Using session data from local storage:",
-                  sessionData
-                );
               } else {
                 setError(
                   "Session not found. Please complete an interview first."
@@ -586,10 +531,6 @@ const InterviewResults = () => {
             sessionIdFromParams || sessionIdFromUrl || sessionData?.sessionId;
         }
 
-        console.log("Loading interview data for session:", finalSessionId);
-        console.log("Session data:", sessionData);
-        console.log("Question responses:", sessionData?.questionResponses);
-
         // UNIFIED ANALYSIS DATA FETCHING - Works for both scenarios
         if (finalSessionId && sessionData) {
           await fetchAndMapAnalysisData(finalSessionId, sessionData);
@@ -598,10 +539,6 @@ const InterviewResults = () => {
         // Always fetch analysis data if we have a session ID
         if (finalSessionId) {
           try {
-            console.log(
-              "Attempting to fetch AI analysis data for session:",
-              finalSessionId
-            );
             const { aiAnalysisService } = await import(
               "../services/aiAnalysisService"
             );
@@ -613,45 +550,23 @@ const InterviewResults = () => {
             );
 
             if (analyses.length > 0 || summary) {
-              console.log("Found AI analysis data for session:", {
-                analyses: analyses.length,
-                summary: !!summary,
-              });
               // Store analysis data for later use
               (sessionData as any)._analyses = analyses;
               (sessionData as any)._summary = summary;
 
               // Update individual question responses with analysis scores
               if (analyses.length > 0) {
-                console.log(
-                  "Starting analysis mapping, analyses.length:",
-                  analyses.length
-                );
-
                 // Prefer mapping by interview_response_id, then fallback to question_id
                 const byResponseId = new Map<string, any>();
                 const byQuestionId = new Map<number, any>();
 
                 analyses.forEach((a: any) => {
-                  console.log("Indexing analysis:", {
-                    interview_response_id: a?.interview_response_id,
-                    question_id: a?.question_id,
-                    strengths: a?.strengths,
-                    improvements: a?.improvements,
-                  });
                   if (a?.interview_response_id) {
                     byResponseId.set(String(a.interview_response_id), a);
                   }
                   if (typeof a?.question_id === "number") {
                     byQuestionId.set(a.question_id, a);
                   }
-                });
-
-                console.log("Analysis maps created:", {
-                  byResponseIdSize: byResponseId.size,
-                  byQuestionIdSize: byQuestionId.size,
-                  responseIdKeys: Array.from(byResponseId.keys()),
-                  questionIdKeys: Array.from(byQuestionId.keys()),
                 });
 
                 sessionData.questionResponses =
@@ -669,31 +584,14 @@ const InterviewResults = () => {
                       let analysis = null;
                       if (rid && byResponseId.has(rid)) {
                         analysis = byResponseId.get(rid);
-                        console.log(`Found analysis by response ID: ${rid}`);
                       } else if (byQuestionId.has(qid)) {
                         analysis = byQuestionId.get(qid);
-                        console.log(`Found analysis by question ID: ${qid}`);
                       } else {
                         // Fallback: try to match by index if we have the same number of analyses and responses
                         if (idx < analyses.length) {
                           analysis = analyses[idx];
-                          console.log(
-                            `Fallback: using analysis by index ${idx}`
-                          );
-                        } else {
-                          console.log(
-                            `No analysis found for response ID: ${rid}, question ID: ${qid}`
-                          );
                         }
                       }
-
-                      console.log(`Mapping response ${idx}:`, {
-                        responseId: rid,
-                        questionId: qid,
-                        foundAnalysis: !!analysis,
-                        analysisStrengths: analysis?.strengths,
-                        analysisImprovements: analysis?.improvements,
-                      });
 
                       if (analysis) {
                         return {
@@ -728,23 +626,10 @@ const InterviewResults = () => {
                       };
                     }
                   );
-
-                console.log(
-                  "Final mapped responses:",
-                  sessionData.questionResponses.map((r: any) => ({
-                    questionId: r.questionId,
-                    responseId: r.responseId,
-                    strengths: r.strengths,
-                    improvements: r.improvements,
-                  }))
-                );
               }
             }
           } catch (analysisError) {
-            console.error(
-              "Could not fetch AI analysis data:",
-              analysisError
-            );
+            console.error("Could not fetch AI analysis data:", analysisError);
             console.error("Analysis error details:", {
               message: analysisError.message,
               stack: analysisError.stack,
@@ -779,12 +664,6 @@ const InterviewResults = () => {
                       ""
                   );
 
-                  console.log("Database response mapping:", {
-                    question_id: response.question_id,
-                    response_id: responseId,
-                    response_object: response,
-                  });
-
                   return {
                     // Ensure we keep the DB response id for accurate analysis mapping
                     responseId: responseId,
@@ -800,11 +679,6 @@ const InterviewResults = () => {
                   };
                 }
               );
-              console.log(
-                "Enhanced session data with database responses:",
-                sessionData.questionResponses
-              );
-
               // Try to fetch AI analysis data if available (or use pre-fetched data)
               try {
                 let analyses, summary;
@@ -816,7 +690,6 @@ const InterviewResults = () => {
                 ) {
                   analyses = (sessionData as any)._analyses;
                   summary = (sessionData as any)._summary;
-                  console.log("Using pre-fetched AI analysis data");
                 } else {
                   const { aiAnalysisService } = await import(
                     "../services/aiAnalysisService"
@@ -830,21 +703,6 @@ const InterviewResults = () => {
                 }
 
                 if (analyses.length > 0 || summary) {
-                  console.log("Found AI analysis data:", {
-                    analyses: analyses.length,
-                    summary: !!summary,
-                    firstAnalysis: analyses[0]
-                      ? {
-                          id: analyses[0].id,
-                          interview_response_id:
-                            analyses[0].interview_response_id,
-                          question_id: analyses[0].question_id,
-                          strengths: analyses[0].strengths,
-                          improvements: analyses[0].improvements,
-                        }
-                      : null,
-                  });
-
                   // Update session data with real AI analysis
                   if (summary) {
                     sessionData.aiFeedback = {
@@ -881,25 +739,12 @@ const InterviewResults = () => {
                     const byResponseId = new Map<string, any>();
                     const byQuestionId = new Map<number, any>();
                     analyses.forEach((a: any) => {
-                      console.log("Indexing analysis:", {
-                        interview_response_id: a?.interview_response_id,
-                        question_id: a?.question_id,
-                        strengths: a?.strengths,
-                        improvements: a?.improvements,
-                      });
                       if (a?.interview_response_id) {
                         byResponseId.set(String(a.interview_response_id), a);
                       }
                       if (typeof a?.question_id === "number") {
                         byQuestionId.set(a.question_id, a);
                       }
-                    });
-
-                    console.log("Analysis maps created:", {
-                      byResponseIdSize: byResponseId.size,
-                      byQuestionIdSize: byQuestionId.size,
-                      responseIdKeys: Array.from(byResponseId.keys()),
-                      questionIdKeys: Array.from(byQuestionId.keys()),
                     });
 
                     sessionData.questionResponses =
@@ -916,38 +761,14 @@ const InterviewResults = () => {
                           let analysis = null;
                           if (rid && byResponseId.has(rid)) {
                             analysis = byResponseId.get(rid);
-                            console.log(
-                              `Found analysis by response ID: ${rid}`
-                            );
                           } else if (byQuestionId.has(qid)) {
                             analysis = byQuestionId.get(qid);
-                            console.log(
-                              `Found analysis by question ID: ${qid}`
-                            );
                           } else {
                             // Fallback: try to match by index if we have the same number of analyses and responses
                             if (idx < analyses.length) {
                               analysis = analyses[idx];
-                              console.log(
-                                `Fallback: using analysis by index ${idx}`
-                              );
-                            } else {
-                              console.log(
-                                `No analysis found for response ID: ${rid}, question ID: ${qid}`
-                              );
                             }
                           }
-
-                          console.log(`Mapping response ${idx}:`, {
-                            responseId: rid,
-                            questionId: qid,
-                            foundAnalysis: !!analysis,
-                            analysisStrengths: analysis?.strengths,
-                            analysisImprovements: analysis?.improvements,
-                            analysisActionableFeedback:
-                              analysis?.actionable_feedback,
-                            analysisImprovedExample: analysis?.improved_example,
-                          });
 
                           if (analysis) {
                             return {
@@ -975,16 +796,6 @@ const InterviewResults = () => {
                           return response;
                         }
                       );
-
-                    console.log(
-                      "Final mapped responses:",
-                      sessionData.questionResponses.map((r: any) => ({
-                        questionId: r.questionId,
-                        responseId: r.responseId,
-                        strengths: r.strengths,
-                        improvements: r.improvements,
-                      }))
-                    );
                   }
                 }
 
@@ -1021,13 +832,8 @@ const InterviewResults = () => {
 
         if (!videoData) {
           console.error("No video data found for session:", finalSessionId);
-          console.log(
-            "Continuing without video data - video card will show error message"
-          );
           // Always continue, even without video data
         }
-
-        console.log("Video data loaded:", videoData);
 
         let videoBlob: Blob | null = null;
         let actualFormat = "video/webm";
@@ -1062,15 +868,9 @@ const InterviewResults = () => {
         // });
 
         if (isMP4) {
-          console.log("Video is already in MP4 format - no conversion needed!");
           // Video is already MP4, so we can use it directly
         } else {
           // Only attempt conversion for non-MP4 formats
-          console.log(
-            "Video is in",
-            videoData?.metadata?.format || "unknown",
-            "format - conversion may be needed for optimal playback"
-          );
         }
 
         // Create result from real data
@@ -1542,7 +1342,8 @@ const InterviewResults = () => {
                 Interview Analytics
               </h1>
               <p className="text-xs text-muted-foreground hidden sm:block">
-                {getInterviewTypeDisplay(result.sessionData || {})} Mock Interview • {formatDate(result.completionTime)}
+                {getInterviewTypeDisplay(result.sessionData || {})} Mock
+                Interview • {formatDate(result.completionTime)}
               </p>
             </div>
             <div className="w-12 sm:w-20 md:w-32" />
@@ -1550,7 +1351,7 @@ const InterviewResults = () => {
         </div>
       </header>
 
-        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* Stats Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1569,7 +1370,9 @@ const InterviewResults = () => {
                   {scoreBadge.label}
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground mb-1">Overall Score</p>
+              <p className="text-sm text-muted-foreground mb-1">
+                Overall Score
+              </p>
               <div className="flex items-baseline gap-1">
                 <span
                   className={`text-4xl font-display font-bold ${
@@ -1608,10 +1411,14 @@ const InterviewResults = () => {
               <p className="text-sm text-muted-foreground mb-1">Duration</p>
               <p className="text-4xl font-display font-bold text-foreground">
                 {result.duration > 0 && isFinite(result.duration)
-                  ? `${Math.floor(result.duration / 60)}m ${Math.round(result.duration % 60)}s`
+                  ? `${Math.floor(result.duration / 60)}m ${Math.round(
+                      result.duration % 60
+                    )}s`
                   : "0m 0s"}
               </p>
-              <p className="text-sm text-muted-foreground mt-2">Interview length</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Interview length
+              </p>
             </div>
           </div>
 
@@ -1635,7 +1442,11 @@ const InterviewResults = () => {
                 <div
                   className="h-full bg-blue-400 rounded-full"
                   style={{
-                    width: `${(result.responses.length / (result.responses.length || 1)) * 100}%`,
+                    width: `${
+                      (result.responses.length /
+                        (result.responses.length || 1)) *
+                      100
+                    }%`,
                   }}
                 />
               </div>
@@ -1654,11 +1465,15 @@ const InterviewResults = () => {
                   {readinessBadge.label}
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground mb-1">Readiness Level</p>
+              <p className="text-sm text-muted-foreground mb-1">
+                Readiness Level
+              </p>
               <p className="text-4xl font-display font-bold text-foreground capitalize">
                 {result.readinessLevel || "ready"}
               </p>
-              <p className="text-sm text-muted-foreground mt-2">Interview readiness</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Interview readiness
+              </p>
             </div>
           </div>
         </motion.div>
@@ -1677,7 +1492,9 @@ const InterviewResults = () => {
                 <Sparkles className="w-5 h-5 text-purple-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Your Superpower</h3>
+                <h3 className="font-semibold text-foreground">
+                  Your Superpower
+                </h3>
                 <p className="text-xs text-muted-foreground">Top Strength</p>
               </div>
             </div>
@@ -1694,7 +1511,9 @@ const InterviewResults = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">Focus On</h3>
-                <p className="text-xs text-muted-foreground">Improvement Area</p>
+                <p className="text-xs text-muted-foreground">
+                  Improvement Area
+                </p>
               </div>
             </div>
             <p className="text-sm text-foreground/80">
@@ -1709,12 +1528,16 @@ const InterviewResults = () => {
                 <ArrowRight className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Your Next Move</h3>
+                <h3 className="font-semibold text-foreground">
+                  Your Next Move
+                </h3>
                 <p className="text-xs text-muted-foreground">Action Step</p>
               </div>
             </div>
             <p className="text-sm text-foreground/80">
-              {result.nextSteps?.[0] || result.recommendations?.[0] || "Practice STAR examples for recent projects"}
+              {result.nextSteps?.[0] ||
+                result.recommendations?.[0] ||
+                "Practice STAR examples for recent projects"}
             </p>
           </div>
         </motion.div>
@@ -1724,7 +1547,7 @@ const InterviewResults = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6"
         >
           {/* Video Recording */}
           <div className="glass-card p-6">
@@ -1746,7 +1569,8 @@ const InterviewResults = () => {
                 </Badge>
                 {totalDuration > 0 && isFinite(totalDuration) && (
                   <span className="text-sm text-muted-foreground">
-                    {Math.floor(totalDuration / 60)}m {Math.round(totalDuration % 60)}s
+                    {Math.floor(totalDuration / 60)}m{" "}
+                    {Math.round(totalDuration % 60)}s
                   </span>
                 )}
               </div>
@@ -1761,7 +1585,8 @@ const InterviewResults = () => {
                   </div>
                   <p className="text-white font-medium">Video Not Available</p>
                   <p className="text-white/60 text-sm mt-2">
-                    This interview was recorded locally and is not accessible in production.
+                    This interview was recorded locally and is not accessible in
+                    production.
                   </p>
                 </div>
               ) : (
@@ -1788,7 +1613,9 @@ const InterviewResults = () => {
                       <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
                         <Play className="w-8 h-8 text-white ml-1" />
                       </div>
-                      <p className="text-white mt-4 font-medium">Interview Recording</p>
+                      <p className="text-white mt-4 font-medium">
+                        Interview Recording
+                      </p>
                       <p className="text-white/60 text-sm">Click to play</p>
                     </div>
                   )}
@@ -1804,7 +1631,9 @@ const InterviewResults = () => {
                       setCurrentTime((e.target as HTMLVideoElement).currentTime)
                     }
                     onRateChange={(e) =>
-                      setPlaybackRate((e.target as HTMLVideoElement).playbackRate)
+                      setPlaybackRate(
+                        (e.target as HTMLVideoElement).playbackRate
+                      )
                     }
                     onPlay={() => setVideoPlaying(true)}
                     onPause={() => setVideoPlaying(false)}
@@ -1817,8 +1646,10 @@ const InterviewResults = () => {
             </div>
 
             {/* Controls */}
-            {videoUrl && (() => {
-                const videoFormat = result?.videoMetadata?.format || "video/webm";
+            {videoUrl &&
+              (() => {
+                const videoFormat =
+                  result?.videoMetadata?.format || "video/webm";
                 const isMP4 = isMP4Format(videoFormat);
                 const formatName = getFormatDisplayName(videoFormat);
                 const fileExtension = getFileExtension(videoFormat);
@@ -1866,12 +1697,16 @@ const InterviewResults = () => {
                               setIsConverting(true);
                               toast({
                                 title: "Converting Video",
-                                description: "Converting to MP4 format for better compatibility...",
+                                description:
+                                  "Converting to MP4 format for better compatibility...",
                               });
 
                               const response = await fetch(videoUrl);
                               const videoBlob = await response.blob();
-                              const mp4Blob = await videoConversionService.convertWebMToMP4(videoBlob);
+                              const mp4Blob =
+                                await videoConversionService.convertWebMToMP4(
+                                  videoBlob
+                                );
 
                               const link = document.createElement("a");
                               link.href = URL.createObjectURL(mp4Blob);
@@ -1880,13 +1715,15 @@ const InterviewResults = () => {
 
                               toast({
                                 title: "Download Complete",
-                                description: "MP4 video downloaded successfully!",
+                                description:
+                                  "MP4 video downloaded successfully!",
                               });
                             } catch (error) {
                               console.error("MP4 conversion failed:", error);
                               toast({
                                 title: "Conversion Failed",
-                                description: "Failed to convert to MP4. Please try downloading the WebM version.",
+                                description:
+                                  "Failed to convert to MP4. Please try downloading the WebM version.",
                                 variant: "destructive",
                               });
                             } finally {
@@ -1904,7 +1741,11 @@ const InterviewResults = () => {
                       {["0.75x", "1x", "1.25x", "1.5x"].map((speed) => (
                         <Button
                           key={speed}
-                          variant={playbackRate === parseFloat(speed) ? "default" : "ghost"}
+                          variant={
+                            playbackRate === parseFloat(speed)
+                              ? "default"
+                              : "ghost"
+                          }
                           size="sm"
                           className="h-8 px-2 text-xs"
                           onClick={() => {
@@ -1923,11 +1764,16 @@ const InterviewResults = () => {
                         className="h-8 px-2 text-xs"
                         onClick={async () => {
                           try {
-                            if (videoRef.current && (document as any).pictureInPictureEnabled) {
+                            if (
+                              videoRef.current &&
+                              (document as any).pictureInPictureEnabled
+                            ) {
                               if ((document as any).pictureInPictureElement) {
                                 await (document as any).exitPictureInPicture();
                               } else {
-                                await (videoRef.current as any).requestPictureInPicture();
+                                await (
+                                  videoRef.current as any
+                                ).requestPictureInPicture();
                               }
                             }
                           } catch {}
@@ -1940,148 +1786,162 @@ const InterviewResults = () => {
                 );
               })()}
 
-              {/* Chapters */}
-              {videoUrl && chapters.length > 0 && totalDuration > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Chapters</span>
-                    </div>
-                    <span className="text-muted-foreground">
-                      {Math.floor(currentTime)}s / {Math.floor(totalDuration)}s
-                    </span>
+            {/* Chapters */}
+            {videoUrl && chapters.length > 0 && totalDuration > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Chapters</span>
                   </div>
-                  <div className="relative h-4 w-full bg-muted rounded overflow-hidden">
-                    {chapters.map((ch, i) => (
-                      <button
-                        key={i}
-                        title={`Q${ch.index}: ${ch.question}`}
-                        onClick={() => seekTo(ch.start)}
-                        style={{
-                          left: `${(ch.start / totalDuration) * 100}%`,
-                          width: `${(ch.duration / totalDuration) * 100}%`,
-                        }}
-                        className={`absolute top-0 h-full ${markerColor(ch.score)} hover:opacity-80 transition-opacity`}
-                      />
-                    ))}
-                    {/* Playhead */}
-                    <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-black/60 dark:bg-white/60"
+                  <span className="text-muted-foreground">
+                    {Math.floor(currentTime)}s / {Math.floor(totalDuration)}s
+                  </span>
+                </div>
+                <div className="relative h-4 w-full bg-muted rounded overflow-hidden">
+                  {chapters.map((ch, i) => (
+                    <button
+                      key={i}
+                      title={`Q${ch.index}: ${ch.question}`}
+                      onClick={() => seekTo(ch.start)}
                       style={{
-                        left: `${(currentTime / totalDuration) * 100}%`,
+                        left: `${(ch.start / totalDuration) * 100}%`,
+                        width: `${(ch.duration / totalDuration) * 100}%`,
+                      }}
+                      className={`absolute top-0 h-full ${markerColor(
+                        ch.score
+                      )} hover:opacity-80 transition-opacity`}
+                    />
+                  ))}
+                  {/* Playhead */}
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-black/60 dark:bg-white/60"
+                    style={{
+                      left: `${(currentTime / totalDuration) * 100}%`,
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  {chapters.map((ch, i) => (
+                    <span
+                      key={i}
+                      className="truncate"
+                      style={{
+                        width: `${(ch.duration / totalDuration) * 100}%`,
+                      }}
+                    >
+                      Q{ch.index}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Performance Trend */}
+          <div className="glass-card p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-foreground">
+                  Performance Trend
+                </h3>
+              </div>
+              <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+                <Button
+                  variant={chartType === "bar" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setChartType("bar")}
+                >
+                  <BarChart3 className="w-3 h-3 mr-1" />
+                  Bar
+                </Button>
+                <Button
+                  variant={chartType === "line" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setChartType("line")}
+                >
+                  <TrendingUp className="w-3 h-3 mr-1" />
+                  Line
+                </Button>
+              </div>
+            </div>
+
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                {chartType === "line" ? (
+                  <LineChart data={performanceData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                    />
+                    <XAxis
+                      dataKey="question"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        color: "hsl(var(--foreground))",
                       }}
                     />
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    {chapters.map((ch, i) => (
-                      <span
-                        key={i}
-                        className="truncate"
-                        style={{
-                          width: `${(ch.duration / totalDuration) * 100}%`,
-                        }}
-                      >
-                        Q{ch.index}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={3}
+                      dot={{
+                        fill: "hsl(var(--primary))",
+                        strokeWidth: 2,
+                        r: 6,
+                      }}
+                      activeDot={{ r: 8 }}
+                    />
+                  </LineChart>
+                ) : (
+                  <BarChart data={performanceData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                    />
+                    <XAxis
+                      dataKey="question"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        color: "hsl(var(--foreground))",
+                      }}
+                    />
+                    <Bar
+                      dataKey="score"
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
             </div>
-
-            {/* Performance Trend */}
-            <div className="glass-card p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <BarChart3 className="w-5 h-5 text-primary" />
-                  <h3 className="font-semibold text-foreground">Performance Trend</h3>
-                </div>
-                <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-                  <Button
-                    variant={chartType === "bar" ? "default" : "ghost"}
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => setChartType("bar")}
-                  >
-                    <BarChart3 className="w-3 h-3 mr-1" />
-                    Bar
-                  </Button>
-                  <Button
-                    variant={chartType === "line" ? "default" : "ghost"}
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => setChartType("line")}
-                  >
-                    <TrendingUp className="w-3 h-3 mr-1" />
-                    Line
-                  </Button>
-                </div>
-              </div>
-
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  {chartType === "line" ? (
-                    <LineChart data={performanceData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis
-                        dataKey="question"
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                      />
-                      <YAxis
-                        domain={[0, 100]}
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          background: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                          color: "hsl(var(--foreground))",
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="score"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={3}
-                        dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 6 }}
-                        activeDot={{ r: 8 }}
-                      />
-                    </LineChart>
-                  ) : (
-                    <BarChart data={performanceData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis
-                        dataKey="question"
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                      />
-                      <YAxis
-                        domain={[0, 100]}
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          background: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                          color: "hsl(var(--foreground))",
-                        }}
-                      />
-                      <Bar
-                        dataKey="score"
-                        fill="hsl(var(--primary))"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  )}
-                </ResponsiveContainer>
-              </div>
-            </div>
+          </div>
         </motion.div>
 
         {/* Response Transcriptions */}
@@ -2093,7 +1953,9 @@ const InterviewResults = () => {
         >
           <div className="flex items-center gap-3 mb-6">
             <MessageSquare className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-foreground text-lg">Response Transcriptions</h3>
+            <h3 className="font-semibold text-foreground text-lg">
+              Response Transcriptions
+            </h3>
           </div>
 
           <div className="space-y-3">
@@ -2101,7 +1963,7 @@ const InterviewResults = () => {
               const questionId = response.id || `q${index}`;
               const isExpanded = expandedQuestions.includes(questionId);
               const score = response.score || 0;
-              
+
               return (
                 <div
                   key={questionId}
@@ -2123,7 +1985,9 @@ const InterviewResults = () => {
                       >
                         Q{index + 1}
                       </Badge>
-                      <span className="text-foreground text-left">{response.question}</span>
+                      <span className="text-foreground text-left">
+                        {response.question}
+                      </span>
                     </div>
                     <div className="flex items-center gap-4">
                       <span
@@ -2168,7 +2032,9 @@ const InterviewResults = () => {
                             <Lightbulb className="w-4 h-4" />
                             AI Feedback
                           </h4>
-                          <p className="text-foreground/80 text-sm">{response.actionable_feedback}</p>
+                          <p className="text-foreground/80 text-sm">
+                            {response.actionable_feedback}
+                          </p>
                         </div>
                       )}
                     </motion.div>
@@ -2200,7 +2066,9 @@ const InterviewResults = () => {
               {readinessBadge.label}
             </Badge>
             <p className="text-foreground/70 text-sm leading-relaxed">
-              {result.insights?.[0] || result.recommendations?.[0] || "Your interview performance shows strong potential. Continue practicing to improve consistency and depth in your responses."}
+              {result.insights?.[0] ||
+                result.recommendations?.[0] ||
+                "Your interview performance shows strong potential. Continue practicing to improve consistency and depth in your responses."}
             </p>
           </div>
 
@@ -2216,16 +2084,18 @@ const InterviewResults = () => {
             </div>
 
             <div className="space-y-3">
-              {(result.improvements || result.recommendations || []).slice(0, 7).map((item: string, index: number) => (
-                <div key={index} className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs font-semibold text-primary">
-                      {index + 1}
-                    </span>
+              {(result.improvements || result.recommendations || [])
+                .slice(0, 7)
+                .map((item: string, index: number) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-semibold text-primary">
+                        {index + 1}
+                      </span>
+                    </div>
+                    <p className="text-foreground/80 text-sm">{item}</p>
                   </div>
-                  <p className="text-foreground/80 text-sm">{item}</p>
-                </div>
-              ))}
+                ))}
             </div>
 
             {result.estimatedPracticeTime && (
@@ -2234,7 +2104,9 @@ const InterviewResults = () => {
                   <Clock className="w-4 h-4" />
                   <span className="text-sm font-medium">
                     Estimated practice time:{" "}
-                    <span className="text-emerald-300">{result.estimatedPracticeTime}</span>
+                    <span className="text-emerald-300">
+                      {result.estimatedPracticeTime}
+                    </span>
                   </span>
                 </div>
               </div>
@@ -2256,11 +2128,20 @@ const InterviewResults = () => {
             Continue your interview preparation journey
           </p>
           <div className="flex items-center justify-center gap-4">
-            <Button variant="hero" size="lg" className="gap-2" onClick={() => navigate("/interview/setup")}>
+            <Button
+              variant="hero"
+              size="lg"
+              className="gap-2"
+              onClick={() => navigate("/interview/setup")}
+            >
               <Calendar className="w-5 h-5" />
               Schedule Another Interview
             </Button>
-            <Button variant="outline" size="lg" onClick={() => navigate("/dashboard")}>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => navigate("/dashboard")}
+            >
               View All My Interviews
             </Button>
           </div>

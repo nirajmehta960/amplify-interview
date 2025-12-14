@@ -49,7 +49,6 @@ export const useVideoRecording = (): VideoRecordingState &
         const audioStream = await navigator.mediaDevices.getUserMedia({
           audio: true,
         });
-        console.log("Audio permission granted");
         audioStream.getTracks().forEach((track) => track.stop());
       } catch (audioError) {
         console.error("Audio permission denied:", audioError);
@@ -82,8 +81,6 @@ export const useVideoRecording = (): VideoRecordingState &
 
       const audioTracks = stream.getAudioTracks();
       const videoTracks = stream.getVideoTracks();
-      console.log("Audio tracks:", audioTracks.length);
-      console.log("Video tracks:", videoTracks.length);
 
       if (audioTracks.length === 0) {
         console.warn("No audio tracks found in stream! Trying fallback...");
@@ -100,85 +97,18 @@ export const useVideoRecording = (): VideoRecordingState &
             audio: true, // Basic audio without constraints
           });
 
-          console.log(
-            "Fallback stream audio tracks:",
-            fallbackStream.getAudioTracks().length
-          );
           if (fallbackStream.getAudioTracks().length > 0) {
             // Stop the original stream and use the fallback
             stream.getTracks().forEach((track) => track.stop());
             streamRef.current = fallbackStream;
-            console.log("Using fallback stream with audio");
           }
         } catch (fallbackError) {
           console.error("Fallback audio also failed:", fallbackError);
         }
-      } else {
-        console.log("Audio track details:", {
-          label: audioTracks[0].label,
-          enabled: audioTracks[0].enabled,
-          muted: audioTracks[0].muted,
-          readyState: audioTracks[0].readyState,
-        });
-      }
-
-      // Log audio track settings for debugging
-      audioTracks.forEach((track, index) => {
-        const settings = track.getSettings();
-        console.log(`Audio track ${index} settings:`, {
-          echoCancellation: settings.echoCancellation,
-          noiseSuppression: settings.noiseSuppression,
-          autoGainControl: settings.autoGainControl,
-          sampleRate: settings.sampleRate,
-          channelCount: settings.channelCount,
-        });
-      });
-
-      if (audioTracks.length === 0) {
-        console.warn("No audio tracks found in stream! Trying fallback...");
-
-        // Try fallback with basic audio settings
-        try {
-          const fallbackStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              width: { ideal: 1920, max: 3840 },
-              height: { ideal: 1080, max: 2160 },
-              frameRate: { ideal: 30, max: 60 },
-              facingMode: "user",
-            },
-            audio: true, // Basic audio without constraints
-          });
-
-          console.log(
-            "Fallback stream audio tracks:",
-            fallbackStream.getAudioTracks().length
-          );
-          if (fallbackStream.getAudioTracks().length > 0) {
-            // Stop the original stream and use the fallback
-            stream.getTracks().forEach((track) => track.stop());
-            streamRef.current = fallbackStream;
-            console.log("Using fallback stream with audio");
-          }
-        } catch (fallbackError) {
-          console.error("Fallback audio also failed:", fallbackError);
-        }
-      } else {
-        console.log("Audio track details:", {
-          label: audioTracks[0].label,
-          enabled: audioTracks[0].enabled,
-          muted: audioTracks[0].muted,
-          readyState: audioTracks[0].readyState,
-        });
       }
 
       // Get the best supported format for this browser
       const mimeType = getBestRecordingFormat();
-
-      console.log(
-        "Using MIME type:",
-        mimeType,
-        `(${getFormatDisplayName(mimeType)})`
-      );
 
       // Create MediaRecorder with optimized settings for reliable uploads
       const mediaRecorder = new MediaRecorder(stream, {
@@ -198,8 +128,6 @@ export const useVideoRecording = (): VideoRecordingState &
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
-        console.log("Data available:", event.data.size, "bytes");
-        console.log("Data type:", event.data.type);
         if (event.data.size > 0) {
           setState((prev) => ({
             ...prev,
@@ -209,7 +137,6 @@ export const useVideoRecording = (): VideoRecordingState &
       };
 
       mediaRecorder.onstart = () => {
-        console.log("MediaRecorder started");
         setState((prev) => ({
           ...prev,
           isRecording: true,
@@ -228,7 +155,6 @@ export const useVideoRecording = (): VideoRecordingState &
       };
 
       mediaRecorder.onstop = () => {
-        console.log("MediaRecorder stopped");
         setState((prev) => ({
           ...prev,
           isRecording: false,
@@ -314,8 +240,6 @@ export const useVideoRecording = (): VideoRecordingState &
         return;
       }
 
-      console.log("Stopping recording...");
-
       // Create a local variable to capture chunks
       let finalChunks: Blob[] = [];
 
@@ -323,10 +247,6 @@ export const useVideoRecording = (): VideoRecordingState &
         // Get the latest chunks from state
         setState((prev) => {
           finalChunks = [...prev.recordedChunks];
-          console.log(
-            "MediaRecorder stopped, final chunks:",
-            finalChunks.length
-          );
 
           if (finalChunks.length === 0) {
             console.warn("No recorded chunks available");
@@ -341,22 +261,11 @@ export const useVideoRecording = (): VideoRecordingState &
           }
 
           const blob = new Blob(finalChunks, { type: mimeType });
-          console.log("Created video blob:", blob.size, "bytes");
-          console.log("Video blob type:", blob.type);
 
           // Check if the blob contains audio by creating a video element
           const video = document.createElement("video");
           video.src = URL.createObjectURL(blob);
           video.onloadedmetadata = () => {
-            console.log("Video metadata loaded:", {
-              duration: video.duration,
-              videoWidth: video.videoWidth,
-              videoHeight: video.videoHeight,
-              hasAudio:
-                (video as any).mozHasAudio ||
-                (video as any).webkitAudioDecodedByteCount > 0 ||
-                false,
-            });
             URL.revokeObjectURL(video.src);
           };
 

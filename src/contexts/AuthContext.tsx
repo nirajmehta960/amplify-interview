@@ -113,10 +113,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Always stay on the current origin (works for both local and production)
           // Clean up hash and navigate to dashboard
           const currentOrigin = window.location.origin;
-          console.log(
-            "OAuth callback detected, staying on origin:",
-            currentOrigin
-          );
           window.history.replaceState(null, "", "/dashboard");
           navigate("/dashboard", { replace: true });
         }
@@ -171,7 +167,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             })
               .then((result) => {
                 if (result.error) {
-                  console.error("Welcome email failed for user:", userId, result.error);
+                  console.error(
+                    "Welcome email failed for user:",
+                    userId,
+                    result.error
+                  );
                   // On error, remove from sent list so we can retry later
                   welcomeEmailSentRef.current.delete(userId);
                   try {
@@ -189,13 +189,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     // Ignore errors
                   }
                 } else {
-                  console.log("Welcome email sent successfully to:", user.email);
                 }
                 // Remove from in-progress set
                 emailSendingInProgressRef.current.delete(userId);
               })
               .catch((error) => {
-                console.error("Welcome email exception for user:", userId, error);
+                console.error(
+                  "Welcome email exception for user:",
+                  userId,
+                  error
+                );
                 // On error, remove from sent list so we can retry later
                 welcomeEmailSentRef.current.delete(userId);
                 try {
@@ -308,8 +311,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const baseUrl = window.location.origin;
       const redirectUrl = `${baseUrl}/dashboard`;
-
-      console.log("Google OAuth redirect URL:", redirectUrl);
 
       // Supabase automatically links accounts with the same email address by default
       // No additional configuration needed - automatic linking is enabled by default

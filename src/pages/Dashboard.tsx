@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { 
-  Mic, 
-  Video, 
-  Target, 
-  TrendingUp, 
-  Flame, 
+import {
+  Mic,
+  Video,
+  Target,
+  TrendingUp,
+  Flame,
   Sparkles,
   ChevronRight,
   BarChart3,
@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,6 +72,7 @@ interface InterviewSummary {
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [profile, setProfile] = useState<any>(null);
   const [sessions, setSessions] = useState<InterviewSession[]>([]);
   const [summaries, setSummaries] = useState<InterviewSummary[]>([]);
@@ -92,7 +94,8 @@ const Dashboard = () => {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [user]);
 
   useEffect(() => {
@@ -109,64 +112,179 @@ const Dashboard = () => {
 
   const fetchProfile = async () => {
     try {
-      const { data: profileData } = await supabase
+      if (!user?.id) {
+        throw new Error("User ID is required");
+      }
+
+      const { data: profileData, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user?.id)
+        .eq("id", user.id)
         .single();
+
+      if (error) {
+        // Profile might not exist yet, which is okay
+        if (error.code !== "PGRST116") {
+          console.error("Error fetching profile:", error);
+        }
+        setProfile({
+          full_name:
+            user?.user_metadata?.full_name ||
+            user?.email?.split("@")[0] ||
+            "User",
+          avatar_url: user?.user_metadata?.avatar_url,
+        });
+        return;
+      }
 
       if (profileData) {
         setProfile(profileData);
       } else {
         setProfile({
-          full_name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User",
+          full_name:
+            user?.user_metadata?.full_name ||
+            user?.email?.split("@")[0] ||
+            "User",
           avatar_url: user?.user_metadata?.avatar_url,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching profile:", error);
+      // Fallback to user metadata
       setProfile({
-        full_name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User",
+        full_name:
+          user?.user_metadata?.full_name ||
+          user?.email?.split("@")[0] ||
+          "User",
         avatar_url: user?.user_metadata?.avatar_url,
       });
+
+      // Only show error if it's a network issue
+      if (
+        error?.message?.includes("network") ||
+        error?.message?.includes("fetch")
+      ) {
+        toast({
+          title: "Network Error",
+          description: "Unable to fetch profile. Please check your connection.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const fetchSessions = async () => {
     try {
+      if (!user?.id) {
+        throw new Error("User ID is required");
+      }
+
       const { data, error } = await supabase
         .from("interview_sessions")
         .select("*")
-        .eq("user_id", user?.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching sessions:", error);
+
+        // Check for specific error types
+        if (
+          error.code === "PGRST301" ||
+          error.message?.includes("network") ||
+          error.message?.includes("fetch")
+        ) {
+          toast({
+            title: "Network Error",
+            description:
+              "Unable to fetch interview sessions. Please check your connection and try again.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error Loading Sessions",
+            description:
+              "Failed to load your interview sessions. Please try refreshing the page.",
+            variant: "destructive",
+          });
+        }
         return;
       }
 
       setSessions(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in fetchSessions:", error);
+
+      // Handle network errors
+      if (
+        error?.message?.includes("network") ||
+        error?.message?.includes("fetch") ||
+        error?.name === "TypeError"
+      ) {
+        toast({
+          title: "Connection Error",
+          description:
+            "Unable to connect to the server. Please check your internet connection.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred while loading sessions.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const fetchSummaries = async () => {
     try {
+      if (!user?.id) {
+        throw new Error("User ID is required");
+      }
+
       const { data, error } = await supabase
         .from("interview_summary")
         .select("*")
-        .eq("user_id", user?.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching summaries:", error);
+
+        // Check for specific error types
+        if (
+          error.code === "PGRST301" ||
+          error.message?.includes("network") ||
+          error.message?.includes("fetch")
+        ) {
+          toast({
+            title: "Network Error",
+            description:
+              "Unable to fetch interview summaries. Please check your connection and try again.",
+            variant: "destructive",
+          });
+        }
         return;
       }
 
       setSummaries(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in fetchSummaries:", error);
+
+      // Handle network errors
+      if (
+        error?.message?.includes("network") ||
+        error?.message?.includes("fetch") ||
+        error?.name === "TypeError"
+      ) {
+        toast({
+          title: "Connection Error",
+          description:
+            "Unable to connect to the server. Please check your internet connection.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -192,8 +310,12 @@ const Dashboard = () => {
 
     if (olderSummaries.length === 0) return "+0%";
 
-    const recentAvg = recentSummaries.reduce((acc, s) => acc + (s.average_score || 0), 0) / recentSummaries.length;
-    const olderAvg = olderSummaries.reduce((acc, s) => acc + (s.average_score || 0), 0) / olderSummaries.length;
+    const recentAvg =
+      recentSummaries.reduce((acc, s) => acc + (s.average_score || 0), 0) /
+      recentSummaries.length;
+    const olderAvg =
+      olderSummaries.reduce((acc, s) => acc + (s.average_score || 0), 0) /
+      olderSummaries.length;
 
     if (olderAvg === 0) return "+0%";
 
@@ -209,14 +331,17 @@ const Dashboard = () => {
     today.setHours(0, 0, 0, 0);
 
     const sortedSummaries = [...summaries].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
     for (const summary of sortedSummaries) {
       const summaryDate = new Date(summary.created_at);
       summaryDate.setHours(0, 0, 0, 0);
 
-      const daysDiff = Math.floor((today.getTime() - summaryDate.getTime()) / (1000 * 60 * 60 * 24));
+      const daysDiff = Math.floor(
+        (today.getTime() - summaryDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       if (daysDiff === streak) {
         streak++;
@@ -231,7 +356,10 @@ const Dashboard = () => {
 
   const calculateAverageScore = () => {
     if (summaries.length === 0) return 0;
-    const totalScore = summaries.reduce((acc, summary) => acc + (summary.average_score || 0), 0);
+    const totalScore = summaries.reduce(
+      (acc, summary) => acc + (summary.average_score || 0),
+      0
+    );
     return Math.round(totalScore / summaries.length);
   };
 
@@ -280,15 +408,49 @@ const Dashboard = () => {
 
   const avgScore = calculateAverageScore();
   const stats = [
-    { icon: Video, label: "Total Interviews", value: String(summaries.length || sessions.length), color: "primary" },
-    { icon: Target, label: "Average Score", value: String(avgScore), badge: avgScore > 0 ? getReadinessLevel(avgScore) : undefined, color: "accent" },
-    { icon: TrendingUp, label: "Improvement", value: calculateImprovement(), subtitle: "vs previous interviews", color: "info" },
-    { icon: Flame, label: "Practice Streak", value: calculatePracticeStreak(), color: "warning" },
+    {
+      icon: Video,
+      label: "Total Interviews",
+      value: String(summaries.length || sessions.length),
+      color: "primary",
+    },
+    {
+      icon: Target,
+      label: "Average Score",
+      value: String(avgScore),
+      badge: avgScore > 0 ? getReadinessLevel(avgScore) : undefined,
+      color: "accent",
+    },
+    {
+      icon: TrendingUp,
+      label: "Improvement",
+      value: calculateImprovement(),
+      subtitle: "vs previous interviews",
+      color: "info",
+    },
+    {
+      icon: Flame,
+      label: "Practice Streak",
+      value: calculatePracticeStreak(),
+      color: "warning",
+    },
   ];
 
-  const handleRefresh = () => {
-    fetchSessions();
-    fetchSummaries();
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([fetchSessions(), fetchSummaries()]);
+      toast({
+        title: "Refreshed",
+        description: "Data has been refreshed successfully.",
+      });
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast({
+        title: "Refresh Failed",
+        description: "Unable to refresh data. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -301,16 +463,23 @@ const Dashboard = () => {
               <Mic className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <span className="font-display font-semibold text-lg text-foreground">Amplify Interview</span>
-              <p className="text-xs text-muted-foreground">AI-Powered Mock Interviews</p>
+              <span className="font-display font-semibold text-lg text-foreground">
+                Amplify Interview
+              </span>
+              <p className="text-xs text-muted-foreground">
+                AI-Powered Mock Interviews
+              </p>
             </div>
           </Link>
 
           <div className="text-center hidden md:block">
             <h1 className="font-display font-semibold text-foreground">
-              Welcome back, {profile?.full_name || user?.email?.split("@")[0] || "User"}!
+              Welcome back,{" "}
+              {profile?.full_name || user?.email?.split("@")[0] || "User"}!
             </h1>
-            <p className="text-sm text-muted-foreground">{getMotivationalMessage()}</p>
+            <p className="text-sm text-muted-foreground">
+              {getMotivationalMessage()}
+            </p>
           </div>
 
           <DropdownMenu>
@@ -322,7 +491,9 @@ const Dashboard = () => {
                 <Avatar className="w-10 h-10">
                   <AvatarImage src={profile?.avatar_url} />
                   <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                    {profile?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}
+                    {profile?.full_name?.charAt(0)?.toUpperCase() ||
+                      user?.email?.charAt(0)?.toUpperCase() ||
+                      "U"}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -330,9 +501,7 @@ const Dashboard = () => {
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-3 py-2">
                 <p className="text-sm font-medium text-foreground">
-                  {profile?.full_name ||
-                    user?.email?.split("@")[0] ||
-                    "User"}
+                  {profile?.full_name || user?.email?.split("@")[0] || "User"}
                 </p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
@@ -389,11 +558,23 @@ const Dashboard = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className={`text-3xl font-display font-bold ${stat.color === 'primary' ? 'text-foreground' : stat.color === 'accent' ? 'text-accent' : stat.color === 'info' ? 'text-info' : 'text-warning'}`}>
+                <p
+                  className={`text-3xl font-display font-bold ${
+                    stat.color === "primary"
+                      ? "text-foreground"
+                      : stat.color === "accent"
+                      ? "text-accent"
+                      : stat.color === "info"
+                      ? "text-info"
+                      : "text-warning"
+                  }`}
+                >
                   {stat.value}
                 </p>
                 {stat.subtitle && (
-                  <p className="text-xs text-muted-foreground">{stat.subtitle}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stat.subtitle}
+                  </p>
                 )}
               </div>
             </motion.div>
@@ -407,25 +588,45 @@ const Dashboard = () => {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
         >
-          <Button variant="hero" size="xl" className="md:col-span-1 justify-start gap-3" asChild>
+          <Button
+            variant="hero"
+            size="xl"
+            className="md:col-span-1 justify-start gap-3"
+            asChild
+          >
             <Link to="/interview/setup">
               <Sparkles className="w-5 h-5" />
               Start New Interview
             </Link>
           </Button>
-          <Button variant="glass" size="lg" className="justify-start gap-3" asChild>
+          <Button
+            variant="glass"
+            size="lg"
+            className="justify-start gap-3"
+            asChild
+          >
             <Link to="/dashboard/progress">
               <TrendingUp className="w-5 h-5" />
               Progress
             </Link>
           </Button>
-          <Button variant="glass" size="lg" className="justify-start gap-3" asChild>
+          <Button
+            variant="glass"
+            size="lg"
+            className="justify-start gap-3"
+            asChild
+          >
             <Link to="/dashboard/practice-questions">
               <MessageSquare className="w-5 h-5" />
               Practice Questions
             </Link>
           </Button>
-          <Button variant="glass" size="lg" className="justify-start gap-3" asChild>
+          <Button
+            variant="glass"
+            size="lg"
+            className="justify-start gap-3"
+            asChild
+          >
             <Link to="/dashboard/insights">
               <Lightbulb className="w-5 h-5" />
               Insights
@@ -442,8 +643,12 @@ const Dashboard = () => {
         >
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="font-display text-xl font-semibold text-foreground">Recent Sessions</h2>
-              <p className="text-sm text-muted-foreground">{sessions.length} sessions found</p>
+              <h2 className="font-display text-xl font-semibold text-foreground">
+                Recent Sessions
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {sessions.length} sessions found
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={handleRefresh}>
@@ -459,13 +664,18 @@ const Dashboard = () => {
             <div className="text-center py-12">
               <Video className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">No interview sessions yet</p>
-              <p className="text-sm text-muted-foreground mt-2">Start your first interview to see your progress here</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Start your first interview to see your progress here
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {sessions.slice(0, 6).map((session, index) => {
-                const sessionSummary = summaries.find(summary => summary.session_id === session.id);
-                const sessionScore = sessionSummary?.average_score || session.session_score || 0;
+                const sessionSummary = summaries.find(
+                  (summary) => summary.session_id === session.id
+                );
+                const sessionScore =
+                  sessionSummary?.average_score || session.session_score || 0;
                 const status = getReadinessLevel(sessionScore);
 
                 return (
@@ -482,26 +692,43 @@ const Dashboard = () => {
                           <Video className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium text-foreground capitalize">{session.interview_type}</p>
+                          <p className="font-medium text-foreground capitalize">
+                            {session.interview_type}
+                          </p>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(session.created_at).toLocaleDateString()} • {session.duration ? `${Math.round(session.duration / 60)} min` : "0 min"}
+                            {new Date(session.created_at).toLocaleDateString()}{" "}
+                            •{" "}
+                            {session.duration
+                              ? `${Math.round(session.duration / 60)} min`
+                              : "0 min"}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`text-lg font-bold ${getScoreColor(sessionScore)}`}>{sessionScore}%</p>
+                        <p
+                          className={`text-lg font-bold ${getScoreColor(
+                            sessionScore
+                          )}`}
+                        >
+                          {sessionScore}%
+                        </p>
                         <span className={getStatusColor(status)}>{status}</span>
                       </div>
                     </div>
 
                     <div className="progress-bar mb-4">
-                      <div 
-                        className="progress-bar-fill" 
+                      <div
+                        className="progress-bar-fill"
                         style={{ width: `${sessionScore}%` }}
                       />
                     </div>
 
-                    <Button variant="ghost" size="sm" className="w-full justify-between group-hover:text-primary" onClick={() => navigate(`/results/${session.id}`)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-between group-hover:text-primary"
+                      onClick={() => navigate(`/results/${session.id}`)}
+                    >
                       View Details
                       <ChevronRight className="w-4 h-4" />
                     </Button>

@@ -1,39 +1,17 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background Circle -->
-  <circle cx="16" cy="16" r="15" fill="url(#gradient1)" stroke="#3B82F6" stroke-width="1"/>
+  <!-- Rounded square container: matches header exactly - w-10 h-10 (40px) rounded-xl (12px) bg-primary/20 border-primary/30 -->
+  <!-- Scaled to 32px: 30px container with 9px radius -->
+  <rect x="1" y="1" width="30" height="30" rx="9" fill="rgba(79, 209, 199, 0.2)" stroke="rgba(79, 209, 199, 0.3)" stroke-width="1"/>
   
-  <!-- Microphone Icon -->
-  <g transform="translate(10, 10)">
-    <!-- Microphone Body -->
-    <rect x="3" y="3" width="6" height="8" rx="3" fill="white"/>
-    <!-- Microphone Stand -->
-    <rect x="4" y="11" width="4" height="6" fill="white"/>
-    <!-- Microphone Base -->
-    <rect x="2" y="17" width="8" height="1" rx="0.5" fill="white"/>
+  <!-- Exact lucide-react Mic icon - increased size for better visibility -->
+  <!-- Icon is 24x24 viewBox, scaling to 18px (0.75 scale) for better visibility -->
+  <!-- Center: (30-18)/2 = 6, plus 1px margin = 7 -->
+  <g transform="translate(7, 7) scale(0.75)">
+    <!-- Microphone body - exact path from lucide-react Mic icon -->
+    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" stroke="#4FD1C7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Microphone grill - exact path from lucide-react Mic icon -->
+    <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="#4FD1C7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Microphone stand - exact line from lucide-react Mic icon -->
+    <line x1="12" y1="19" x2="12" y2="22" stroke="#4FD1C7" stroke-width="2.4" stroke-linecap="round"/>
   </g>
-  
-  <!-- AI Brain/Neural Network -->
-  <g transform="translate(8, 8)">
-    <!-- Main Brain Circle -->
-    <circle cx="8" cy="8" r="6" fill="none" stroke="white" stroke-width="1" opacity="0.8"/>
-    <!-- Neural Network Nodes -->
-    <circle cx="5" cy="5" r="1" fill="white"/>
-    <circle cx="11" cy="5" r="1" fill="white"/>
-    <circle cx="5" cy="11" r="1" fill="white"/>
-    <circle cx="11" cy="11" r="1" fill="white"/>
-    <circle cx="8" cy="8" r="1" fill="white"/>
-    <!-- Neural Network Connections -->
-    <line x1="5" y1="5" x2="8" y2="8" stroke="white" stroke-width="0.5" opacity="0.6"/>
-    <line x1="11" y1="5" x2="8" y2="8" stroke="white" stroke-width="0.5" opacity="0.6"/>
-    <line x1="5" y1="11" x2="8" y2="8" stroke="white" stroke-width="0.5" opacity="0.6"/>
-    <line x1="11" y1="11" x2="8" y2="8" stroke="white" stroke-width="0.5" opacity="0.6"/>
-  </g>
-  
-  <!-- Gradients -->
-  <defs>
-    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1D4ED8;stop-opacity:1" />
-    </linearGradient>
-  </defs>
 </svg>

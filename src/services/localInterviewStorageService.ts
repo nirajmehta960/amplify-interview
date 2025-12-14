@@ -36,7 +36,6 @@ class LocalInterviewStorageService {
       const sessions = this.getAllSessions();
       sessions[session.id] = session;
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(sessions));
-      console.log(`Saved session ${session.id} locally`);
     } catch (error) {
       console.error("Error saving session locally:", error);
       throw error;
@@ -82,9 +81,6 @@ class LocalInterviewStorageService {
         session.responses = session.responses || [];
         session.responses.push(response);
         await this.saveSession(session);
-        console.log(
-          `Saved response for question ${response.questionId} in session ${sessionId}`
-        );
       }
     } catch (error) {
       console.error("Error saving response:", error);
@@ -105,7 +101,6 @@ class LocalInterviewStorageService {
         session.completedAt = new Date().toISOString();
         session.duration = Math.round(totalDuration);
         await this.saveSession(session);
-        console.log(`Completed session ${sessionId} locally`);
       }
     } catch (error) {
       console.error("Error completing session:", error);
@@ -160,7 +155,6 @@ class LocalInterviewStorageService {
       const sessions = this.getAllSessions();
       delete sessions[sessionId];
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(sessions));
-      console.log(`Deleted session ${sessionId}`);
     } catch (error) {
       console.error("Error deleting session:", error);
     }

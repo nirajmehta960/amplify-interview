@@ -32,8 +32,6 @@ class VideoSegmentService {
     if (!this.recordingStartEpochMs) {
       this.recordingStartEpochMs = startTime;
     }
-
-    console.log(`Started tracking question ${questionId} at ${startTime}`);
   }
 
   /**
@@ -60,9 +58,6 @@ class VideoSegmentService {
 
     this.questionSegments.push(segment);
     this.currentQuestionStartTime = null;
-
-    console.log(`Ended tracking for question ${questionId}:`, segment);
-    console.log(`Total question segments: ${this.questionSegments.length}`);
   }
 
   /**
@@ -90,9 +85,6 @@ class VideoSegmentService {
    * Get all question segments
    */
   getQuestionSegments(): QuestionSegment[] {
-    console.log(
-      `Getting question segments: ${this.questionSegments.length} segments`
-    );
     return [...this.questionSegments];
   }
 
@@ -103,7 +95,6 @@ class VideoSegmentService {
     this.questionSegments = [];
     this.currentQuestionStartTime = null;
     this.recordingStartEpochMs = null;
-    console.log("Reset question segments");
   }
 
   /**
@@ -116,9 +107,6 @@ class VideoSegmentService {
     // Use provided segments or fall back to internal segments
     const segments = segmentsToTranscribe || this.questionSegments;
 
-    console.log(
-      `Transcribing question segments. Found ${segments.length} segments`
-    );
     if (segments.length === 0) {
       console.warn("No question segments found for transcription");
       return [];
