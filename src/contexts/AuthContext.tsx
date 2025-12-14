@@ -104,59 +104,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
           setLoading(false);
         }
-      } else if (event === "SIGNED_IN") {
-        // Handle OAuth callback redirect - if redirected to wrong URL, fix it
+      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        // Handle OAuth callback redirect
         if (
           window.location.hash &&
           window.location.hash.includes("#access_token")
         ) {
-          // If we're on localhost but should be on production, redirect to production
-          if (
-            window.location.origin.includes("localhost") &&
-            import.meta.env.VITE_APP_URL &&
-            !import.meta.env.VITE_APP_URL.includes("localhost")
-          ) {
-            // Preserve the hash token and redirect to production
-            window.location.href = `${import.meta.env.VITE_APP_URL}${
-              window.location.pathname
-            }${window.location.search}${window.location.hash}`;
-            return;
-          }
-
-          // Clean up hash and use correct base URL
-          const baseUrl =
-            import.meta.env.VITE_APP_URL || window.location.origin;
-
-          // Navigate to dashboard with correct URL
-          const dashboardUrl = `${baseUrl}/dashboard`;
-
-          // If we're not on the production URL, redirect
-          if (
-            window.location.origin !== baseUrl &&
-            import.meta.env.VITE_APP_URL
-          ) {
-            window.location.href = dashboardUrl;
-            return;
-          }
-
+          // Always stay on the current origin (works for both local and production)
           // Clean up hash and navigate to dashboard
+          const currentOrigin = window.location.origin;
+          console.log(
+            "OAuth callback detected, staying on origin:",
+            currentOrigin
+          );
           window.history.replaceState(null, "", "/dashboard");
           navigate("/dashboard", { replace: true });
         }
 
-        // Check if this is a new user (first time sign-in, including OAuth)
+        // Check if this is a new user
         if (mounted && session?.user) {
           const user = session.user;
           const userId = user.id;
 
-          // Check if we've already sent welcome email OR if sending is in progress
+          // Check if welcome email already sent or sending in progress
           const alreadySentEmail = hasWelcomeEmailBeenSent(userId);
           const isSendingInProgress =
             emailSendingInProgressRef.current.has(userId);
 
           if (alreadySentEmail || isSendingInProgress) {
-            // Already sent or sending in progress, skip
-            // Navigate to dashboard if needed
+            // Already sent or sending in progress
             const currentPath = window.location.pathname;
             if (
               currentPath === "/auth/signin" ||
@@ -181,14 +157,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               user.email?.split("@")[0] ||
               "there";
 
-            // Mark as sending in progress IMMEDIATELY to prevent duplicates
+            // Mark as sending in progress to prevent duplicates
             emailSendingInProgressRef.current.add(userId);
             markWelcomeEmailAsSent(userId);
 
-            // Get dashboard URL from environment or use current origin
-            const dashboardUrl = import.meta.env.VITE_APP_URL
-              ? `${import.meta.env.VITE_APP_URL}/dashboard`
-              : `${window.location.origin}/dashboard`;
+            const dashboardUrl = `${window.location.origin}/dashboard`;
 
             // Send welcome email asynchronously (don't block the UI)
             sendWelcomeEmail({
@@ -198,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             })
               .then((result) => {
                 if (result.error) {
+                  console.error("Welcome email failed for user:", userId, result.error);
                   // On error, remove from sent list so we can retry later
                   welcomeEmailSentRef.current.delete(userId);
                   try {
@@ -214,11 +188,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   } catch (e) {
                     // Ignore errors
                   }
+                } else {
+                  console.log("Welcome email sent successfully to:", user.email);
                 }
                 // Remove from in-progress set
                 emailSendingInProgressRef.current.delete(userId);
               })
-              .catch(() => {
+              .catch((error) => {
+                console.error("Welcome email exception for user:", userId, error);
                 // On error, remove from sent list so we can retry later
                 welcomeEmailSentRef.current.delete(userId);
                 try {
@@ -292,12 +269,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (!error) {
+    if (!error && data?.user) {
       navigate("/dashboard");
     }
 
@@ -305,8 +282,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    // Use VITE_APP_URL in production, fallback to window.location.origin for local dev
-    const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+    // Always use window.location.origin for redirects (works for both local and production)
+    const baseUrl = window.location.origin;
     const redirectUrl = `${baseUrl}/dashboard`;
 
     const { error } = await supabase.auth.signUp({
@@ -329,11 +306,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      // Use VITE_APP_URL in production, fallback to window.location.origin for local dev
-      const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+      const baseUrl = window.location.origin;
       const redirectUrl = `${baseUrl}/dashboard`;
 
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log("Google OAuth redirect URL:", redirectUrl);
+
+      // Supabase automatically links accounts with the same email address by default
+      // No additional configuration needed - automatic linking is enabled by default
+      // If you want manual linking, enable it in: Authentication > Settings > "Enable Manual Linking"
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: redirectUrl,
@@ -341,19 +322,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             access_type: "offline",
             prompt: "consent",
           },
+          // This allows account linking when email matches an existing account
+          skipBrowserRedirect: false,
         },
       });
 
+      if (error) {
+        console.error("Google OAuth error:", error);
+        // If user already exists with email/password, suggest using email login
+        if (
+          error.message?.includes("already registered") ||
+          error.message?.includes("email already exists")
+        ) {
+          return {
+            error: {
+              ...error,
+              message:
+                "An account with this email already exists. Please sign in with your password or try Google sign-in again to link accounts.",
+            },
+          };
+        }
+      }
+
       return { error };
     } catch (error) {
+      console.error("Google OAuth exception:", error);
       return { error: error as Error };
     }
   };
 
   const resetPassword = async (email: string) => {
     try {
-      // Use VITE_APP_URL in production, fallback to window.location.origin for local dev
-      const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+      // Always use window.location.origin for redirects (works for both local and production)
+      const baseUrl = window.location.origin;
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${baseUrl}/auth/reset-password`,
       });
