@@ -21,7 +21,7 @@ export function getEnvVar(key: string): string | undefined {
       }
     }
   } catch (error) {
-    console.warn(`⚠️ Failed to access import.meta.env for ${key}:`, error);
+    console.warn(`Failed to access import.meta.env for ${key}:`, error);
   }
 
   // Fallback to process.env
@@ -36,7 +36,7 @@ export function getEnvVar(key: string): string | undefined {
       }
     }
   } catch (error) {
-    console.warn(`⚠️ Failed to access process.env for ${key}:`, error);
+    console.warn(`Failed to access process.env for ${key}:`, error);
   }
 
   return undefined;

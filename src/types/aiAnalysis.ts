@@ -4,7 +4,6 @@
  */
 
 // Supporting interfaces for nested objects
-// Note: StarScores and TechnicalScores removed as they don't exist in database schema
 
 export interface CommunicationScores {
   clarity: number;
@@ -298,7 +297,6 @@ export const PERFORMANCE_TRENDS = [
   "declining",
 ] as const;
 export const SPEAKING_PACES = ["too_fast", "appropriate", "too_slow"] as const;
-// RESPONSE_LENGTHS removed - this field doesn't exist in database schema
 
 // Score thresholds
 export const SCORE_THRESHOLDS = {
