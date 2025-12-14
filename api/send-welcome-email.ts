@@ -9,7 +9,16 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const EMAIL_FROM = process.env.EMAIL_FROM;
 const APP_NAME = process.env.APP_NAME;
 
-// Welcome email template
+// Welcome email template - matches the new dark theme UI
+// Color conversions from HSL to hex:
+// Primary: hsl(174 72% 56%) = #4FD1C7 (teal/cyan)
+// Accent: hsl(160 60% 45%) = #38A169 (green-teal)
+// Background: hsl(222 47% 6%) = #0A0E1A (very dark blue)
+// Card: hsl(222 47% 8%) = #0F141F (slightly lighter dark)
+// Foreground: hsl(210 40% 98%) = #F7F9FC (almost white)
+// Border: hsl(222 30% 18%) = #2A3142 (dark gray)
+// Muted foreground: hsl(215 20% 55%) = #7A8A9F (gray)
+
 const createWelcomeEmailHTML = (userName: string, dashboardUrl: string) => `
 <!DOCTYPE html>
 <html>
