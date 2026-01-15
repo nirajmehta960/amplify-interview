@@ -3,50 +3,64 @@
 ![Amplify Interview](https://img.shields.io/badge/Amplify%20Interview-Interview%20Platform-blue)
 ![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)
-![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite)
-![Supabase](https://img.shields.io/badge/Supabase-Latest-3ECF8E?logo=supabase)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.11x-009688?logo=fastapi)
+![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?logo=firebase)
+![GCP](https://img.shields.io/badge/Google%20Cloud-Run%20%7C%20Firestore%20%7C%20Storage-4285F4?logo=googlecloud)
 
 **AI-Powered Mock Interview Platform for Technical, Behavioral, Leadership, and Custom Domain Interview Preparation**
 
-Amplify Interview is a comprehensive mock interview platform that leverages advanced AI models to provide personalized interview coaching, detailed performance analysis, and skill development tracking. Whether you're preparing for technical interviews, behavioral assessments, leadership roles, or custom domains like Product Management, Software Engineering, AI Engineering, and more - our platform offers a complete interview preparation experience with video recording, real-time transcription, and intelligent feedback.
+Amplify Interview is a full-stack mock interview platform that uses **OpenRouter (OpenAI-compatible API)** and Google Cloud services to deliver personalized interview coaching, detailed performance analysis, and skill development tracking. Upload a **resume** and **job description**, get role-targeted question generation, run an **adaptive real-time interview** (behavioral, technical, or mixed), and receive structured feedback — all on a 100% GCP/Firebase backend.
+
+---
+
+## Architecture
+
+```
+Browser (React + Vite)
+        │  Firebase Auth JWT
+        ▼
+Firebase Hosting  ──────────────►  Cloud Run (FastAPI)
+                                        │
+                          ┌─────────────┼─────────────────┐
+                          ▼             ▼                   ▼
+                    Cloud Firestore  Cloud Storage    Cloud Speech-to-Text
+                    (sessions, users, (resume PDFs)  (voice transcription)
+                     question bank)
+                          │
+                    Secret Manager   Artifact Registry   Cloud Build
+                    (API keys)       (Docker images)     (CI/CD)
+```
+
+**Google Cloud services used:** Cloud Run, Cloud Firestore, Cloud Storage, Cloud Speech-to-Text, Secret Manager, Artifact Registry, Cloud Build, Firebase Auth, Firebase Hosting, Google Analytics 4
 
 ---
 
 ## Features
 
-### Core Functionality
+### Interview Experience
 
-* **AI-Powered Interview Analysis** - Real-time evaluation using OpenAI GPT and Anthropic Claude models
-* **Video Recording & Transcription** - High-quality video capture with automatic speech-to-text via Deepgram
-* **Custom Question Bank** - Create and manage personal question collections by category and domain
-* **Multiple Interview Types** - Behavioral, Technical, Leadership, and Custom domain formats
-* **Session Management** - Complete interview session tracking with video playback and analysis
-* **Progress Analytics** - Visual charts and metrics tracking performance improvements over time
-* **Interview Readiness Assessment** - AI-powered evaluation of interview preparedness
-* **Performance Insights** - Detailed feedback on communication, content quality, and improvement areas
+- **Resume + Job Description ingestion** — upload your resume and target JD; backend extracts and analyzes content
+- **Personalized Question Generation (LLM)** — role-targeted questions (e.g., Software Engineer, Data Analyst, Product Manager) using **OpenRouter** (OpenAI-compatible)
+- **Adaptive Real-Time Interviews** — questions adjust in real time based on your answers; follow-ups generated dynamically and difficulty adapts
+- **Voice Input** — speak your answers; Google Cloud Speech-to-Text transcribes them instantly
+- **Multiple Interview Types** — Behavioral, Technical, Leadership, and Custom domain formats
+- **Custom Question Bank** — build and manage personal question collections by category and domain
+- **Resume-Aware Sessions** — the backend tailors questions to your background and target role
 
-### Question Management
+### Analytics & Feedback
 
-* **Personal Question Bank** - Build your own collection of interview questions
-* **Multi-category Support** - Behavioral, technical, and leadership question categories
-* **Custom Domain Selection** - Specialized questions for Product Manager, Software Engineer, AI Engineer, Data Scientist, UX Designer, and more
-* **Question Classification** - Intelligent categorization by domain and difficulty
-* **Practice Integration** - Seamlessly use custom questions in mock interviews
+- **AI-Powered Feedback** — structured feedback with strengths, weaknesses, and improvement suggestions
+- **Progress Tracking** — score timeline charts across sessions
+- **Skill Breakdown** — per-dimension scores (communication, structure, content, confidence)
+- **Interview Readiness Score** — aggregate readiness rating derived from all completed sessions
+- **Session History** — full record of sessions with per-question scores and transcripts
 
-### Analytics & Tracking
+### Platform
 
-* **Session History** - Complete record of all interview sessions with detailed metrics
-* **Visual Progress Charts** - Interactive charts showing skill development over time
-* **Score Trends** - Track performance improvements across different skill areas
-* **Skill Development Radar** - Visual representation of strengths and improvement areas
-* **Cost Tracking** - Monitor AI analysis costs and token usage
-
-### Security & Privacy
-
-* **Secure Authentication** - Email/password and Google OAuth integration
-* **Row Level Security** - Database-level access control with user isolation
-* **Local Video Storage** - Videos stored securely in browser's IndexedDB for privacy
-* **Data Encryption** - All sensitive data encrypted in transit and at rest
+- **Firebase Auth** — email/password and Google OAuth, JWT tokens sent to every backend request
+- **Transactional Email** — welcome emails via Resend
+- **Google Analytics 4** — page view and event tracking
+- **CI/CD** — Cloud Build automatically builds Docker image, deploys Cloud Run, and deploys Firebase Hosting on every push to `main`
 
 ---
 
@@ -54,211 +68,242 @@ Amplify Interview is a comprehensive mock interview platform that leverages adva
 
 ### Frontend
 
-* **React 18** with TypeScript
-* **Vite** for blazing-fast development
-* **Tailwind CSS** for styling
-* **shadcn/ui** component library
-* **React Router** for navigation
-* **TanStack Query** for data fetching
-* **Framer Motion** for animations
-* **Recharts** for data visualization
+| Layer | Technology |
+|---|---|
+| Framework | React 18 + TypeScript |
+| Build tool | Vite 5 |
+| Styling | Tailwind CSS + shadcn/ui |
+| Routing | React Router 6 |
+| Data fetching | TanStack Query |
+| Animations | Framer Motion |
+| Charts | Recharts |
+| Auth client | Firebase JS SDK 12 |
+| Analytics | react-ga4 (GA4) |
+| Hosting | Firebase Hosting |
 
-### Backend & Database
+### Backend
 
-* **Supabase** for authentication, database, and real-time features
-* **PostgreSQL** for robust data storage and relationships
-* **Row Level Security (RLS)** for data protection and user isolation
-* **Supabase Auth** for secure user authentication and session management
-
-### AI & Analysis
-
-* **OpenRouter API** for AI model integration and analysis
-* **Deepgram** for high-accuracy speech-to-text transcription
-* **Custom AI Analysis Service** for interview response evaluation
-* **Question Classification System** for intelligent question categorization
-
-### Video & Media
-
-* **WebRTC** for video recording and streaming
-* **MediaRecorder API** for video capture and processing
-* **Video Segmentation Service** for question-based response tracking
-* **IndexedDB Storage** for local video file management and privacy
-
----
-
-## Quick Start
-
-### Prerequisites
-
-* **Node.js** 18+ (for frontend)
-* **npm** or **yarn** package manager
-* **Supabase Account** for backend services
-* **OpenRouter API Key** for AI analysis
-* **Deepgram API Key** for transcription services (optional)
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/nirajmehta960/amplify-interview.git
-   cd amplify-interview
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Environment Configuration**
-   
-   Create a `.env` file in the root directory:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` and fill in your configuration:
-   
-   **Required Variables:**
-   - `VITE_SUPABASE_URL` - Your Supabase project URL
-   - `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
-   - `VITE_OPENROUTER_API_KEY` - Your OpenRouter API key
-   - `VITE_RESEND_API_KEY` - Your Resend API key (for welcome emails)
-   - `VITE_EMAIL_FROM` - Your email address for sending emails
-   - `VITE_APP_NAME` - Your application name
-   - `VITE_APP_URL` - Your application URL
-   
-   **Optional Variables:**
-   - `VITE_DEEPGRAM_API_KEY` - Deepgram API key (for transcription)
-   - `VITE_SITE_URL` - Your site URL (for OpenRouter)
-   - `VITE_SITE_TITLE` - Your site title (for OpenRouter)
-
-4. **Database Setup**
-   
-   1. Create a new Supabase project at [supabase.com](https://supabase.com)
-   2. Run the database migrations located in `supabase/migrations/`
-   3. Set up Row Level Security policies for data protection
-   4. Configure authentication settings in your Supabase dashboard
-
-5. **Google OAuth Setup (Optional)**
-   
-   1. Create Google OAuth credentials in [Google Cloud Console](https://console.cloud.google.com/)
-   2. Add authorized redirect URI: `https://<your-supabase-project-id>.supabase.co/auth/v1/callback`
-   3. Enable Google provider in Supabase Dashboard → Authentication → Providers
-   4. Enter your Client ID and Client Secret
-
-6. **Start Development Server**
-   ```bash
-   npm run dev
-   ```
-   
-   The application will be available at `http://localhost:5173`
+| Layer | Technology |
+|---|---|
+| Framework | FastAPI (Python) |
+| Runtime | Cloud Run (us-central1, port 8080) |
+| Container registry | Artifact Registry |
+| Auth verification | Firebase Admin SDK (JWT) |
+| Database | Cloud Firestore (Native mode) |
+| File storage | Cloud Storage |
+| Transcription | Cloud Speech-to-Text |
+| LLM | OpenRouter (OpenAI-compatible) → OpenAI models (e.g. GPT-4o / GPT-4o-mini) |
+| Email | Resend |
+| Secrets | Secret Manager |
+| CI/CD | Cloud Build + `cloudbuild.yaml` |
 
 ---
 
-## Project Structure
+## Repository Structure
 
 ```
 amplify-interview/
-├── api/                      # API routes (Vercel serverless functions)
-│   └── send-welcome-email.ts
-├── public/                   # Static assets
-│   ├── logo.svg
-│   └── favicon.svg
-├── src/
-│   ├── components/          # Reusable UI components
-│   │   ├── ui/             # shadcn/ui components
-│   │   ├── landing/        # Landing page sections
-│   │   └── layout/         # Layout components
-│   ├── contexts/           # React contexts
-│   │   ├── AuthContext.tsx
+├── backend/                    # FastAPI backend (deployed to Cloud Run)
+│   ├── app/
+│   │   ├── main.py             # App entrypoint, CORS, router registration
+│   │   ├── config.py           # Settings via pydantic-settings
+│   │   ├── auth.py             # Firebase JWT verification middleware
+│   │   ├── routers/
+│   │   │   ├── resume.py       # Resume upload → Cloud Storage
+│   │   │   ├── interview.py    # Session CRUD + adaptive question generation
+│   │   │   ├── feedback.py     # AI feedback generation
+│   │   │   ├── analytics.py    # Progress and insights aggregation
+│   │   │   ├── questions.py    # User question bank
+│   │   │   ├── speech.py       # Cloud Speech-to-Text proxy
+│   │   │   └── email.py        # Resend welcome email
+│   │   └── services/
+│   │       ├── firestore.py    # Firestore async client helpers
+│   │       ├── storage.py      # Cloud Storage helpers
+│   │       ├── resume_parser.py      # Resume parsing/extraction
+│   │       ├── jd_parser.py          # Job description parsing/extraction
+│   │       ├── matching_engine.py    # Resume ↔ JD matching/analysis
+│   │       ├── question_generator.py # LLM-powered question generation
+│   │       ├── followup_handler.py   # Dynamic follow-up generation
+│   │       ├── feedback_generator.py # Structured feedback generation
+│   │       └── interview_engine.py   # Real-time interview orchestration + difficulty adaptation
+│   ├── Dockerfile
+│   └── requirements.txt
+├── src/                        # React frontend
+│   ├── components/
+│   │   ├── ui/                 # shadcn/ui components
+│   │   ├── landing/            # Landing page sections
+│   │   └── layout/             # Navbar, shell
+│   ├── contexts/
+│   │   ├── AuthContext.tsx     # Firebase Auth state
 │   │   └── InterviewContext.tsx
-│   ├── hooks/              # Custom React hooks
-│   │   └── useVideoRecording.ts
-│   ├── integrations/       # External service integrations
-│   │   └── supabase/       # Supabase client and types
-│   ├── lib/                # Utility functions
-│   ├── pages/              # Application pages
+│   ├── hooks/
+│   ├── lib/
+│   ├── pages/
 │   │   ├── Dashboard.tsx
-│   │   ├── InterviewSession.tsx
+│   │   ├── InterviewSetup.tsx
+│   │   ├── ChatInterviewSession.tsx
 │   │   ├── InterviewResults.tsx
+│   │   ├── Progress.tsx
+│   │   ├── Insights.tsx
 │   │   └── PracticeQuestions.tsx
-│   ├── services/           # Business logic and API services
-│   │   ├── aiAnalysisService.ts
-│   │   ├── interviewSessionService.ts
-│   │   ├── openRouterService.ts
-│   │   └── deepgramTranscriptionService.ts
-│   └── types/              # TypeScript type definitions
-├── supabase/               # Database migrations and configuration
-│   ├── migrations/
-│   └── config.toml
-├── .env.example            # Environment variables template
+│   ├── services/
+│   │   ├── apiClient.ts              # Typed HTTP client (attaches Firebase JWT)
+│   │   ├── deepgramTranscriptionService.ts  # Proxies audio to backend /api/speech/transcribe
+│   │   ├── emailService.ts           # Calls backend /api/email/welcome
+│   │   ├── questionDatabaseService.ts
+│   │   └── userQuestionBankService.ts
+│   └── utils/
+│       ├── env.ts              # getApiUrl(), getGa4MeasurementId()
+│       └── firebase.ts         # Firebase app + auth initialization
+├── public/
+├── cloudbuild.yaml             # CI/CD: Docker build → Cloud Run → Firebase Hosting
+├── firebase.json               # Firebase Hosting config + SPA rewrites
+├── .firebaserc                 # Firebase project binding
+├── DEPLOYMENT.md               # Complete GCP deployment guide (start here)
 ├── package.json
-├── tailwind.config.ts
-├── tsconfig.json
-└── vite.config.ts
+├── vite.config.ts
+└── tailwind.config.ts
 ```
 
 ---
 
-## Development
+## Local Development
 
-### Available Scripts
+### Prerequisites
+
+- Node.js 20+
+- Python 3.11+
+- A running backend (local or Cloud Run)
+
+### 1. Clone and install frontend dependencies
 
 ```bash
-# Development
-npm run dev          # Start development server
-npm run dev:api      # Start with Vercel API routes
-npm run build        # Build for production
-npm run preview      # Preview production build
-
-# Code Quality
-npm run lint         # Run ESLint
+git clone https://github.com/nirajmehta960/amplify-interview.git
+cd amplify-interview
+npm install
 ```
 
-### API Documentation
+### 2. Configure environment
 
-Once the backend is running, access your Supabase project:
-* **Supabase Dashboard**: `https://app.supabase.com/project/<your-project-id>`
-* **API Documentation**: Available in Supabase Dashboard → API
+Create `.env.local` at the project root (never commit this file):
+
+```bash
+# Backend URL — use your Cloud Run URL or http://localhost:4000 for local dev
+VITE_API_URL=http://localhost:4000
+
+# Firebase Web App config (from Firebase Console → Project settings → Your apps)
+VITE_FIREBASE_API_KEY=AIzaSy...
+VITE_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=123456789012
+VITE_FIREBASE_APP_ID=1:123456789012:web:abcdef
+
+# Optional — Google Analytics 4 Measurement ID
+VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
+### 3. Run the backend locally
+
+```bash
+cd backend
+
+# Create and activate virtualenv
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+
+pip install -r requirements.txt
+
+# Set required env vars (or create backend/.env)
+export GCP_PROJECT_ID=your-project-id
+export GCS_BUCKET_NAME=amplify-interview-uploads
+export OPENAI_API_KEY=sk-...
+export RESEND_API_KEY=re_...
+export FRONTEND_URL=http://localhost:3000
+
+uvicorn app.main:app --reload --port 4000
+```
+
+Backend is available at `http://localhost:4000`. Interactive docs at `http://localhost:4000/docs`.
+
+### 4. Run the frontend
+
+```bash
+# From project root
+npm run dev
+```
+
+Frontend is available at `http://localhost:3000`.
 
 ---
 
 ## Deployment
 
-### Vercel (Recommended)
+Full GCP deployment from scratch is documented in [DEPLOYMENT.md](DEPLOYMENT.md).
 
-1. **Connect Repository**: Link your GitHub repository to Vercel
-2. **Environment Variables**: Add all required environment variables in Vercel dashboard
-3. **Deploy**: Automatic deployment on every push to main branch
+High-level steps:
 
-### Other Platforms
+1. Enable GCP APIs (Cloud Run, Firestore, Storage, Speech, Secret Manager, etc.)
+2. Set up Firebase (Auth, Firestore, Hosting, Web App registration)
+3. Create Cloud Storage bucket + Artifact Registry
+4. Store secrets in Secret Manager
+5. Grant IAM roles to Cloud Build and Cloud Run service accounts
+6. Build and deploy backend Docker image to Cloud Run
+7. Build and deploy frontend to Firebase Hosting
+8. Connect GitHub repo to Cloud Build — every push to `main` auto-deploys both
 
-The application can be deployed to any platform that supports Node.js applications:
-* **Netlify**
-* **Railway**
-* **Heroku**
-* **AWS Amplify**
+### CI/CD Pipeline (`cloudbuild.yaml`)
+
+```
+push to main
+     │
+     ├─► docker build ./backend → push to Artifact Registry
+     │
+     ├─► gcloud run deploy amplify-interview-backend
+     │
+     ├─► npm ci
+     │
+     ├─► npm run build   (reads VITE_* from Secret Manager)
+     │
+     └─► firebase deploy --only hosting
+```
+
+---
+
+## API Overview
+
+The FastAPI backend exposes these router groups (all under `/api`):
+
+| Router | Endpoints | Description |
+|---|---|---|
+| `/api/resume` | `POST /upload` | Upload resume PDF to Cloud Storage |
+| `/api/interview` | `POST /start`, `POST /{id}/respond`, `GET /sessions` | Adaptive interview sessions |
+| `/api/feedback` | `GET /{session_id}` | AI-generated feedback per session |
+| `/api/analytics` | `GET /overview`, `GET /progress`, `GET /skills` | Progress and insights |
+| `/api/questions` | `GET /`, `POST /`, `DELETE /{id}` | User question bank |
+| `/api/speech` | `POST /transcribe` | Cloud Speech-to-Text proxy |
+| `/api/email` | `POST /welcome` | Send welcome email via Resend |
+| `/health` | `GET /` | Health check |
+
+All endpoints (except `/health`) require a Firebase ID token in the `Authorization: Bearer <token>` header.
+
+---
+
+## Security
+
+- **No client-side secrets** — all API keys (OpenAI, Resend) are stored in Secret Manager and accessed only by the Cloud Run backend
+- **Firebase JWT verification** — every backend request validates the Firebase ID token; Firestore is locked to deny all direct client reads/writes
+- **HTTPS everywhere** — Cloud Run and Firebase Hosting both terminate TLS
+- **Least-privilege IAM** — Cloud Run SA has only the roles it needs (Firestore user, Storage object admin, Speech client, Secret accessor)
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Here's how you can help:
-
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Code Style
-
-* Follow existing code patterns
-* Use meaningful variable names
-* Add comments for complex logic
-* Keep components and functions focused
-* Use TypeScript strict mode
-* Follow ESLint rules
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes
+4. Push and open a Pull Request against `main`
 
 ---
 
@@ -266,26 +311,8 @@ Contributions are welcome! Here's how you can help:
 
 Copyright (c) 2025 Niraj Mehta. All rights reserved.
 
----
-
-## Authors
-
-**Niraj Mehta**
-
-* GitHub: [@nirajmehta960](https://github.com/nirajmehta960)
+**Author:** Niraj Mehta — [@nirajmehta960](https://github.com/nirajmehta960)
 
 ---
 
-## Acknowledgments
-
-* Built with React and Supabase
-* UI components from shadcn/ui
-* AI models via OpenRouter
-* Speech-to-text by Deepgram
-* Icons from Lucide
-
----
-
-**Made with passion for better interview preparation**
-
-Star this repo if you find it helpful!
+*Made with passion for better interview preparation.*
