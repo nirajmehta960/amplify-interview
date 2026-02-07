@@ -14,7 +14,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import get_settings
 from app.middleware.rate_limit import limiter
-from app.routers import resume, interview, feedback, analytics
+from app.routers import resume, interview, feedback, analytics, questions, user, email, speech
 
 # ── Logging ──────────────────────────────────────────────
 
@@ -99,6 +99,10 @@ app.include_router(resume.router)
 app.include_router(interview.router)
 app.include_router(feedback.router)
 app.include_router(analytics.router)
+app.include_router(questions.router)
+app.include_router(user.router)
+app.include_router(email.router)
+app.include_router(speech.router)
 
 
 # ── Health Check ─────────────────────────────────────────
@@ -129,5 +133,9 @@ async def root():
             "send_message": "POST /api/interview/session/{id}/message",
             "get_feedback": "GET /api/feedback/session/{id}",
             "analytics": "GET /api/analytics/overview",
+            "user_profile": "GET /api/user/profile",
+            "questions": "GET /api/questions",
+            "welcome_email": "POST /api/email/welcome",
+            "transcribe": "POST /api/speech/transcribe",
         },
     }

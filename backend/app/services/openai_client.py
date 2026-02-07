@@ -23,11 +23,20 @@ def get_openai_client() -> AsyncOpenAI:
     global _client
     if _client is None:
         settings = get_settings()
-        _client = AsyncOpenAI(
-            api_key=settings.openai_api_key,
-            max_retries=settings.openai_max_retries,
-            timeout=settings.openai_timeout,
-        )
+        kwargs: dict = {
+            "api_key": settings.openai_api_key,
+            "max_retries": settings.openai_max_retries,
+            "timeout": settings.openai_timeout,
+        }
+        base = (settings.openai_api_base or "").strip()
+        if base:
+            kwargs["base_url"] = base
+            if "openrouter.ai" in base:
+                kwargs["default_headers"] = {
+                    "HTTP-Referer": settings.app_url or "http://localhost:5173",
+                    "X-Title": settings.app_name,
+                }
+        _client = AsyncOpenAI(**kwargs)
     return _client
 
 

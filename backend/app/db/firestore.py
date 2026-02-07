@@ -100,6 +100,10 @@ def question_bank_col() -> AsyncCollectionReference:
     return get_firestore_client().collection("question_bank")
 
 
+def user_questions_col(user_id: str) -> AsyncCollectionReference:
+    return user_doc(user_id).collection("questions")
+
+
 # ---------- CRUD Helpers ----------
 
 
