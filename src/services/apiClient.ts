@@ -3,7 +3,7 @@
  * Handles all communication with /api/* endpoints.
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 // ── Types ─────────────────────────────────────────────────
 
@@ -104,6 +104,13 @@ export interface ResumeUploadResponse {
   uploaded_at: string;
 }
 
+export interface JDResponse {
+  jd_id: string;
+  raw_text: string;
+  parsed_data: any;
+  created_at: string;
+}
+
 export interface MatchAnalysis {
   overall_score: number;
   matched_skills: string[];
@@ -125,12 +132,11 @@ class ApiError extends Error {
 }
 
 async function getAuthToken(): Promise<string | null> {
-  // TODO: Replace with Firebase Auth token when auth is migrated
-  // For now, try to get from Supabase session
   try {
-    const { supabase } = await import('@/integrations/supabase/client');
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || null;
+    const { auth } = await import('@/lib/firebase');
+    const user = auth.currentUser;
+    if (!user) return null;
+    return user.getIdToken();
   } catch {
     return null;
   }
@@ -240,7 +246,7 @@ export const resumeApi = {
     apiFetch(`/api/resume/${resumeId}`, { method: 'DELETE' }),
 
   /** Create and parse a job description */
-  createJD: (rawText: string, company?: string, roleTitle?: string) =>
+  createJD: (rawText: string, company?: string, roleTitle?: string): Promise<JDResponse> =>
     apiFetch('/api/resume/jd', {
       method: 'POST',
       body: JSON.stringify({ raw_text: rawText, company, role_title: roleTitle }),
@@ -281,4 +287,69 @@ export const analyticsApi = {
 
   /** Get skill analytics */
   getSkills: () => apiFetch('/api/analytics/skills'),
+};
+
+// ── Questions API (User Question Bank) ───────────────────
+
+export interface UserQuestion {
+  id: string;
+  question_text: string;
+  category: string;
+  user_id: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export const questionsApi = {
+  /** List all user practice questions (optionally filtered) */
+  list: (category?: string, q?: string): Promise<UserQuestion[]> => {
+    const params = new URLSearchParams();
+    if (category) params.set('category', category);
+    if (q) params.set('q', q);
+    const qs = params.toString();
+    return apiFetch(`/api/questions${qs ? `?${qs}` : ''}`);
+  },
+
+  /** Create a new practice question */
+  create: (question_text: string, category: string): Promise<UserQuestion> =>
+    apiFetch('/api/questions', {
+      method: 'POST',
+      body: JSON.stringify({ question_text, category }),
+    }),
+
+  /** Update an existing practice question */
+  update: (id: string, data: { question_text?: string; category?: string }): Promise<UserQuestion> =>
+    apiFetch(`/api/questions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  /** Delete a practice question */
+  delete: (id: string): Promise<void> =>
+    apiFetch(`/api/questions/${id}`, { method: 'DELETE' }),
+};
+
+// ── User API ──────────────────────────────────────────────
+
+export interface UserProfile {
+  uid: string;
+  email?: string;
+  display_name?: string;
+  avatar_url?: string;
+}
+
+export const userApi = {
+  /** Get the current user's profile from Firebase token claims */
+  getProfile: (): Promise<UserProfile> => apiFetch('/api/user/profile'),
+};
+
+// ── Email API ─────────────────────────────────────────────
+
+export const emailApi = {
+  /** Send a welcome email to a newly registered user */
+  sendWelcome: (email: string, userName: string, dashboardUrl: string) =>
+    apiFetch('/api/email/welcome', {
+      method: 'POST',
+      body: JSON.stringify({ email, user_name: userName, dashboard_url: dashboardUrl }),
+    }),
 };
