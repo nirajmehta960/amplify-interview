@@ -11,58 +11,61 @@
 
 @layer base {
   :root {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
+    /* Light, production-grade palette (Big Interview inspired) */
+    --background: 210 40% 99%;
+    --foreground: 222 47% 11%;
 
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
 
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 174 72% 56%;
-    --primary-foreground: 222 47% 6%;
+    /* Deep indigo primary — trustworthy, professional */
+    --primary: 231 72% 52%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 30% 14%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 20% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 222 30% 18%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 12% 45%;
 
-    --accent: 160 60% 45%;
-    --accent-foreground: 210 40% 98%;
+    /* Teal accent for success / scores */
+    --accent: 172 72% 38%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 222 30% 18%;
-    --input: 222 30% 14%;
-    --ring: 174 72% 56%;
+    --border: 220 16% 90%;
+    --input: 220 16% 92%;
+    --ring: 231 72% 52%;
 
     --radius: 0.75rem;
 
-    /* Custom tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(174 72% 56%) 0%, hsl(160 60% 45%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(222 47% 8%) 0%, hsl(222 47% 4%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(222 47% 10% / 0.8) 0%, hsl(222 47% 6% / 0.6) 100%);
-    --glass-border: hsl(222 30% 25% / 0.5);
-    --glass-bg: hsl(222 47% 10% / 0.6);
-    --glow-primary: 0 0 60px hsl(174 72% 56% / 0.3);
-    --glow-subtle: 0 0 40px hsl(174 72% 56% / 0.15);
+    /* Custom tokens — tuned for light surfaces */
+    --gradient-primary: linear-gradient(135deg, hsl(231 72% 52%) 0%, hsl(250 72% 60%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(220 40% 98%) 0%, hsl(210 40% 99%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100% / 0.9) 0%, hsl(220 30% 98% / 0.8) 100%);
+    --glass-border: hsl(220 16% 90% / 0.8);
+    --glass-bg: hsl(0 0% 100% / 0.75);
+    --glow-primary: 0 20px 50px -20px hsl(231 72% 52% / 0.35);
+    --glow-subtle: 0 10px 30px -12px hsl(231 72% 52% / 0.15);
 
     /* Status colors */
-    --success: 160 60% 45%;
+    --success: 160 60% 40%;
     --warning: 38 92% 50%;
-    --info: 217 91% 60%;
+    --info: 217 91% 55%;
 
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 174 72% 56%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 30% 14%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 30% 18%;
-    --sidebar-ring: 174 72% 56%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 231 72% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 16% 90%;
+    --sidebar-ring: 231 72% 52%;
   }
 
   .dark {
@@ -72,27 +75,27 @@
     --card-foreground: 210 40% 98%;
     --popover: 222 47% 8%;
     --popover-foreground: 210 40% 98%;
-    --primary: 174 72% 56%;
+    --primary: 231 72% 62%;
     --primary-foreground: 222 47% 6%;
     --secondary: 222 30% 14%;
     --secondary-foreground: 210 40% 98%;
     --muted: 222 30% 18%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 160 60% 45%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 172 72% 45%;
+    --accent-foreground: 222 47% 6%;
+    --destructive: 0 62.8% 40%;
     --destructive-foreground: 210 40% 98%;
     --border: 222 30% 18%;
     --input: 222 30% 14%;
-    --ring: 174 72% 56%;
+    --ring: 231 72% 62%;
     --sidebar-background: 222 47% 6%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 174 72% 56%;
+    --sidebar-primary: 231 72% 62%;
     --sidebar-primary-foreground: 222 47% 6%;
     --sidebar-accent: 222 30% 14%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 222 30% 18%;
-    --sidebar-ring: 174 72% 56%;
+    --sidebar-ring: 231 72% 62%;
   }
 }
 
@@ -117,8 +120,8 @@
 
 @layer components {
   .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border border-border/50 rounded-xl;
-    background: var(--gradient-card);
+    @apply bg-card border border-border rounded-xl;
+    box-shadow: 0 1px 2px hsl(220 40% 20% / 0.04), 0 4px 16px -4px hsl(220 40% 20% / 0.06);
   }
 
   .glass-card-hover {
@@ -126,8 +129,9 @@
   }
 
   .glass-card-hover:hover {
-    @apply border-primary/30;
-    box-shadow: var(--glow-subtle);
+    @apply border-primary/40;
+    box-shadow: 0 1px 2px hsl(220 40% 20% / 0.04), var(--glow-subtle);
+    transform: translateY(-2px);
   }
 
   .gradient-text {
@@ -156,7 +160,7 @@
     position: absolute;
     width: 600px;
     height: 600px;
-    background: radial-gradient(circle, hsl(174 72% 56% / 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, hsl(231 72% 52% / 0.10) 0%, transparent 70%);
     filter: blur(80px);
     pointer-events: none;
   }
@@ -178,15 +182,15 @@
   }
 
   .badge-success {
-    @apply bg-accent/20 text-accent border border-accent/30 text-xs px-2.5 py-0.5 rounded-full font-medium;
+    @apply bg-accent/10 text-accent border border-accent/20 text-xs px-2.5 py-0.5 rounded-full font-medium;
   }
 
   .badge-warning {
-    @apply bg-warning/20 text-warning border border-warning/30 text-xs px-2.5 py-0.5 rounded-full font-medium;
+    @apply bg-warning/10 text-warning border border-warning/20 text-xs px-2.5 py-0.5 rounded-full font-medium;
   }
 
   .badge-info {
-    @apply bg-info/20 text-info border border-info/30 text-xs px-2.5 py-0.5 rounded-full font-medium;
+    @apply bg-info/10 text-info border border-info/20 text-xs px-2.5 py-0.5 rounded-full font-medium;
   }
 
   .progress-bar {

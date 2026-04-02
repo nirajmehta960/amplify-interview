@@ -82,7 +82,7 @@ const ProgressTab = () => {
     try {
       setLoading(true);
 
-      if (!user?.id) {
+      if (!user?.uid) {
         throw new Error("User ID is required");
       }
 
@@ -90,7 +90,7 @@ const ProgressTab = () => {
       const { data: summaries, error: summariesError } = await supabase
         .from("interview_summary")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", user.uid)
         .order("created_at", { ascending: true });
 
       if (summariesError) {
@@ -105,7 +105,7 @@ const ProgressTab = () => {
       const { data: sessions, error: sessionsError } = await supabase
         .from("interview_sessions")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", user.uid)
         .order("created_at", { ascending: true });
 
       if (sessionsError) {
@@ -120,7 +120,7 @@ const ProgressTab = () => {
       const { data: analyses, error: analysesError } = await supabase
         .from("interview_analysis")
         .select("*")
-        .eq("user_id", user.id);
+        .eq("user_id", user.uid);
 
       if (analysesError) {
         console.error("Error fetching analyses:", analysesError);

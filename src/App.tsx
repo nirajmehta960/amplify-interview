@@ -6,9 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-// Removed InterviewProvider import - using direct configuration flow
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/react";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -23,9 +20,7 @@ import InterviewResults from "./pages/InterviewResults";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import ModernAnalyticsDashboard from "./pages/ModernAnalyticsDashboard";
 import AnalyticsDemo from "./pages/AnalyticsDemo";
-import ProgressTab from "./pages/ProgressTab";
 import Progress from "./pages/Progress";
-import InsightsTab from "./pages/InsightsTab";
 import Insights from "./pages/Insights";
 import SessionReview from "./pages/SessionReview";
 import NotFound from "./pages/NotFound";
@@ -156,8 +151,6 @@ const App = () => (
           </Routes>
           </AuthProvider>
         </BrowserRouter>
-        <Analytics />
-        <SpeedInsights />
       </TooltipProvider>
     </QueryClientProvider>
   </HelmetProvider>

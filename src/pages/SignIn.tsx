@@ -2,10 +2,20 @@ import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, Mic, ArrowRight } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  Mic,
+  ArrowRight,
+  Sparkles,
+  TrendingUp,
+  ShieldCheck,
+  Star,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -40,13 +50,17 @@ const SignIn = () => {
       const { error } = await signIn(validated.email, validated.password);
 
       if (error) {
-        // Handle specific error cases for better UX
-        let errorMessage = error.message;
-        
-        if (error.message?.includes("Invalid login credentials") || error.message?.includes("Invalid password")) {
+        const code = error.code || "";
+        let errorMessage = "An unexpected error occurred. Please try again.";
+
+        if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential") {
           errorMessage = "Invalid email or password. Please check your credentials or try signing in with Google.";
-        } else if (error.message?.includes("Email not confirmed")) {
-          errorMessage = "Please verify your email address before signing in. Check your inbox for a confirmation link.";
+        } else if (code === "auth/too-many-requests") {
+          errorMessage = "Too many failed attempts. Please wait a moment before trying again.";
+        } else if (code === "auth/user-disabled") {
+          errorMessage = "This account has been disabled. Please contact support.";
+        } else if (error.message) {
+          errorMessage = error.message;
         }
 
         toast({
@@ -75,42 +89,55 @@ const SignIn = () => {
         <meta name="description" content="Sign in to continue your interview practice." />
       </Helmet>
 
-      <div className="min-h-screen flex relative overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(222_30%_18%/0.3)_1px,transparent_1px),linear-gradient(to_bottom,hsl(222_30%_18%/0.3)_1px,transparent_1px)] bg-[size:60px_60px]" />
-        <div className="hero-glow top-1/4 left-1/4 animate-glow-pulse" />
-        <div className="hero-glow bottom-1/4 right-1/4 animate-glow-pulse" style={{ animationDelay: '1.5s' }} />
+      <div className="min-h-screen flex bg-background">
+        {/* Left: Form */}
+        <div className="flex-1 flex items-center justify-center p-6 lg:p-10 relative overflow-hidden">
+          {/* Soft ambient glow */}
+          <div
+            className="pointer-events-none absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-60"
+            style={{
+              background: "radial-gradient(circle, hsl(231 72% 52% / 0.10) 0%, transparent 70%)",
+              filter: "blur(40px)",
+            }}
+          />
+          <div
+            className="pointer-events-none absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full opacity-60"
+            style={{
+              background: "radial-gradient(circle, hsl(172 72% 38% / 0.10) 0%, transparent 70%)",
+              filter: "blur(40px)",
+            }}
+          />
 
-        {/* Main content */}
-        <div className="flex-1 flex items-center justify-center p-4 sm:p-6 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="w-full max-w-md px-4 sm:px-0"
+            className="w-full max-w-md relative z-10"
           >
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 mb-8 justify-center">
-              <div className="w-12 h-12 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center">
-                <Mic className="w-6 h-6 text-primary" />
+            <Link to="/" className="flex items-center gap-3 mb-10">
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center shadow-lg shadow-primary/25"
+                style={{ background: "var(--gradient-primary)" }}
+              >
+                <Mic className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <span className="font-display font-semibold text-xl text-foreground">Amplify Interview</span>
+                <span className="font-display font-semibold text-lg text-foreground block leading-tight">
+                  Amplify Interview
+                </span>
                 <p className="text-xs text-muted-foreground">AI-Powered Mock Interviews</p>
               </div>
             </Link>
 
-            {/* Card */}
-            <div className="glass-card p-8">
-              <div className="text-center mb-8">
-                <h1 className="font-display text-2xl font-bold text-foreground mb-2">
-                  Welcome Back
-                </h1>
-                <p className="text-muted-foreground">
-                  Sign in to continue your interview practice
-                </p>
-              </div>
+            <div className="mb-8">
+              <h1 className="font-display text-3xl font-bold text-foreground mb-2 tracking-tight">
+                Welcome back
+              </h1>
+              <p className="text-muted-foreground">Sign in to continue your interview practice.</p>
+            </div>
 
+            <div className="glass-card p-8">
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Email</label>
@@ -121,7 +148,7 @@ const SignIn = () => {
                       placeholder="you@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-11"
+                      className="pl-11 bg-card"
                       required
                     />
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -137,7 +164,7 @@ const SignIn = () => {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-11 pr-11"
+                      className="pl-11 pr-11 bg-card"
                       required
                     />
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -161,7 +188,7 @@ const SignIn = () => {
                     />
                     <span className="text-sm text-muted-foreground">Remember me</span>
                   </label>
-                  <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                  <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline font-medium">
                     Forgot password?
                   </Link>
                 </div>
@@ -176,34 +203,32 @@ const SignIn = () => {
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border"></div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-3 text-muted-foreground">Or continue with</span>
+                <div className="relative flex justify-center text-xs uppercase tracking-wider">
+                  <span className="bg-background px-3 text-muted-foreground">Or continue with</span>
                 </div>
               </div>
 
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full"
+                className="w-full bg-card"
                 type="button"
                 onClick={async () => {
                   setIsGoogleLoading(true);
                   try {
                     const { error } = await signInWithGoogle();
                     if (error) {
-                      // Don't show error toast if redirect is happening (OAuth flow will handle it)
-                      if (!error.message?.includes("already registered")) {
+                      const code = error.code || "";
+                      // popup-closed-by-user is not an error — user just dismissed
+                      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
                         toast({
                           title: "Sign in failed",
-                          description: error.message || "Failed to sign in with Google. If you have an account with this email, you can also sign in with your password.",
+                          description: error.message || "Failed to sign in with Google. Please try again.",
                           variant: "destructive",
                         });
                       }
-                      // Reset loading state on error
                       setIsGoogleLoading(false);
                     }
-                    // Note: On success, the OAuth flow will redirect, so we don't need to navigate manually
-                    // Loading state will remain true during redirect, which is fine
                   } catch (error) {
                     toast({
                       title: "Sign in failed",
@@ -268,6 +293,96 @@ const SignIn = () => {
               </p>
             </div>
           </motion.div>
+        </div>
+
+        {/* Right: Visual panel */}
+        <div
+          className="hidden lg:flex flex-1 relative overflow-hidden"
+          style={{
+            background:
+              "linear-gradient(135deg, hsl(231 72% 52%) 0%, hsl(250 72% 60%) 50%, hsl(172 72% 38%) 100%)",
+          }}
+        >
+          {/* Decorative grid */}
+          <div
+            className="absolute inset-0 opacity-[0.08]"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+            }}
+          />
+          {/* Floating orbs */}
+          <div className="absolute top-20 right-20 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute bottom-20 left-10 w-96 h-96 rounded-full bg-white/10 blur-3xl" />
+
+          <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 text-white w-full">
+            <div className="inline-flex items-center gap-2 self-start px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-xs font-medium">
+              <Sparkles className="w-3.5 h-3.5" />
+              Trusted by 50,000+ candidates
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="space-y-8"
+            >
+              <div>
+                <h2 className="font-display text-4xl xl:text-5xl font-bold leading-tight tracking-tight mb-4">
+                  Land your dream job with confidence.
+                </h2>
+                <p className="text-lg text-white/80 max-w-md">
+                  Practice with realistic AI mock interviews and get instant, actionable feedback to ace every round.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 max-w-md">
+                {[
+                  { icon: TrendingUp, title: "Real-time scoring", desc: "Content, clarity, structure & confidence" },
+                  { icon: ShieldCheck, title: "Industry-specific questions", desc: "Tailored to your role & seniority" },
+                  { icon: Star, title: "Detailed playback & insights", desc: "Review every answer with AI feedback" },
+                ].map((f, i) => (
+                  <motion.div
+                    key={f.title}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
+                    className="flex items-start gap-3 p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/15"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                      <f.icon className="w-4.5 h-4.5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{f.title}</p>
+                      <p className="text-sm text-white/70">{f.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-white text-white" />
+                ))}
+                <span className="text-sm text-white/80 ml-2">4.9 / 5 from 2,400+ reviews</span>
+              </div>
+              <blockquote className="text-white/90 italic text-sm max-w-md">
+                "Amplify helped me land offers at two FAANG companies. The AI feedback felt like having a senior coach on demand."
+              </blockquote>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-white/20 border border-white/30 flex items-center justify-center font-semibold text-sm">
+                  SM
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Sarah Mitchell</p>
+                  <p className="text-xs text-white/70">Senior PM · Hired at Google</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>

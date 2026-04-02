@@ -27,17 +27,20 @@ export default function ChatInterviewSession() {
   const [cameraOn, setCameraOn] = useState(true);
   const [videoError, setVideoError] = useState<string | null>(null);
 
-  // Initialize from location state (InterviewSetup sets this up)
-  const config = location.state?.config || (() => {
+  const storedSetup = (() => {
     try {
       const stored = sessionStorage.getItem("interviewConfig");
-      return stored ? JSON.parse(stored).config : null;
+      return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
     }
   })();
 
-  const setupData = location.state || {}; // { config, type, resumeId, jdId }
+  // Initialize from location state (InterviewSetup sets this up) with sessionStorage fallback
+  const config = location.state?.config || storedSetup?.config || null;
+
+  // { config, type, resumeId, jdId } (resumeId/jdId are needed for personalization)
+  const setupData = location.state || storedSetup || {};
 
   // ── Session Initialization ──
   useEffect(() => {

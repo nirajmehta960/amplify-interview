@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Mic, Menu, X, LogOut, BarChart3 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -18,8 +17,11 @@ export function Navbar() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const profile = user
+    ? { full_name: user.displayName || null, avatar_url: user.photoURL || null }
+    : null;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -28,38 +30,6 @@ export function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  // Fetch user profile
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user?.id) return;
-
-      try {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-
-        if (profileData) {
-          setProfile(profileData);
-        } else {
-          setProfile({
-            full_name: user.user_metadata?.full_name || null,
-            avatar_url: user.user_metadata?.avatar_url || null,
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        setProfile({
-          full_name: user.user_metadata?.full_name || null,
-          avatar_url: user.user_metadata?.avatar_url || null,
-        });
-      }
-    };
-
-    fetchProfile();
-  }, [user]);
 
   const handleSignOut = async () => {
     try {

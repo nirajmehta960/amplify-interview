@@ -93,22 +93,22 @@ const InsightsTab = () => {
     try {
       setLoading(true);
 
-      if (!user?.id) {
+      if (!user?.uid) {
         throw new Error("User ID is required");
       }
 
       // Fetch all relevant data
       const [summariesResult, sessionsResult, analysesResult] =
         await Promise.all([
-          supabase.from("interview_summary").select("*").eq("user_id", user.id),
+          supabase.from("interview_summary").select("*").eq("user_id", user.uid),
           supabase
             .from("interview_sessions")
             .select("*")
-            .eq("user_id", user.id),
+            .eq("user_id", user.uid),
           supabase
             .from("interview_analysis")
             .select("*")
-            .eq("user_id", user.id),
+            .eq("user_id", user.uid),
         ]);
 
       // Check for errors and handle them appropriately
