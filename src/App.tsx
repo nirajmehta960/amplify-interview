@@ -17,7 +17,7 @@ import ResetPassword from "./pages/ResetPassword";
 import PracticeQuestions from "./pages/PracticeQuestions";
 import Dashboard from "./pages/Dashboard";
 import InterviewSetup from "./pages/InterviewSetup";
-import InterviewSession from "./pages/InterviewSession";
+import ChatInterviewSession from "./pages/ChatInterviewSession";
 import ProcessingInterview from "./pages/ProcessingInterview";
 import InterviewResults from "./pages/InterviewResults";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
@@ -122,7 +122,7 @@ const App = () => (
               path="/interview/session"
               element={
                 <ProtectedRoute>
-                  <InterviewSession />
+                  <ChatInterviewSession />
                 </ProtectedRoute>
               }
             />
