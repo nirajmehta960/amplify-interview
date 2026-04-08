@@ -12,9 +12,9 @@ export default defineConfig({
   },
   server: {
     host: "::",
-    port: 8080,
+    port: 3000,
     hmr: {
-      clientPort: 8080, // Ensure HMR client connects to the correct port
+      clientPort: 3000, // Ensure HMR client connects to the correct port
     },
   },
   build: {
