@@ -3,48 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, CheckCircle, BarChart3, Play } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 const Hero = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<any>(null);
 
-  // Fetch user profile
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user?.id) return;
-
-      try {
-        // First try to get from profiles table
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-
-        if (profileData) {
-          setProfile(profileData);
-        } else {
-          // Fallback to user metadata if no profile exists
-          setProfile({
-            full_name: user.user_metadata?.full_name || null,
-            avatar_url: user.user_metadata?.avatar_url || null,
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        // Fallback to user metadata
-        setProfile({
-          full_name: user.user_metadata?.full_name || null,
-          avatar_url: user.user_metadata?.avatar_url || null,
-        });
-      }
-    };
-
-    fetchProfile();
-  }, [user]);
+  const profile = user
+    ? { full_name: user.displayName || null, avatar_url: user.photoURL || null }
+    : null;
 
   const floatingAnimation = {
     y: [0, -20, 0],

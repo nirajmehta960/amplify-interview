@@ -31,7 +31,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
+import { analyticsApi } from "@/services/apiClient";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ProgressData {
@@ -44,16 +44,8 @@ interface ProgressData {
     confidence: number;
     structure: number;
   };
-  interviewTypePerformance: {
-    behavioral: number;
-    technical: number;
-    leadership: number;
-    custom: number;
-  };
-  timelineData: Array<{
-    date: string;
-    score: number;
-  }>;
+  interviewTypePerformance: Record<string, number>;
+  timelineData: Array<{ date: string; score: number }>;
   milestones: Array<{
     icon: string;
     title: string;
@@ -62,9 +54,7 @@ interface ProgressData {
     achieved: boolean;
     date?: string;
   }>;
-  practiceConsistency: {
-    totalDays: number;
-  };
+  practiceConsistency: { totalDays: number };
 }
 
 const Progress = () => {
@@ -81,39 +71,11 @@ const Progress = () => {
   const fetchProgressData = async () => {
     try {
       setLoading(true);
-
-      const [summariesResult, sessionsResult, analysesResult] = await Promise.all([
-        supabase
-          .from("interview_summary")
-          .select("*")
-          .eq("user_id", user?.id)
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("interview_sessions")
-          .select("*")
-          .eq("user_id", user?.id)
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("interview_analysis")
-          .select("*")
-          .eq("user_id", user?.id),
+      const [overview, progress] = await Promise.all([
+        analyticsApi.getOverview() as Promise<any>,
+        analyticsApi.getProgress() as Promise<any>,
       ]);
-
-      if (summariesResult.error || sessionsResult.error || analysesResult.error) {
-        console.error("Error fetching progress data:", {
-          summaries: summariesResult.error,
-          sessions: sessionsResult.error,
-          analyses: analysesResult.error,
-        });
-        return;
-      }
-
-      const processedData = processProgressData(
-        summariesResult.data || [],
-        sessionsResult.data || [],
-        analysesResult.data || []
-      );
-      setProgressData(processedData);
+      setProgressData(processData(overview, progress));
     } catch (error) {
       console.error("Error fetching progress data:", error);
     } finally {
@@ -121,225 +83,110 @@ const Progress = () => {
     }
   };
 
-  const processProgressData = (
-    summaries: any[],
-    sessions: any[],
-    analyses: any[]
-  ): ProgressData => {
-    const averageScore =
-      summaries.length > 0
-        ? summaries.reduce((sum, s) => sum + (s.average_score || 0), 0) / summaries.length
-        : 0;
+  const processData = (overview: any, progress: any): ProgressData => {
+    const timeline: any[] = progress.score_timeline || [];
+    const commTimeline: any[] = progress.communication_timeline || [];
 
-    const improvementTrend =
-      summaries.length >= 2
-        ? (summaries[summaries.length - 1]?.average_score || 0) - (summaries[0]?.average_score || 0)
-        : 0;
-
-    const skillBreakdown = {
-      communication: 0,
-      content: 0,
-      confidence: 0,
-      structure: 0,
-    };
-
-    if (analyses.length > 0) {
-      const commScores = analyses
-        .map((a) => a.communication_scores)
-        .filter(Boolean)
-        .map((cs) => (typeof cs === "string" ? JSON.parse(cs) : cs));
-
-      const contentScores = analyses
-        .map((a) => a.content_scores)
-        .filter(Boolean)
-        .map((cs) => (typeof cs === "string" ? JSON.parse(cs) : cs));
-
-      if (commScores.length > 0) {
-        skillBreakdown.communication =
-          commScores.reduce(
-            (sum, cs) => sum + (cs.clarity + cs.structure + cs.conciseness) / 3,
-            0
-          ) / commScores.length;
-      }
-
-      if (contentScores.length > 0) {
-        skillBreakdown.content =
-          contentScores.reduce(
-            (sum, cs) => sum + (cs.relevance + cs.depth + cs.specificity) / 3,
-            0
-          ) / contentScores.length;
-      }
-
-      const confidenceScores = analyses
-        .map((a) => a.confidence_score)
-        .filter((score) => score !== null && score !== undefined && score > 0);
-
-      if (confidenceScores.length > 0) {
-        skillBreakdown.confidence =
-          confidenceScores.reduce((sum, score) => sum + score, 0) / confidenceScores.length;
-      } else {
-        skillBreakdown.confidence = skillBreakdown.communication;
-      }
-
-      skillBreakdown.structure = skillBreakdown.communication;
-    }
-
-    Object.keys(skillBreakdown).forEach((key) => {
-      skillBreakdown[key as keyof typeof skillBreakdown] = Math.max(
-        0,
-        Math.min(100, skillBreakdown[key as keyof typeof skillBreakdown])
-      );
-    });
-
-    const interviewTypePerformance = {
-      behavioral: 0,
-      technical: 0,
-      leadership: 0,
-      custom: 0,
-    };
-
-    summaries.forEach((summary) => {
-      const session = sessions.find((s) => s.id === summary.session_id);
-      if (session) {
-        const type = session.interview_type as keyof typeof interviewTypePerformance;
-        if (interviewTypePerformance.hasOwnProperty(type)) {
-          interviewTypePerformance[type] = summary.average_score || 0;
-        }
-      }
-    });
-
-    const timelineData = summaries.map((summary) => ({
-      date: new Date(summary.created_at).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-      score: summary.average_score || 0,
+    const timelineData = timeline.map((t) => ({
+      date: new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      score: t.score,
     }));
 
-    const practiceConsistency = {
-      totalDays: new Set(sessions.map((s) => new Date(s.created_at).toDateString())).size,
+    const avgField = (field: string) => {
+      if (commTimeline.length === 0) return 0;
+      return commTimeline.reduce((sum, t) => sum + (t[field] || 0), 0) / commTimeline.length;
     };
+
+    const avgClarity = avgField("clarity");
+    const avgStructure = avgField("structure");
+    const avgConciseness = avgField("conciseness");
+
+    const skillBreakdown = {
+      communication: Math.round(avgClarity),
+      structure: Math.round(avgStructure),
+      content: Math.round(avgConciseness),
+      confidence: Math.round((avgClarity + avgStructure + avgConciseness) / 3),
+    };
+
+    const modeScores: Record<string, number[]> = {};
+    timeline.forEach((t) => {
+      if (!modeScores[t.mode]) modeScores[t.mode] = [];
+      modeScores[t.mode].push(t.score);
+    });
+    const interviewTypePerformance: Record<string, number> = {};
+    Object.entries(modeScores).forEach(([mode, scores]) => {
+      interviewTypePerformance[mode] = scores.reduce((s, v) => s + v, 0) / scores.length;
+    });
+
+    const improvementTrend =
+      timeline.length >= 2
+        ? (timeline[timeline.length - 1]?.score || 0) - (timeline[0]?.score || 0)
+        : 0;
+
+    const uniqueDays = new Set(
+      timeline.map((t) => new Date(t.date).toDateString())
+    ).size;
+
+    const avgScore = overview.average_score || 0;
+    const recentScores: number[] = overview.recent_scores || [];
+    const readinessDist = overview.readiness_distribution || {};
 
     const milestones = [
       {
-        icon: "",
+        icon: "🎯",
         title: "First Interview",
         desc: "Complete your first mock interview",
         points: 10,
-        achieved: summaries.length > 0,
-        date: summaries.length > 0 ? summaries[0].created_at : undefined,
+        achieved: (overview.completed_sessions || 0) > 0,
       },
       {
-        icon: "",
+        icon: "📅",
         title: "Consistent Practice",
         desc: "Complete 3 interviews",
         points: 25,
-        achieved: summaries.length >= 3,
-        date: summaries.length >= 3 ? summaries[2].created_at : undefined,
+        achieved: (overview.completed_sessions || 0) >= 3,
       },
       {
-        icon: "",
+        icon: "⭐",
         title: "High Performer",
         desc: "Achieve an average score of 80 or higher",
         points: 50,
-        achieved: averageScore >= 80,
-        date: summaries.find((s) => (s.average_score || 0) >= 80)?.created_at,
+        achieved: avgScore >= 80,
       },
       {
-        icon: "",
+        icon: "🏆",
         title: "Interview Ready",
         desc: "Achieve 'Interview Ready' status",
         points: 75,
-        achieved: summaries.some((s) => s.readiness_level === "ready"),
-        date: summaries.find((s) => s.readiness_level === "ready")?.created_at,
+        achieved:
+          (readinessDist["Interview Ready"] || 0) > 0 ||
+          (readinessDist["interview_ready"] || 0) > 0,
       },
       {
-        icon: "",
+        icon: "💪",
         title: "Practice Champion",
         desc: "Complete 10 interviews",
         points: 100,
-        achieved: summaries.length >= 10,
-        date: summaries.length >= 10 ? summaries[9].created_at : undefined,
+        achieved: (overview.completed_sessions || 0) >= 10,
       },
       {
-        icon: "",
+        icon: "🌟",
         title: "Excellence Seeker",
         desc: "Achieve a perfect score (95+)",
         points: 150,
-        achieved: summaries.some((s) => (s.average_score || 0) >= 95),
-        date: summaries.find((s) => (s.average_score || 0) >= 95)?.created_at,
-      },
-      {
-        icon: "",
-        title: "Communication Master",
-        desc: "Achieve 90+ in communication skills",
-        points: 75,
-        achieved: skillBreakdown.communication >= 90,
-        date: summaries.find((s) => {
-          return analyses.some((a) => {
-            const comm = typeof a.communication_scores === "string" ? JSON.parse(a.communication_scores) : a.communication_scores;
-            return comm && (comm.clarity + comm.structure + comm.conciseness) / 3 >= 90;
-          });
-        })?.created_at,
-      },
-      {
-        icon: "",
-        title: "Content Expert",
-        desc: "Achieve 90+ in content skills",
-        points: 75,
-        achieved: skillBreakdown.content >= 90,
-        date: summaries.find((s) => {
-          return analyses.some((a) => {
-            const content = typeof a.content_scores === "string" ? JSON.parse(a.content_scores) : a.content_scores;
-            return content && (content.relevance + content.depth + content.specificity) / 3 >= 90;
-          });
-        })?.created_at,
-      },
-      {
-        icon: "",
-        title: "Confidence Builder",
-        desc: "Achieve 90+ in confidence",
-        points: 75,
-        achieved: skillBreakdown.confidence >= 90,
-        date: summaries.find((s) => analyses.some((a) => (a.confidence_score || 0) >= 90))?.created_at,
-      },
-      {
-        icon: "",
-        title: "Streak Master",
-        desc: "Complete 5 interviews in 5 days",
-        points: 100,
-        achieved: false,
-      },
-      {
-        icon: "",
-        title: "All-Rounder",
-        desc: "Score 80+ in all interview types",
-        points: 125,
-        achieved: Object.values(interviewTypePerformance).every((score) => score >= 80),
-      },
-      {
-        icon: "",
-        title: "Improvement Champion",
-        desc: "Show 20+ point improvement",
-        points: 100,
-        achieved: improvementTrend >= 20,
-        date: summaries.find((s, index) => {
-          if (index === 0) return false;
-          const prevScore = summaries[index - 1]?.average_score || 0;
-          return (s.average_score || 0) - prevScore >= 20;
-        })?.created_at,
+        achieved: recentScores.some((s) => s >= 95),
       },
     ];
 
     return {
-      averageScore,
-      totalInterviews: summaries.length,
+      averageScore: avgScore,
+      totalInterviews: overview.completed_sessions || 0,
       improvementTrend,
       skillBreakdown,
       interviewTypePerformance,
       timelineData,
       milestones,
-      practiceConsistency,
+      practiceConsistency: { totalDays: uniqueDays },
     };
   };
 
@@ -387,10 +234,10 @@ const Progress = () => {
   ];
 
   const skillData = [
-    { skill: "Communication", value: Math.round(progressData.skillBreakdown.communication), fullMark: 100 },
-    { skill: "Content", value: Math.round(progressData.skillBreakdown.content), fullMark: 100 },
-    { skill: "Confidence", value: Math.round(progressData.skillBreakdown.confidence), fullMark: 100 },
-    { skill: "Structure", value: Math.round(progressData.skillBreakdown.structure), fullMark: 100 },
+    { skill: "Communication", value: progressData.skillBreakdown.communication, fullMark: 100 },
+    { skill: "Content", value: progressData.skillBreakdown.content, fullMark: 100 },
+    { skill: "Confidence", value: progressData.skillBreakdown.confidence, fullMark: 100 },
+    { skill: "Structure", value: progressData.skillBreakdown.structure, fullMark: 100 },
   ];
 
   const performanceByType = Object.entries(progressData.interviewTypePerformance)
@@ -424,8 +271,7 @@ const Progress = () => {
         </div>
       </header>
 
-        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
-        {/* Subtitle */}
+      <main className="container mx-auto px-4 py-8 space-y-8">
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -434,11 +280,10 @@ const Progress = () => {
           Track your improvement and celebrate your achievements
         </motion.p>
 
-        {/* Stats Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
         >
           {stats.map((stat, index) => (
             <div key={index} className="glass-card p-6 text-center">
@@ -451,7 +296,6 @@ const Progress = () => {
           ))}
         </motion.div>
 
-        {/* Score Timeline */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -490,14 +334,12 @@ const Progress = () => {
           </div>
         </motion.div>
 
-        {/* Skill Development & Performance by Type */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         >
-          {/* Skill Development */}
           <div className="glass-card p-6">
             <div className="flex items-center gap-3 mb-4">
               <Target className="w-5 h-5 text-primary" />
@@ -523,7 +365,7 @@ const Progress = () => {
                 </RadarChart>
               </ResponsiveContainer>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <div className="grid grid-cols-2 gap-4 mt-4">
               {skillData.map((skill, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <div>
@@ -535,13 +377,14 @@ const Progress = () => {
                       {skill.skill === "Structure" && "Answer Organization & Flow"}
                     </p>
                   </div>
-                  <span className="text-lg font-bold text-primary">{skill.value}<span className="text-xs text-muted-foreground">/100</span></span>
+                  <span className="text-lg font-bold text-primary">
+                    {skill.value}<span className="text-xs text-muted-foreground">/100</span>
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Performance by Type */}
           <div className="glass-card p-6">
             <div className="flex items-center gap-3 mb-6">
               <MessageSquare className="w-5 h-5 text-primary" />
@@ -568,7 +411,6 @@ const Progress = () => {
           </div>
         </motion.div>
 
-        {/* Achievements & Milestones */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -602,7 +444,7 @@ const Progress = () => {
                       {achievement.achieved ? (
                         <div className="flex items-center gap-1 mt-2 text-emerald-400 text-sm">
                           <CheckCircle2 className="w-4 h-4" />
-                          <span>Achieved: {achievement.date ? new Date(achievement.date).toLocaleDateString() : "Recently"}</span>
+                          <span>Achieved{achievement.date ? `: ${achievement.date}` : ""}</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 mt-2 text-muted-foreground text-sm">
@@ -639,5 +481,3 @@ const Progress = () => {
 };
 
 export default Progress;
-
-

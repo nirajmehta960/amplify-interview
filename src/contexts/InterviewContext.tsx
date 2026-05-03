@@ -180,7 +180,7 @@ export function InterviewProvider({ children }: { children: ReactNode }) {
       // Get questions from the database service
       const { sessionId, questions } =
         await interviewSessionService.createInterviewSession({
-          userId: user.id,
+          userId: user.uid,
           interviewType: interviewType as any,
           config,
         });
@@ -188,7 +188,7 @@ export function InterviewProvider({ children }: { children: ReactNode }) {
       // Create local session
       const localSession = {
         id: sessionId,
-        userId: user.id,
+        userId: user.uid,
         interviewType: interviewType as any,
         config,
         questions,
@@ -339,7 +339,7 @@ export function InterviewProvider({ children }: { children: ReactNode }) {
 
     try {
       const sessionId = await interviewSessionService.checkForIncompleteSession(
-        user.id
+        user.uid
       );
       return sessionId;
     } catch (error) {

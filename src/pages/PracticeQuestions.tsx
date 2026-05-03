@@ -140,7 +140,7 @@ const PracticeQuestions = () => {
     setLoading(true);
     try {
       const userQuestions = await userQuestionBankService.getUserQuestions(
-        user.id
+        user.uid
       );
       setQuestions(userQuestions);
     } catch (error) {
@@ -160,7 +160,7 @@ const PracticeQuestions = () => {
 
     try {
       const questionStats = await userQuestionBankService.getQuestionBankStats(
-        user.id
+        user.uid
       );
       setStats(questionStats);
     } catch (error) {
@@ -192,7 +192,7 @@ const PracticeQuestions = () => {
     if (!user || !formData.text.trim()) return;
 
     try {
-      const newQuestion = await userQuestionBankService.addQuestion(user.id, {
+      const newQuestion = await userQuestionBankService.addQuestion(user.uid, {
         text: formData.text.trim(),
         category: formData.category,
       });

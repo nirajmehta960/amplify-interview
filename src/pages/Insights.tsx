@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
+import { analyticsApi } from "@/services/apiClient";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Insights = () => {
@@ -33,28 +33,12 @@ const Insights = () => {
   const fetchInsightsData = async () => {
     try {
       setLoading(true);
-
-      const [summariesResult, sessionsResult, analysesResult] = await Promise.all([
-        supabase.from("interview_summary").select("*").eq("user_id", user?.id),
-        supabase.from("interview_sessions").select("*").eq("user_id", user?.id),
-        supabase.from("interview_analysis").select("*").eq("user_id", user?.id),
+      const [overview, progress, skills] = await Promise.all([
+        analyticsApi.getOverview() as Promise<any>,
+        analyticsApi.getProgress() as Promise<any>,
+        analyticsApi.getSkills() as Promise<any>,
       ]);
-
-      if (summariesResult.error || sessionsResult.error || analysesResult.error) {
-        console.error("Error fetching insights data:", {
-          summaries: summariesResult.error,
-          sessions: sessionsResult.error,
-          analyses: analysesResult.error,
-        });
-        return;
-      }
-
-      const processedData = processInsightsData(
-        summariesResult.data || [],
-        sessionsResult.data || [],
-        analysesResult.data || []
-      );
-      setInsightsData(processedData);
+      setInsightsData(processInsightsData(overview, progress, skills));
     } catch (error) {
       console.error("Error fetching insights data:", error);
     } finally {
@@ -62,215 +46,113 @@ const Insights = () => {
     }
   };
 
-  const getBestTimeOfDay = (sessions: any[]): string => {
-    if (sessions.length === 0) return "Afternoon";
-    const timeSlots: Record<string, number> = {
-      "Early Morning": 0,
-      Morning: 0,
-      Afternoon: 0,
-      Evening: 0,
-      Night: 0,
-    };
-    sessions.forEach((session) => {
-      const hour = new Date(session.created_at).getHours();
-      if (hour >= 6 && hour < 9) timeSlots["Early Morning"]++;
-      else if (hour >= 9 && hour < 12) timeSlots["Morning"]++;
-      else if (hour >= 12 && hour < 17) timeSlots["Afternoon"]++;
-      else if (hour >= 17 && hour < 20) timeSlots["Evening"]++;
-      else timeSlots["Night"]++;
-    });
-    return Object.entries(timeSlots).sort((a, b) => b[1] - a[1])[0][0];
-  };
-
-  const calculateScoreVariation = (summaries: any[]): number => {
-    if (summaries.length < 2) return 0;
-    const scores = summaries.map((s) => s.average_score || 0);
-    const mean = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-    const variance = scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length;
-    return Math.round(Math.sqrt(variance));
-  };
-
-  const calculateConsistencyScore = (summaries: any[]): number => {
-    if (summaries.length < 2) return 100;
-    const variation = calculateScoreVariation(summaries);
+  const calculateConsistencyScore = (timeline: any[]): number => {
+    if (timeline.length < 2) return 100;
+    const scores = timeline.map((t) => t.score);
+    const mean = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+    const variance = scores.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / scores.length;
+    const variation = Math.sqrt(variance);
     return Math.max(0, Math.round(100 - variation));
   };
 
-  const calculateConfidenceTrend = (analyses: any[]): "improving" | "consistent" | "declining" => {
-    if (analyses.length < 2) return "consistent";
-    const recent = analyses.slice(-3).reduce((sum, a) => sum + (a.confidence_score || 0), 0) / Math.min(3, analyses.length);
-    const earlier = analyses.slice(0, 3).reduce((sum, a) => sum + (a.confidence_score || 0), 0) / Math.min(3, analyses.length);
-    if (recent > earlier + 5) return "improving";
-    if (recent < earlier - 5) return "declining";
-    return "consistent";
-  };
+  const capitalize = (s: string) =>
+    s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
-  const getMostCommonFillerWords = (analyses: any[]): Array<{ word: string; count: number }> => {
-    const wordCounts: Record<string, number> = {};
-    analyses.forEach((a) => {
-      const fillerWords = typeof a.filler_words === "string" ? JSON.parse(a.filler_words) : a.filler_words;
-      if (fillerWords?.words && Array.isArray(fillerWords.words)) {
-        fillerWords.words.forEach((word: string) => {
-          wordCounts[word] = (wordCounts[word] || 0) + 1;
-        });
-      }
-    });
-    return Object.entries(wordCounts)
-      .map(([word, count]) => ({ word, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
-  };
-
-  const getTopStrengths = (analyses: any[]): string[] => {
-    const strengthCounts: Record<string, number> = {};
-    analyses.forEach((a) => {
-      const strengths = typeof a.strengths === "string" ? JSON.parse(a.strengths) : a.strengths;
-      if (Array.isArray(strengths)) {
-        strengths.forEach((strength: string) => {
-          const normalized = strength.toLowerCase().trim();
-          strengthCounts[normalized] = (strengthCounts[normalized] || 0) + 1;
-        });
-      }
-    });
-    return Object.entries(strengthCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([strength]) => strength.charAt(0).toUpperCase() + strength.slice(1));
-  };
-
-  const getImprovementAreas = (analyses: any[]): string[] => {
-    const improvementCounts: Record<string, number> = {};
-    analyses.forEach((a) => {
-      const improvements = typeof a.improvements === "string" ? JSON.parse(a.improvements) : a.improvements;
-      if (Array.isArray(improvements)) {
-        improvements.forEach((improvement: string) => {
-          const normalized = improvement.toLowerCase().trim();
-          improvementCounts[normalized] = (improvementCounts[normalized] || 0) + 1;
-        });
-      }
-    });
-    return Object.entries(improvementCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([improvement]) => improvement.charAt(0).toUpperCase() + improvement.slice(1));
-  };
-
-  const getEasiestQuestionTypes = (summaries: any[], sessions: any[]): string[] => {
-    const typeScores: Record<string, number[]> = {};
-    summaries.forEach((summary) => {
-      const session = sessions.find((s) => s.id === summary.session_id);
-      if (session) {
-        const type = session.interview_type;
-        if (!typeScores[type]) typeScores[type] = [];
-        typeScores[type].push(summary.average_score || 0);
-      }
-    });
-    return Object.entries(typeScores)
-      .map(([type, scores]) => ({
-        type: type.charAt(0).toUpperCase() + type.slice(1),
-        average: scores.reduce((sum, score) => sum + score, 0) / scores.length,
-      }))
-      .sort((a, b) => b.average - a.average)
-      .slice(0, 2)
-      .map((item) => item.type);
-  };
-
-  const getHardestQuestionTypes = (summaries: any[], sessions: any[]): string[] => {
-    const typeScores: Record<string, number[]> = {};
-    summaries.forEach((summary) => {
-      const session = sessions.find((s) => s.id === summary.session_id);
-      if (session) {
-        const type = session.interview_type;
-        if (!typeScores[type]) typeScores[type] = [];
-        typeScores[type].push(summary.average_score || 0);
-      }
-    });
-    return Object.entries(typeScores)
-      .map(([type, scores]) => ({
-        type: type.charAt(0).toUpperCase() + type.slice(1),
-        average: scores.reduce((sum, score) => sum + score, 0) / scores.length,
-      }))
-      .sort((a, b) => a.average - b.average)
-      .slice(0, 2)
-      .map((item) => item.type);
-  };
-
-  const getNextMilestone = (summaries: any[]): string => {
-    if (summaries.length === 0) return "Complete your first interview";
-    const avgScore = summaries.reduce((sum, s) => sum + (s.average_score || 0), 0) / summaries.length;
+  const getNextMilestone = (avgScore: number, completedSessions: number): string => {
+    if (completedSessions === 0) return "Complete your first interview";
     if (avgScore < 70) return "Achieve 70+ average score";
     if (avgScore < 80) return "Achieve 80+ average score";
     if (avgScore < 90) return "Achieve 90+ average score";
-    return "Achieve 90+ average score";
+    return "Maintain excellence — you're interview ready!";
   };
 
-  const getEstimatedTimeToReady = (summaries: any[]): string => {
-    if (summaries.length === 0) return "2-3 weeks";
-    const avgScore = summaries.reduce((sum, s) => sum + (s.average_score || 0), 0) / summaries.length;
+  const getEstimatedTimeToReady = (avgScore: number): string => {
     if (avgScore >= 85) return "Ready now";
     if (avgScore >= 80) return "1 week";
-    if (avgScore >= 75) return "1-2 weeks";
-    if (avgScore >= 70) return "2-3 weeks";
-    return "3-4 weeks";
+    if (avgScore >= 75) return "1–2 weeks";
+    if (avgScore >= 70) return "2–3 weeks";
+    return "3–4 weeks";
   };
 
-  const getRecommendedFocus = (analyses: any[]): string => {
-    const improvements = getImprovementAreas(analyses);
-    if (improvements.length > 0) {
-      return `Focus on ${improvements[0].toLowerCase()}`;
-    }
-    return "Maintain excellence and help others improve";
-  };
+  const processInsightsData = (overview: any, progress: any, skills: any) => {
+    const timeline: any[] = progress.score_timeline || [];
+    const commTimeline: any[] = progress.communication_timeline || [];
 
-  const processInsightsData = (summaries: any[], sessions: any[], analyses: any[]) => {
-    const consistencyScore = calculateConsistencyScore(summaries);
-    const avgFillerWords = analyses.length > 0
-      ? Math.round(analyses.reduce((sum, a) => {
-          const fillerWords = typeof a.filler_words === "string" ? JSON.parse(a.filler_words) : a.filler_words;
-          return sum + (fillerWords?.total || 0);
-        }, 0) / analyses.length)
-      : 0;
+    const consistencyScore = calculateConsistencyScore(timeline);
 
-    const totalCost = summaries.reduce((sum, s) => sum + (s.total_cost_cents || 0), 0) / 100;
-    const avgCostPerInterview = summaries.length > 0 ? totalCost / summaries.length : 0;
+    const totalCostCents = overview.total_cost_cents || 0;
+    const totalCost = totalCostCents / 100;
+    const completedSessions = overview.completed_sessions || 0;
+    const avgCostPerInterview = completedSessions > 0 ? totalCost / completedSessions : 0;
 
-    const avgSessionLength = summaries.length > 0
-      ? Math.round(summaries.reduce((sum, s) => sum + (s.total_duration_seconds || 0), 0) / summaries.length / 60)
-      : 0;
+    const avgScore = overview.average_score || 0;
+    const trend = (overview.performance_trend || "consistent").toLowerCase() as
+      | "improving"
+      | "consistent"
+      | "declining";
+
+    const avgSessionLength =
+      timeline.length > 0
+        ? "~" + Math.round(timeline.length > 0 ? 15 : 0) + " min"
+        : "N/A";
+
+    const scoreVariation =
+      timeline.length >= 2
+        ? (() => {
+            const scores = timeline.map((t) => t.score);
+            const mean = scores.reduce((s, v) => s + v, 0) / scores.length;
+            return Math.round(
+              Math.sqrt(
+                scores.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / scores.length
+              )
+            );
+          })()
+        : 0;
 
     const performancePatterns = [
-      { label: "Best Time to Practice", value: getBestTimeOfDay(sessions) },
-      { label: "Avg Session Length", value: `${avgSessionLength} min` },
-      { label: "Score Variation", value: String(calculateScoreVariation(summaries)) },
+      { label: "Performance Trend", value: capitalize(trend) },
+      { label: "Sessions Completed", value: String(completedSessions) },
+      { label: "Score Variation", value: String(scoreVariation) },
     ];
 
-    const confidenceTrend = calculateConfidenceTrend(analyses);
-    const fillerWords = getMostCommonFillerWords(analyses);
+    const topStrengths: string[] = (progress.top_strengths || [])
+      .slice(0, 3)
+      .map((s: any) => capitalize(s.item));
 
-    const strengths = getTopStrengths(analyses);
-    const focusAreas = getImprovementAreas(analyses);
+    const topImprovements: string[] = (progress.top_improvements || [])
+      .slice(0, 3)
+      .map((s: any) => capitalize(s.item));
 
-    const readinessScore = summaries.length > 0
-      ? Math.round(summaries[summaries.length - 1]?.readiness_score || summaries.reduce((sum, s) => sum + (s.average_score || 0), 0) / summaries.length)
-      : 0;
+    const demonstratedSkills: string[] = (skills.skills_demonstrated || []).slice(0, 2);
+    const skillsToPractice: string[] = (skills.skills_to_practice || []).slice(0, 2);
 
-    const strongAreas = getEasiestQuestionTypes(summaries, sessions).map((type) => ({ type, status: "Strong" }));
-    const areasToImprove = getHardestQuestionTypes(summaries, sessions).map((type) => ({ type, status: "Focus" }));
+    const strongAreas = demonstratedSkills.map((s: string) => ({ type: s, status: "Strong" }));
+    const areasToImprove = skillsToPractice.map((s: string) => ({ type: s, status: "Focus" }));
+
+    const recommendedFocus =
+      topImprovements.length > 0
+        ? `Focus on ${topImprovements[0].toLowerCase()}`
+        : "Maintain excellence and keep practicing";
 
     return {
       consistencyScore,
-      avgFillerWords,
       totalCost,
       avgCostPerInterview,
       performancePatterns,
-      confidenceTrend,
-      fillerWords,
-      strengths: strengths.length > 0 ? strengths : ["Relevant examples provided", "Concise and to the point", "Relevant details provided"],
-      focusAreas: focusAreas.length > 0 ? focusAreas : ["Improve structure for better flow", "Enhance structure for better flow", "Increase specificity in examples"],
-      readinessScore,
-      nextMilestone: getNextMilestone(summaries),
-      estimatedTimeToReady: getEstimatedTimeToReady(summaries),
-      recommendedFocus: getRecommendedFocus(analyses),
+      confidenceTrend: trend,
+      fillerWords: [] as any[],
+      strengths:
+        topStrengths.length > 0
+          ? topStrengths
+          : ["Relevant examples provided", "Concise and to the point", "Relevant details shared"],
+      focusAreas:
+        topImprovements.length > 0
+          ? topImprovements
+          : ["Improve structure for better flow", "Enhance specificity in examples", "Develop more depth in answers"],
+      readinessScore: Math.round(avgScore),
+      nextMilestone: getNextMilestone(avgScore, completedSessions),
+      estimatedTimeToReady: getEstimatedTimeToReady(avgScore),
+      recommendedFocus,
       strongAreas,
       areasToImprove,
     };
@@ -313,9 +195,27 @@ const Insights = () => {
   }
 
   const topStats = [
-    { label: "Consistency Score", value: insightsData.consistencyScore, icon: Target, color: "primary", showProgress: true },
-    { label: "Avg Filler Words", value: String(insightsData.avgFillerWords), icon: MessageSquare, subtitle: insightsData.confidenceTrend === "improving" ? "Improving" : "Consistent", color: "accent" },
-    { label: "Total Cost", value: `$${insightsData.totalCost.toFixed(2)}`, icon: DollarSign, subtitle: `$${insightsData.avgCostPerInterview.toFixed(2)} per interview`, color: "muted" },
+    {
+      label: "Consistency Score",
+      value: insightsData.consistencyScore,
+      icon: Target,
+      color: "primary",
+      showProgress: true,
+    },
+    {
+      label: "Performance Trend",
+      value: insightsData.confidenceTrend === "improving" ? "Improving ↑" : insightsData.confidenceTrend === "declining" ? "Declining ↓" : "Consistent →",
+      icon: MessageSquare,
+      subtitle: `Based on recent sessions`,
+      color: "accent",
+    },
+    {
+      label: "Total Cost",
+      value: `$${insightsData.totalCost.toFixed(2)}`,
+      icon: DollarSign,
+      subtitle: `$${insightsData.avgCostPerInterview.toFixed(2)} per interview`,
+      color: "muted",
+    },
   ];
 
   return (
@@ -325,7 +225,6 @@ const Insights = () => {
         <meta name="description" content="Deep analysis of your interview performance and personalized recommendations." />
       </Helmet>
 
-      {/* Header */}
       <header className="border-b border-border/50 bg-card/30 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -343,7 +242,6 @@ const Insights = () => {
       </header>
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
-        {/* Subtitle */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -352,7 +250,6 @@ const Insights = () => {
           Deep analysis of your interview performance and personalized recommendations
         </motion.p>
 
-        {/* Top Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -375,14 +272,12 @@ const Insights = () => {
           ))}
         </motion.div>
 
-        {/* Performance & Speaking Patterns */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         >
-          {/* Performance Patterns */}
           <div className="glass-card p-6">
             <div className="flex items-center gap-3 mb-6">
               <TrendingUp className="w-5 h-5 text-primary" />
@@ -398,7 +293,6 @@ const Insights = () => {
             </div>
           </div>
 
-          {/* Speaking Patterns */}
           <div className="glass-card p-6">
             <div className="flex items-center gap-3 mb-6">
               <MessageSquare className="w-5 h-5 text-primary" />
@@ -409,43 +303,39 @@ const Insights = () => {
                 <span className="text-muted-foreground">Confidence Trend</span>
                 <div className="flex items-center gap-2 text-emerald-400">
                   <TrendingUp className="w-4 h-4" />
-                  <span className="font-semibold">{insightsData.confidenceTrend === "improving" ? "Improving" : insightsData.confidenceTrend === "declining" ? "Declining" : "Consistent"}</span>
+                  <span className="font-semibold">
+                    {insightsData.confidenceTrend === "improving"
+                      ? "Improving"
+                      : insightsData.confidenceTrend === "declining"
+                      ? "Declining"
+                      : "Consistent"}
+                  </span>
                 </div>
               </div>
               <div>
                 <p className="text-muted-foreground mb-3">Most Common Filler Words:</p>
                 <div className="flex flex-wrap gap-2">
-                  {insightsData.fillerWords.length > 0 ? (
-                    insightsData.fillerWords.map((filler: any, index: number) => (
-                      <Badge key={index} variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                        {filler.word} ({filler.count})
-                      </Badge>
-                    ))
-                  ) : (
-                    <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-                      No filler words detected
-                    </Badge>
-                  )}
+                  <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                    Not tracked in current version
+                  </Badge>
                 </div>
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Strengths & AI Predictions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         >
-          {/* Strengths & Areas for Improvement */}
           <div className="glass-card p-6">
             <div className="flex items-center gap-3 mb-6">
               <CheckCircle2 className="w-5 h-5 text-primary" />
               <h3 className="font-semibold text-foreground text-lg">Strengths & Areas for Improvement</h3>
             </div>
-            
+
             <div className="space-y-6">
               <div>
                 <p className="text-emerald-400 font-medium mb-3">Top Strengths</p>
@@ -458,7 +348,7 @@ const Insights = () => {
                   ))}
                 </ul>
               </div>
-              
+
               <div>
                 <p className="text-orange-400 font-medium mb-3">Focus Areas</p>
                 <ul className="space-y-2">
@@ -473,13 +363,12 @@ const Insights = () => {
             </div>
           </div>
 
-          {/* AI Predictions & Recommendations */}
           <div className="glass-card p-6">
             <div className="flex items-center gap-3 mb-6">
               <Brain className="w-5 h-5 text-primary" />
               <h3 className="font-semibold text-foreground text-lg">AI Predictions & Recommendations</h3>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex items-center justify-between py-3 border-b border-border/50">
                 <span className="text-muted-foreground">Readiness Score</span>
@@ -501,7 +390,6 @@ const Insights = () => {
           </div>
         </motion.div>
 
-        {/* Question Type Analysis */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -510,12 +398,12 @@ const Insights = () => {
         >
           <div className="flex items-center gap-3 mb-6">
             <BarChart3 className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-foreground text-lg">Question Type Analysis</h3>
+            <h3 className="font-semibold text-foreground text-lg">Skill Analysis</h3>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <p className="text-emerald-400 font-medium mb-4">Your Strongest Areas</p>
+              <p className="text-emerald-400 font-medium mb-4">Demonstrated Skills</p>
               <div className="space-y-3">
                 {insightsData.strongAreas.length > 0 ? (
                   insightsData.strongAreas.map((area: any, index: number) => (
@@ -527,13 +415,13 @@ const Insights = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-muted-foreground text-sm">Complete more interviews to see your strong areas</p>
+                  <p className="text-muted-foreground text-sm">Complete more interviews to see demonstrated skills</p>
                 )}
               </div>
             </div>
-            
+
             <div>
-              <p className="text-orange-400 font-medium mb-4">Areas to Improve</p>
+              <p className="text-orange-400 font-medium mb-4">Skills to Practice</p>
               <div className="space-y-3">
                 {insightsData.areasToImprove.length > 0 ? (
                   insightsData.areasToImprove.map((area: any, index: number) => (
@@ -545,7 +433,7 @@ const Insights = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-muted-foreground text-sm">Keep practicing to identify improvement areas</p>
+                  <p className="text-muted-foreground text-sm">Keep practicing to identify skill gaps</p>
                 )}
               </div>
             </div>
@@ -557,5 +445,3 @@ const Insights = () => {
 };
 
 export default Insights;
-
-

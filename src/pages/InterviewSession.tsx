@@ -207,14 +207,14 @@ const InterviewSession = () => {
             config.useUserQuestions &&
             config.selectedUserQuestions &&
             config.selectedUserQuestions.length > 0 &&
-            user?.id
+            user?.uid
           ) {
             const { userQuestionBankService } = await import(
               "../services/userQuestionBankService"
             );
             const userQuestions =
               await userQuestionBankService.getQuestionsForInterview(
-                user.id,
+                user.uid,
                 config.selectedUserQuestions
               );
 
@@ -235,7 +235,7 @@ const InterviewSession = () => {
               config.selectedField,
               config.useUserQuestions,
               config.selectedUserQuestions,
-              user?.id
+              user?.uid
             );
           }
 
@@ -248,7 +248,7 @@ const InterviewSession = () => {
             try {
               const { sessionId } =
                 await interviewSessionService.createInterviewSession({
-                  userId: user.id,
+                  userId: user.uid,
                   interviewType: interviewType.id as any,
                   config: {
                     duration: config.duration,

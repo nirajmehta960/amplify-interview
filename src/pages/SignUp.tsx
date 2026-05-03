@@ -80,15 +80,26 @@ const SignUp = () => {
       );
 
       if (error) {
+        const code = error.code || "";
+        let errorMessage = error.message || "An unexpected error occurred.";
+
+        if (code === "auth/email-already-in-use") {
+          errorMessage = "An account with this email already exists. Please sign in instead.";
+        } else if (code === "auth/weak-password") {
+          errorMessage = "Password is too weak. Please use at least 8 characters with a mix of letters and numbers.";
+        } else if (code === "auth/invalid-email") {
+          errorMessage = "Invalid email address. Please check and try again.";
+        }
+
         toast({
           title: 'Sign up failed',
-          description: error.message,
+          description: errorMessage,
           variant: 'destructive',
         });
       } else {
         toast({
           title: 'Account created!',
-          description: 'Welcome to AI Interview Master',
+          description: 'Welcome to Amplify Interview',
         });
       }
     } catch (error) {
