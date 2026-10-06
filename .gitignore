@@ -34,3 +34,6 @@ backend/.mypy_cache/
 *.sln
 *.sw?
 .vercel
+
+# Brainstorm mockups and verification screenshots (superpowers)
+.superpowers/
