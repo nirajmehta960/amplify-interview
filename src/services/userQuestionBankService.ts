@@ -30,14 +30,10 @@ function mapToCustomQuestion(q: UserQuestion): CustomQuestion {
 }
 
 class UserQuestionBankService {
+  /** Throws on failure, so the page can say so instead of showing an empty bank. */
   async getUserQuestions(_userId: string): Promise<CustomQuestion[]> {
-    try {
-      const data = await questionsApi.list();
-      return data.map(mapToCustomQuestion);
-    } catch (error) {
-      console.error("Error in getUserQuestions:", error);
-      return [];
-    }
+    const data = await questionsApi.list();
+    return data.map(mapToCustomQuestion);
   }
 
   async getQuestionsByCategory(
