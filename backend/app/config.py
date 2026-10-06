@@ -4,9 +4,10 @@ Loads from environment variables and .env file.
 """
 
 from typing import List, Any
+from typing_extensions import Annotated
 from functools import lru_cache
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict, NoDecode
 
 
 class Settings(BaseSettings):
@@ -23,7 +24,9 @@ class Settings(BaseSettings):
     app_version: str = "2.0.0"
     debug: bool = False
     environment: str = "development"  # development | staging | production
-    allowed_origins: List[str] = [
+    # NoDecode disables pydantic-settings' automatic JSON decoding so the
+    # validator below can accept plain comma-separated env values.
+    allowed_origins: Annotated[List[str], NoDecode] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://localhost:8080",
@@ -35,26 +38,29 @@ class Settings(BaseSettings):
         """
         Support comma-separated env var values like:
         ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+        or JSON array values like ["http://localhost:3000"].
         """
         if v is None:
             return v
         if isinstance(v, str):
-            # If user passed a JSON array string, pydantic will handle it later,
-            # but comma-separated is common in .env files.
             raw = v.strip()
             if raw.startswith("[") and raw.endswith("]"):
-                return v
+                import json
+                try:
+                    return json.loads(raw)
+                except json.JSONDecodeError:
+                    pass
             return [s.strip() for s in raw.split(",") if s.strip()]
         return v
 
-    # ── GCP ──────────────────────────────────────────────
-    gcp_project_id: str = ""
-    gcs_bucket_name: str = "amplify-interview-uploads"
-    firestore_database: str = "(default)"
-
-    # ── Firebase Auth ────────────────────────────────────
-    firebase_project_id: str = ""
-    firebase_service_account_path: str = ""
+    # ── AWS Configs ──────────────────────────────────────
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_region: str = "us-east-1"
+    aws_s3_bucket: str = "amplify-interview-uploads"
+    aws_cognito_user_pool_id: str = ""
+    aws_cognito_client_id: str = ""
+    aws_dynamodb_table_prefix: str = "amplify_"
 
     # ── LLM (OpenAI API or OpenRouter-compatible base URL) ──
     openai_api_key: str = ""
@@ -70,8 +76,8 @@ class Settings(BaseSettings):
     email_from: str = "Amplify Interview <noreply@amplifyinterview.com>"
     app_url: str = "https://amplifyinterview.com"
 
-    # ── Speech-to-Text ───────────────────────────────────
-    gcp_speech_language: str = "en-US"
+    # ── Speech-to-Text (AWS Transcribe) ──────────────────
+    aws_transcribe_language: str = "en-US"
 
     # ── Rate Limiting ────────────────────────────────────
     rate_limit_per_minute: int = 30

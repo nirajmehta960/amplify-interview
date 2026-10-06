@@ -109,7 +109,7 @@ const Dashboard = () => {
       const data = await userApi.getProfile();
       setProfile(data);
     } catch (error) {
-      // Fallback to Firebase user metadata
+      // Fallback to auth-context user metadata
       setProfile({
         uid: user?.uid || "",
         email: user?.email || undefined,

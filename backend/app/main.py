@@ -33,15 +33,15 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info(f"Starting {settings.app_name} v{settings.app_version}")
     logger.info(f"Environment: {settings.environment}")
-    logger.info(f"GCP Project: {settings.gcp_project_id or '(not set)'}")
+    logger.info(f"AWS Region: {settings.aws_region}")
 
-    # Initialize Firestore client on startup
-    from app.db.firestore import get_firestore_client
+    # Initialize DynamoDB resource on startup
+    from app.db.dynamodb import get_dynamodb_resource
     try:
-        get_firestore_client()
-        logger.info("Firestore client initialized")
+        get_dynamodb_resource()
+        logger.info("DynamoDB client initialized")
     except Exception as e:
-        logger.warning(f"Firestore initialization deferred: {e}")
+        logger.warning(f"DynamoDB initialization deferred: {e}")
 
     yield
 
@@ -109,7 +109,7 @@ app.include_router(speech.router)
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """Health check endpoint for Cloud Run."""
+    """Health check endpoint for load balancers and deploy verification."""
     return {
         "status": "healthy",
         "version": settings.app_version,

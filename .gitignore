@@ -34,7 +34,3 @@ backend/.mypy_cache/
 *.sln
 *.sw?
 .vercel
-
-# Firebase
-.firebase/
-firebase-debug.log

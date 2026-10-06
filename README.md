@@ -3,298 +3,233 @@
 ![Amplify Interview](https://img.shields.io/badge/Amplify%20Interview-Interview%20Platform-blue)
 ![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.11x-009688?logo=fastapi)
-![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?logo=firebase)
-![GCP](https://img.shields.io/badge/Google%20Cloud-Run%20%7C%20Firestore%20%7C%20Storage-4285F4?logo=googlecloud)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)
+![AWS](https://img.shields.io/badge/AWS-Cognito%20%7C%20S3%20%7C%20Transcribe-FF9900?logo=amazonaws)
+![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?logo=openai)
 
-**AI-Powered Mock Interview Platform for Technical, Behavioral, Leadership, and Custom Domain Interview Preparation**
+**AI-powered mock interview platform for technical, behavioural, and mixed interview preparation.**
 
-Amplify Interview is a full-stack mock interview platform that uses **OpenRouter (OpenAI-compatible API)** and Google Cloud services to deliver personalized interview coaching, detailed performance analysis, and skill development tracking. Upload a **resume** and **job description**, get role-targeted question generation, run an **adaptive real-time interview** (behavioral, technical, or mixed), and receive structured feedback — all on a 100% GCP/Firebase backend.
+Upload a **résumé** and a **job description**, get questions targeted at the specific gaps between them, run an **adaptive interview** where difficulty responds to your answers, and receive structured feedback with per-dimension scoring.
 
 ---
 
 ## Architecture
 
 ```
-Browser (React + Vite)
-        │  Firebase Auth JWT
+Browser (React + Vite on CloudFront/S3)
+        │  Cognito JWT  (Authorization: Bearer …)
         ▼
-Firebase Hosting  ──────────────►  Cloud Run (FastAPI)
-                                        │
-                          ┌─────────────┼─────────────────┐
-                          ▼             ▼                   ▼
-                    Cloud Firestore  Cloud Storage    Cloud Speech-to-Text
-                    (sessions, users, (resume PDFs)  (voice transcription)
-                     question bank)
-                          │
-                    Secret Manager   Artifact Registry   Cloud Build
-                    (API keys)       (Docker images)     (CI/CD)
+   Nginx (TLS) ──► FastAPI in Docker on EC2
+                        │
+        ┌───────────────┼────────────────┬──────────────┐
+        ▼               ▼                ▼              ▼
+   DynamoDB          Amazon S3      AWS Transcribe   OpenAI API
+  (sessions,      (résumé files,     (voice → text)   (GPT-4o /
+   messages,      temp audio)                          GPT-4o-mini)
+   résumés)
 ```
 
-**Google Cloud services used:** Cloud Run, Cloud Firestore, Cloud Storage, Cloud Speech-to-Text, Secret Manager, Artifact Registry, Cloud Build, Firebase Auth, Firebase Hosting, Google Analytics 4
+**AWS services:** Cognito (auth), DynamoDB (data), S3 (files), Transcribe (speech), EC2 + ECR (compute), CloudFront (CDN), SSM Parameter Store (config), CloudWatch (observability).
+
+> **Migration in progress:** the data layer is moving from DynamoDB to **RDS PostgreSQL** (SQLAlchemy 2.0 + Alembic). See [`docs/deployment_plan/PHASE_05_code_migration.md`](docs/deployment_plan/PHASE_05_code_migration.md).
 
 ---
 
 ## Features
 
-### Interview Experience
+### Interview experience
 
-- **Resume + Job Description ingestion** — upload your resume and target JD; backend extracts and analyzes content
-- **Personalized Question Generation (LLM)** — role-targeted questions (e.g., Software Engineer, Data Analyst, Product Manager) using **OpenRouter** (OpenAI-compatible)
-- **Adaptive Real-Time Interviews** — questions adjust in real time based on your answers; follow-ups generated dynamically and difficulty adapts
-- **Voice Input** — speak your answers; Google Cloud Speech-to-Text transcribes them instantly
-- **Multiple Interview Types** — Behavioral, Technical, Leadership, and Custom domain formats
-- **Custom Question Bank** — build and manage personal question collections by category and domain
-- **Resume-Aware Sessions** — the backend tailors questions to your background and target role
+- **Résumé + JD ingestion** — PDF/DOCX text extraction, then LLM structuring into typed objects
+- **Gap-driven question generation** — a résumé↔JD match analysis produces `interview_focus_areas` and `missing_skills`, which feed directly into question generation. This is what makes questions personal rather than generic.
+- **Adaptive difficulty** — a rolling 3-answer window raises difficulty above an average of 78 and lowers it below 45, with a dead zone between so it doesn't oscillate
+- **Dynamic follow-ups** — vague or notable answers trigger a follow-up (`clarify` / `deepen` / `verify` / `pivot`) instead of moving on
+- **On-the-fly generation** — if you outpace the pre-generated question set, new questions are generated mid-interview, avoiding topics already covered
+- **Voice input** — answers can be spoken; audio is transcribed via AWS Transcribe and dropped into the input box so you can edit before submitting
+- **Practice question bank** — save and categorise your own questions
 
-### Analytics & Feedback
+### Analytics & feedback
 
-- **AI-Powered Feedback** — structured feedback with strengths, weaknesses, and improvement suggestions
-- **Progress Tracking** — score timeline charts across sessions
-- **Skill Breakdown** — per-dimension scores (communication, structure, content, confidence)
-- **Interview Readiness Score** — aggregate readiness rating derived from all completed sessions
-- **Session History** — full record of sessions with per-question scores and transcripts
-
-### Platform
-
-- **Firebase Auth** — email/password and Google OAuth, JWT tokens sent to every backend request
-- **Transactional Email** — welcome emails via Resend
-- **Google Analytics 4** — page view and event tracking
-- **CI/CD** — Cloud Build automatically builds Docker image, deploys Cloud Run, and deploys Firebase Hosting on every push to `main`
+- **Per-answer scoring** across seven dimensions (relevance, specificity, structure, depth, clarity, confidence, overall)
+- **End-of-session feedback** — a single GPT-4o pass over the whole transcript producing strengths, improvements, and a readiness level
+- **Progress tracking** — score timelines, skill breakdowns, and readiness distribution across sessions
 
 ---
 
-## Tech Stack
+## Tech stack
 
 ### Frontend
 
 | Layer | Technology |
 |---|---|
-| Framework | React 18 + TypeScript |
-| Build tool | Vite 5 |
-| Styling | Tailwind CSS + shadcn/ui |
+| Framework | React 18 + TypeScript 5.8 |
+| Build | Vite 5 (dev server on **port 3000**) |
+| Styling | Tailwind CSS 3.4 + shadcn/ui (Radix) |
 | Routing | React Router 6 |
-| Data fetching | TanStack Query |
-| Animations | Framer Motion |
-| Charts | Recharts |
-| Auth client | Firebase JS SDK 12 |
-| Analytics | react-ga4 (GA4) |
-| Hosting | Firebase Hosting |
+| Animation / charts | Framer Motion · Recharts |
+| Validation | Zod |
+| Auth client | Cognito IDP API via raw `fetch` (no Amplify SDK) |
+| Media | MediaRecorder API |
 
 ### Backend
 
 | Layer | Technology |
 |---|---|
-| Framework | FastAPI (Python) |
-| Runtime | Cloud Run (us-central1, port 8080) |
-| Container registry | Artifact Registry |
-| Auth verification | Firebase Admin SDK (JWT) |
-| Database | Cloud Firestore (Native mode) |
-| File storage | Cloud Storage |
-| Transcription | Cloud Speech-to-Text |
-| LLM | OpenRouter (OpenAI-compatible) → OpenAI models (e.g. GPT-4o / GPT-4o-mini) |
+| Framework | FastAPI + Uvicorn (Python 3.12) |
+| Validation | Pydantic v2 + pydantic-settings |
+| Auth | AWS Cognito JWTs, verified locally against JWKS (`python-jose`) |
+| Database | AWS DynamoDB *(migrating to RDS PostgreSQL)* |
+| File storage | Amazon S3 (presigned URLs) |
+| Transcription | AWS Transcribe |
+| LLM | OpenAI GPT-4o / GPT-4o-mini — OpenRouter-compatible via `OPENAI_API_BASE` |
+| Parsing | PyPDF2 · python-docx |
 | Email | Resend |
-| Secrets | Secret Manager |
-| CI/CD | Cloud Build + `cloudbuild.yaml` |
 
 ---
 
-## Repository Structure
+## Repository structure
 
 ```
 amplify-interview/
-├── backend/                    # FastAPI backend (deployed to Cloud Run)
+├── CLAUDE.md                   # Load-bearing facts + gotchas — read this first
+├── docs/
+│   ├── backend_plan/           # How the API is built (10 phases)
+│   ├── frontend_plan/          # How the client is built (8 phases)
+│   ├── deployment_plan/        # Manual AWS deployment (11 phases)
+│   ├── AWS_SETUP_RUNBOOK.md    # Condensed command reference
+│   └── CLOUD_LEARNING_OBJECTIVES.md
+├── backend/
 │   ├── app/
-│   │   ├── main.py             # App entrypoint, CORS, router registration
-│   │   ├── config.py           # Settings via pydantic-settings
-│   │   ├── auth.py             # Firebase JWT verification middleware
-│   │   ├── routers/
-│   │   │   ├── resume.py       # Resume upload → Cloud Storage
-│   │   │   ├── interview.py    # Session CRUD + adaptive question generation
-│   │   │   ├── feedback.py     # AI feedback generation
-│   │   │   ├── analytics.py    # Progress and insights aggregation
-│   │   │   ├── questions.py    # User question bank
-│   │   │   ├── speech.py       # Cloud Speech-to-Text proxy
-│   │   │   └── email.py        # Resend welcome email
-│   │   └── services/
-│   │       ├── firestore.py    # Firestore async client helpers
-│   │       ├── storage.py      # Cloud Storage helpers
-│   │       ├── resume_parser.py      # Resume parsing/extraction
-│   │       ├── jd_parser.py          # Job description parsing/extraction
-│   │       ├── matching_engine.py    # Resume ↔ JD matching/analysis
-│   │       ├── question_generator.py # LLM-powered question generation
-│   │       ├── followup_handler.py   # Dynamic follow-up generation
-│   │       ├── feedback_generator.py # Structured feedback generation
-│   │       └── interview_engine.py   # Real-time interview orchestration + difficulty adaptation
+│   │   ├── main.py             # App, CORS, middleware, router registration
+│   │   ├── config.py           # pydantic-settings (the only reader of env vars)
+│   │   ├── middleware/         # Cognito JWT auth, rate limiting
+│   │   ├── models/             # Pydantic contracts — also used as LLM schemas
+│   │   ├── routers/            # HTTP layer (thin)
+│   │   ├── services/           # Business logic (no HTTP awareness)
+│   │   │   ├── openai_client.py      # The single LLM seam
+│   │   │   ├── interview_engine.py   # Adaptive state machine
+│   │   │   ├── question_generator.py · followup_handler.py
+│   │   │   ├── feedback_generator.py · matching_engine.py
+│   │   │   └── resume_parser.py · jd_parser.py
+│   │   ├── prompts/            # Pure functions returning message lists
+│   │   └── db/                 # dynamodb.py · storage.py (S3)
 │   ├── Dockerfile
 │   └── requirements.txt
-├── src/                        # React frontend
-│   ├── components/
-│   │   ├── ui/                 # shadcn/ui components
-│   │   ├── landing/            # Landing page sections
-│   │   └── layout/             # Navbar, shell
-│   ├── contexts/
-│   │   ├── AuthContext.tsx     # Firebase Auth state
-│   │   └── InterviewContext.tsx
-│   ├── hooks/
-│   ├── lib/
+├── src/
+│   ├── components/ui/          # shadcn/ui primitives
+│   ├── components/chat-interview/
+│   ├── contexts/AuthContext.tsx
+│   ├── hooks/useVideoRecording.ts
 │   ├── pages/
-│   │   ├── Dashboard.tsx
-│   │   ├── InterviewSetup.tsx
-│   │   ├── ChatInterviewSession.tsx
-│   │   ├── InterviewResults.tsx
-│   │   ├── Progress.tsx
-│   │   ├── Insights.tsx
-│   │   └── PracticeQuestions.tsx
-│   ├── services/
-│   │   ├── apiClient.ts              # Typed HTTP client (attaches Firebase JWT)
-│   │   ├── deepgramTranscriptionService.ts  # Proxies audio to backend /api/speech/transcribe
-│   │   ├── emailService.ts           # Calls backend /api/email/welcome
-│   │   ├── questionDatabaseService.ts
-│   │   └── userQuestionBankService.ts
-│   └── utils/
-│       ├── env.ts              # getApiUrl(), getGa4MeasurementId()
-│       └── firebase.ts         # Firebase app + auth initialization
-├── public/
-├── cloudbuild.yaml             # CI/CD: Docker build → Cloud Run → Firebase Hosting
-├── firebase.json               # Firebase Hosting config + SPA rewrites
-├── .firebaserc                 # Firebase project binding
-├── DEPLOYMENT.md               # Complete GCP deployment guide (start here)
-├── package.json
-├── vite.config.ts
-└── tailwind.config.ts
+│   └── services/apiClient.ts   # Typed client — all HTTP goes through here
+└── vite.config.ts · tailwind.config.ts · package.json
 ```
 
 ---
 
-## Local Development
+## Local development
 
-### Prerequisites
+**Prerequisites:** Node.js 20+, Python 3.12, and an AWS account if you want real auth/storage.
 
-- Node.js 20+
-- Python 3.11+
-- A running backend (local or Cloud Run)
-
-### 1. Clone and install frontend dependencies
+### 1. Frontend
 
 ```bash
-git clone https://github.com/nirajmehta960/amplify-interview.git
-cd amplify-interview
 npm install
+cp .env.example .env      # then fill it in
+npm run dev               # http://localhost:3000
 ```
 
-### 2. Configure environment
+Leaving `VITE_AWS_COGNITO_CLIENT_ID` empty runs the app in **mock auth mode** — any email/password signs in. That is the fastest way to work on UI without provisioning Cognito.
 
-Create `.env.local` at the project root (never commit this file):
-
-```bash
-# Backend URL — use your Cloud Run URL or http://localhost:4000 for local dev
-VITE_API_URL=http://localhost:4000
-
-# Firebase Web App config (from Firebase Console → Project settings → Your apps)
-VITE_FIREBASE_API_KEY=AIzaSy...
-VITE_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=123456789012
-VITE_FIREBASE_APP_ID=1:123456789012:web:abcdef
-
-# Optional — Google Analytics 4 Measurement ID
-VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
-```
-
-### 3. Run the backend locally
+### 2. Backend
 
 ```bash
 cd backend
+python3.12 -m venv venv
+./venv/bin/pip install -r requirements.txt
+cp .env.example .env      # then fill it in
 
-# Create and activate virtualenv
-python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-
-pip install -r requirements.txt
-
-# Set required env vars (or create backend/.env)
-export GCP_PROJECT_ID=your-project-id
-export GCS_BUCKET_NAME=amplify-interview-uploads
-export OPENAI_API_KEY=sk-...
-export RESEND_API_KEY=re_...
-export FRONTEND_URL=http://localhost:3000
-
-uvicorn app.main:app --reload --port 4000
+./venv/bin/python -m uvicorn app.main:app --reload --port 4000
 ```
 
-Backend is available at `http://localhost:4000`. Interactive docs at `http://localhost:4000/docs`.
+API at `http://localhost:4000`, interactive docs at `/docs` (only when `DEBUG=true`).
 
-### 4. Run the frontend
+With `ENVIRONMENT=development`, the literal token `mock-user-token` authenticates as a stub user — useful for exercising protected routes with `curl`.
 
-```bash
-# From project root
-npm run dev
-```
+> ⚠️ `db/dynamodb.py` and `db/storage.py` **auto-create real DynamoDB tables and the S3 bucket** on first use when AWS credentials are present. Hitting a data endpoint locally touches your real AWS account.
 
-Frontend is available at `http://localhost:3000`.
+### Available scripts
+
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Vite dev server (port 3000) |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `tsc --noEmit` |
 
 ---
 
 ## Deployment
 
-Full GCP deployment from scratch is documented in [DEPLOYMENT.md](DEPLOYMENT.md).
-
-High-level steps:
-
-1. Enable GCP APIs (Cloud Run, Firestore, Storage, Speech, Secret Manager, etc.)
-2. Set up Firebase (Auth, Firestore, Hosting, Web App registration)
-3. Create Cloud Storage bucket + Artifact Registry
-4. Store secrets in Secret Manager
-5. Grant IAM roles to Cloud Build and Cloud Run service accounts
-6. Build and deploy backend Docker image to Cloud Run
-7. Build and deploy frontend to Firebase Hosting
-8. Connect GitHub repo to Cloud Build — every push to `main` auto-deploys both
-
-### CI/CD Pipeline (`cloudbuild.yaml`)
+Deployed manually to AWS, phase by phase, in [`docs/deployment_plan/`](docs/deployment_plan/README.md). Each phase is one work session ending in verifiable checkpoints.
 
 ```
-push to main
-     │
-     ├─► docker build ./backend → push to Artifact Registry
-     │
-     ├─► gcloud run deploy amplify-interview-backend
-     │
-     ├─► npm ci
-     │
-     ├─► npm run build   (reads VITE_* from Secret Manager)
-     │
-     └─► firebase deploy --only hosting
+1  Foundations (IAM, MFA, CLI, billing alarm)
+2  Networking (VPC, security groups, SG-to-SG)
+3  S3 bucket + EC2 instance role
+4  Cognito user pool
+5  Code migration: DynamoDB → PostgreSQL     ← longest phase, purely local
+6  RDS PostgreSQL + SSM Parameter Store
+7  Docker image + ECR
+8  EC2 + Nginx + TLS                          ← first live deploy
+9  GitHub Actions CI/CD (OIDC, no stored keys)
+10 Frontend on S3 + CloudFront
+11 CloudWatch observability
 ```
+
+Target architecture: EC2 + Docker + Nginx + RDS + S3 + Cognito, with the frontend on CloudFront. Stage 2 (App Runner/ECS, Terraform, SQS, ElastiCache) is mapped out in [`DEPLOYMENT_AWS.md`](docs/deployment_plan/DEPLOYMENT_AWS.md).
+
+**No long-lived credentials anywhere** — the EC2 instance profile grants AWS access on the box, and GitHub Actions assumes a role via OIDC.
 
 ---
 
-## API Overview
+## API overview
 
-The FastAPI backend exposes these router groups (all under `/api`):
+All routes are under `/api` and require `Authorization: Bearer <Cognito ID token>`, except `/health`, `/`, and `/api/speech/transcribe`.
 
-| Router | Endpoints | Description |
-|---|---|---|
-| `/api/resume` | `POST /upload` | Upload resume PDF to Cloud Storage |
-| `/api/interview` | `POST /start`, `POST /{id}/respond`, `GET /sessions` | Adaptive interview sessions |
-| `/api/feedback` | `GET /{session_id}` | AI-generated feedback per session |
-| `/api/analytics` | `GET /overview`, `GET /progress`, `GET /skills` | Progress and insights |
-| `/api/questions` | `GET /`, `POST /`, `DELETE /{id}` | User question bank |
-| `/api/speech` | `POST /transcribe` | Cloud Speech-to-Text proxy |
-| `/api/email` | `POST /welcome` | Send welcome email via Resend |
-| `/health` | `GET /` | Health check |
-
-All endpoints (except `/health`) require a Firebase ID token in the `Authorization: Bearer <token>` header.
+| Router | Key endpoints |
+|---|---|
+| `/api/resume` | `POST /upload`, `GET /list`, `POST /jd`, `POST /match` |
+| `/api/interview` | `POST /session`, `POST /session/{id}/message`, `GET /sessions`, `GET /session/{id}/messages`, `POST /session/{id}/end` |
+| `/api/feedback` | `POST /session/{id}`, `GET /session/{id}`, `GET /session/{id}/questions` |
+| `/api/analytics` | `GET /overview`, `GET /progress`, `GET /skills` |
+| `/api/questions` | `GET`, `POST`, `PUT /{id}`, `DELETE /{id}` |
+| `/api/user` | `GET /profile` |
+| `/api/speech` | `POST /transcribe` |
+| `/health` | `GET` |
 
 ---
 
 ## Security
 
-- **No client-side secrets** — all API keys (OpenAI, Resend) are stored in Secret Manager and accessed only by the Cloud Run backend
-- **Firebase JWT verification** — every backend request validates the Firebase ID token; Firestore is locked to deny all direct client reads/writes
-- **HTTPS everywhere** — Cloud Run and Firebase Hosting both terminate TLS
-- **Least-privilege IAM** — Cloud Run SA has only the roles it needs (Firestore user, Storage object admin, Speech client, Secret accessor)
+- **Cognito JWTs verified locally** against the pool's JWKS (cached 1h) — the backend never calls Cognito per request
+- **No long-lived AWS keys** — instance profile on EC2, OIDC in CI
+- **Private by default** — S3 blocks public access and serves via presigned URLs; RDS has no public IP and accepts connections only from the app's security group
+- **Secrets in SSM Parameter Store** as `SecureString`, fetched at deploy time — never baked into an image
+- **Multi-tenancy by construction** — the authenticated user's ID is the DynamoDB partition key on every read and write
+
+---
+
+## Documentation
+
+| Doc | Contents |
+|---|---|
+| [`CLAUDE.md`](CLAUDE.md) | Load-bearing facts, gotchas, the cross-layer contract, known issues |
+| [`docs/backend_plan/`](docs/backend_plan/README.md) | How the API is built, phase by phase |
+| [`docs/frontend_plan/`](docs/frontend_plan/README.md) | How the client is built, phase by phase |
+| [`docs/deployment_plan/`](docs/deployment_plan/README.md) | Manual AWS deployment |
+| [`docs/CLOUD_LEARNING_OBJECTIVES.md`](docs/CLOUD_LEARNING_OBJECTIVES.md) | The infrastructure concepts, from the ground up |
+
+Each plan's final phase carries a known-issues table — including what is currently mocked or unfinished.
 
 ---
 
@@ -312,7 +247,3 @@ All endpoints (except `/health`) require a Firebase ID token in the `Authorizati
 Copyright (c) 2025 Niraj Mehta. All rights reserved.
 
 **Author:** Niraj Mehta — [@nirajmehta960](https://github.com/nirajmehta960)
-
----
-
-*Made with passion for better interview preparation.*

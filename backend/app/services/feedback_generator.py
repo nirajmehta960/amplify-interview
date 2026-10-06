@@ -17,7 +17,7 @@ from app.models.feedback import (
 from app.models.interview import InterviewStatus
 from app.services.openai_client import chat_completion_json, TokenUsage
 from app.prompts.feedback import build_session_feedback_prompt
-from app.db import firestore as db
+from app.db import dynamodb as db
 
 logger = logging.getLogger(__name__)
 

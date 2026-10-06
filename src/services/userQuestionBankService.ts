@@ -1,6 +1,6 @@
 /**
  * User Question Bank Service
- * Manages user's custom questions stored in Firestore via the FastAPI backend.
+ * Manages the user's custom practice questions via the FastAPI backend.
  */
 
 import { questionsApi, UserQuestion } from "@/services/apiClient";

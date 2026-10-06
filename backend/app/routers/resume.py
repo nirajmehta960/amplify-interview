@@ -18,7 +18,7 @@ from app.models.resume import (
     MatchResponse,
 )
 from app.services import resume_parser, jd_parser, matching_engine
-from app.db import firestore as db, storage as gcs
+from app.db import dynamodb as db, storage
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -53,8 +53,8 @@ async def upload_resume(
         raise HTTPException(400, f"File too large. Maximum size is {settings.max_resume_size_mb}MB.")
 
     try:
-        # Upload to GCS
-        gcs_uri = await gcs.upload_file(
+        # Upload to S3
+        s3_uri = await storage.upload_file(
             file_content=content,
             file_name=file.filename,
             content_type=file.content_type,
@@ -65,9 +65,9 @@ async def upload_resume(
         # Parse resume
         parsed, raw_text, usage = await resume_parser.parse_resume(content, file.content_type)
 
-        # Save to Firestore
+        # Persist the resume record
         resume_data = {
-            "raw_file_url": gcs_uri,
+            "raw_file_url": s3_uri,
             "raw_text": raw_text[:50000],  # cap stored text
             "parsed_data": parsed.model_dump(),
             "file_name": file.filename,
@@ -121,17 +121,17 @@ async def get_resume(user: CurrentUser, resume_id: str):
 
 @router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_resume(user: CurrentUser, resume_id: str):
-    """Delete a resume and its GCS file."""
+    """Delete a resume and its S3 file."""
     doc = await db.get_document(db.resumes_col(user.uid).document(resume_id))
     if not doc:
         raise HTTPException(404, "Resume not found")
 
-    # Delete GCS file
+    # Delete S3 file
     if doc.get("raw_file_url"):
         try:
-            await gcs.delete_file(doc["raw_file_url"])
+            await storage.delete_file(doc["raw_file_url"])
         except Exception as e:
-            logger.warning(f"Failed to delete GCS file: {e}")
+            logger.warning(f"Failed to delete S3 file: {e}")
 
     await db.delete_document(db.resumes_col(user.uid).document(resume_id))
 

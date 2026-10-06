@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException
 from app.middleware.auth import CurrentUser
 from app.models.feedback import SessionFeedback, QuestionFeedback
 from app.services import feedback_generator
-from app.db import firestore as db
+from app.db import dynamodb as db
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/feedback", tags=["Feedback"])

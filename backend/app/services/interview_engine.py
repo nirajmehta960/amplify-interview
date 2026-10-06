@@ -22,7 +22,7 @@ from app.models.question import GeneratedQuestion
 from app.services.question_generator import generate_questions, generate_single_question
 from app.services.followup_handler import decide_followup, analyze_response
 from app.services.openai_client import TokenUsage
-from app.db import firestore as db
+from app.db import dynamodb as db
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ async def initialize_session(
         )
         total_usage = _merge_usage(total_usage, q_usage)
 
-    # Persist session to Firestore
+    # Persist the session record
     session_data = {
         "user_id": user_id,
         "config": config.model_dump(),

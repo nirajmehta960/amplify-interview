@@ -1,7 +1,7 @@
 """
 User profile router.
-Returns profile data from Firebase Auth JWT claims.
-No separate Firestore document needed — name/email/picture live in the token.
+Returns profile data from AWS Cognito JWT claims.
+No separate database record needed — name/email/picture live in the token.
 """
 
 import logging
@@ -25,7 +25,7 @@ class UserProfile(BaseModel):
 
 @router.get("/profile", response_model=UserProfile)
 async def get_profile(user: CurrentUser):
-    """Return the authenticated user's profile from their Firebase JWT claims."""
+    """Return the authenticated user's profile from their Cognito JWT claims."""
     return UserProfile(
         uid=user.uid,
         email=user.email,
