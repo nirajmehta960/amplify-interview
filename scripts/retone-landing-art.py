@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Re-tone the reference landing artwork from Bitplaza orange to Amplify emerald.
+"""Re-tone the reference landing artwork from Bitplaza orange to Amplify's accent.
 
 One-off, kept in the repo so the artwork can be regenerated if the accent changes.
 Spec: docs/superpowers/specs/2026-10-05-ui-redesign-foundation-landing-design.md §5.
 
-- Hue is rotated by a fixed amount (orange #FA6A3C -> emerald #10A37F).
+- Hue is rotated by a fixed amount (orange #FA6A3C -> the --target accent).
+  Emerald #10A37F used --hue-nudge -7; electric blue #3575EE (default) uses -10.
 - Saturation is untouched. Value is optionally scaled, weighted by saturation, so
   saturated pixels darken while neutral ones (the hero's white foot) do not move.
 - Alpha is copied byte-for-byte.
@@ -34,14 +35,14 @@ def hue(hex_color: str) -> float:
     return colorsys.rgb_to_hsv(r, g, b)[0]
 
 
-def hue_shift(nudge_degrees: float) -> int:
+def hue_shift(target: str, nudge_degrees: float) -> int:
     """Rotation in PIL units (hue stored as 0-255 for 0-360 degrees).
 
     The reference's brightest pixels are amber, ~15 degrees yellower than its
-    orange, so a straight orange->emerald rotation lands them on cyan. The nudge
-    pulls the whole rotation back toward green.
+    orange, so a straight rotation lands them further round the wheel than the
+    accent. The nudge pulls the whole rotation back (negative = less rotation).
     """
-    turn = (hue("#10A37F") - hue("#FA6A3C") + nudge_degrees / 360) % 1.0
+    turn = (hue(target) - hue("#FA6A3C") + nudge_degrees / 360) % 1.0
     return round(turn * 256) % 256
 
 
@@ -70,13 +71,14 @@ def main() -> None:
         "--glow-value", type=float, default=0.9,
         help="value scale for the section glow (1.0 = unchanged)",
     )
+    parser.add_argument("--target", default="#3575EE", help="accent hex the artwork is rotated to")
     parser.add_argument(
-        "--hue-nudge", type=float, default=-7.0,
-        help="degrees added to the orange->emerald rotation (negative = greener)",
+        "--hue-nudge", type=float, default=-10.0,
+        help="degrees added to the orange->target rotation (negative = less rotation)",
     )
     args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
-    shift = hue_shift(args.hue_nudge)
+    shift = hue_shift(args.target, args.hue_nudge)
 
     hero_src = Image.open(args.src / "hero-ground.webp")
     hero = retone(hero_src, args.hero_value, shift)

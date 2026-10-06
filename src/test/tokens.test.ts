@@ -20,12 +20,12 @@ describe("design tokens", () => {
   it.each([
     ["--background", "40 55% 96%"],
     ["--foreground", "25 29% 8%"],
-    ["--primary", "165 83% 26%"],
+    ["--primary", "221 67% 49%"],
     ["--primary-foreground", "0 0% 100%"],
-    ["--accent", "165 82% 35%"],
+    ["--accent", "219 84% 57%"],
     ["--muted-foreground", "35 9% 39%"],
     ["--border", "45 34% 89%"],
-    ["--ring", "165 83% 26%"],
+    ["--ring", "221 67% 49%"],
     ["--destructive", "6 54% 50%"],
     ["--score-low", "6 54% 50%"],
     ["--score-mid", "37 91% 55%"],
@@ -33,6 +33,13 @@ describe("design tokens", () => {
     ["--score-low-text", "6 58% 42%"],
     ["--score-mid-text", "39 100% 27%"],
     ["--score-high-text", "165 83% 26%"],
+    ["--sidebar-background", "223 47% 7%"],
+    ["--sidebar-foreground", "220 37% 81%"],
+    ["--sidebar-primary", "219 84% 57%"],
+    ["--sidebar-accent", "221 48% 17%"],
+    ["--sidebar-accent-foreground", "0 0% 100%"],
+    ["--sidebar-border", "223 33% 16%"],
+    ["--sidebar-ring", "221 100% 71%"],
   ])("sets %s to %s", (token, value) => {
     expect(css).toContain(`${token}: ${value};`);
   });
