@@ -1,128 +1,79 @@
 import { motion } from 'framer-motion';
-import { Bot, User, CheckCircle2, ChevronDown, ChevronUp, ArrowUpRight } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import type { ChatMessage, ResponseAnalysis } from '@/services/apiClient';
+import { ArrowUpRight, Bot, Check, ChevronDown, ChevronUp, TrendingUp, User } from 'lucide-react';
 import { useState } from 'react';
+import { DifficultyChip } from '@/components/interview/DifficultyChip';
+import { DimensionBar } from '@/components/interview/DimensionBar';
+import { ScoreBadge } from '@/components/interview/ScoreBadge';
+import { SCORE_COLORS } from '@/lib/score';
+import type { ChatMessage, ResponseAnalysis } from '@/services/apiClient';
 
 interface ChatBubbleProps {
   message: ChatMessage;
   isLatest?: boolean;
 }
 
-const scoreColor = (score: number) => {
-  if (score >= 80) return 'text-emerald-400';
-  if (score >= 60) return 'text-cyan-400';
-  if (score >= 40) return 'text-amber-400';
-  return 'text-rose-400';
-};
-
-const scoreBg = (score: number) => {
-  if (score >= 80) return 'bg-emerald-500/15 border-emerald-500/30';
-  if (score >= 60) return 'bg-cyan-500/15 border-cyan-500/30';
-  if (score >= 40) return 'bg-amber-500/15 border-amber-500/30';
-  return 'bg-rose-500/15 border-rose-500/30';
-};
-
-const difficultyBadge = (diff: string) => {
-  const colors: Record<string, string> = {
-    easy: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    medium: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-    hard: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-  };
-  return colors[diff] || colors.medium;
-};
-
 function InlineAnalysis({ analysis }: { analysis: ResponseAnalysis }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 }}
-      className="mt-3 space-y-2"
-    >
-      {/* Score pill */}
+    <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-2 space-y-2">
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all hover:scale-[1.02] ${scoreBg(analysis.score)}`}
+        aria-expanded={expanded}
+        className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-xs shadow-[var(--card-shadow)] transition-colors hover:bg-secondary"
       >
-        <span className={`text-sm font-bold ${scoreColor(analysis.score)}`}>
-          {analysis.score}/100
-        </span>
-        <span className="text-muted-foreground">•</span>
-        <span className="text-muted-foreground truncate max-w-[200px]">
-          {analysis.brief_feedback.split('.')[0] || 'View feedback'}
-        </span>
+        <ScoreBadge score={analysis.score} outOf size="sm" />
+        <span className="truncate text-muted-foreground">{analysis.brief_feedback.split('.')[0] || 'View feedback'}</span>
         {expanded ? (
-          <ChevronUp className="w-3 h-3 text-muted-foreground" />
+          <ChevronUp className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
         ) : (
-          <ChevronDown className="w-3 h-3 text-muted-foreground" />
+          <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
         )}
       </button>
 
-      {/* Expanded details */}
       {expanded && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="glass-card p-3 space-y-3 text-xs"
+          className="space-y-4 rounded-xl border border-border bg-card p-4 text-left text-xs shadow-[var(--card-shadow)]"
         >
-          {/* Score bars */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <span className="text-muted-foreground font-medium">Communication</span>
-              <div className="flex gap-1 mt-1">
-                {Object.entries(analysis.communication_scores).map(([k, v]) => (
-                  <div key={k} className="flex-1">
-                    <div className="text-[10px] text-muted-foreground capitalize">{k}</div>
-                    <div className="progress-bar mt-0.5">
-                      <div
-                        className="progress-bar-fill"
-                        style={{ width: `${v}%`, opacity: v > 0 ? 1 : 0.3 }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <p className="font-medium text-foreground">Communication</p>
+              {Object.entries(analysis.communication_scores).map(([k, v]) => (
+                <DimensionBar key={k} label={k} value={v} />
+              ))}
             </div>
-            <div>
-              <span className="text-muted-foreground font-medium">Content</span>
-              <div className="flex gap-1 mt-1">
-                {Object.entries(analysis.content_scores).map(([k, v]) => (
-                  <div key={k} className="flex-1">
-                    <div className="text-[10px] text-muted-foreground capitalize">{k}</div>
-                    <div className="progress-bar mt-0.5">
-                      <div
-                        className="progress-bar-fill"
-                        style={{ width: `${v}%`, opacity: v > 0 ? 1 : 0.3 }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="space-y-2">
+              <p className="font-medium text-foreground">Content</p>
+              {Object.entries(analysis.content_scores).map(([k, v]) => (
+                <DimensionBar key={k} label={k} value={v} />
+              ))}
             </div>
           </div>
 
-          {/* Strengths & Improvements */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-4 border-t border-border pt-3 sm:grid-cols-2">
             {analysis.strengths.length > 0 && (
               <div>
-                <span className="text-emerald-400 font-medium">✓ Strengths</span>
-                <ul className="mt-1 space-y-0.5">
+                <p className="flex items-center gap-1.5 font-medium" style={{ color: SCORE_COLORS.high.text }}>
+                  <Check className="size-3.5" aria-hidden="true" /> Strengths
+                </p>
+                <ul className="mt-1.5 space-y-1 text-muted-foreground">
                   {analysis.strengths.map((s, i) => (
-                    <li key={i} className="text-muted-foreground">{s}</li>
+                    <li key={i}>{s}</li>
                   ))}
                 </ul>
               </div>
             )}
             {analysis.improvements.length > 0 && (
               <div>
-                <span className="text-amber-400 font-medium">↑ Improve</span>
-                <ul className="mt-1 space-y-0.5">
+                <p className="flex items-center gap-1.5 font-medium" style={{ color: SCORE_COLORS.mid.text }}>
+                  <TrendingUp className="size-3.5" aria-hidden="true" /> To improve
+                </p>
+                <ul className="mt-1.5 space-y-1 text-muted-foreground">
                   {analysis.improvements.map((s, i) => (
-                    <li key={i} className="text-muted-foreground">{s}</li>
+                    <li key={i}>{s}</li>
                   ))}
                 </ul>
               </div>
@@ -134,19 +85,16 @@ function InlineAnalysis({ analysis }: { analysis: ResponseAnalysis }) {
   );
 }
 
-export default function ChatBubble({ message, isLatest }: ChatBubbleProps) {
+/** Interviewer on the left as a white card, the candidate on the right in soft blue. */
+export default function ChatBubble({ message }: ChatBubbleProps) {
   const isInterviewer = message.role === 'interviewer';
   const isSystem = message.role === 'system';
   const meta = message.question_metadata;
 
   if (isSystem) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex justify-center my-4"
-      >
-        <div className="glass-card px-4 py-2.5 max-w-lg text-center">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="my-4 flex justify-center">
+        <div className="max-w-lg rounded-full border border-border bg-card px-4 py-2 text-center shadow-[var(--card-shadow)]">
           <p className="text-sm text-muted-foreground">{message.content}</p>
         </div>
       </motion.div>
@@ -158,73 +106,49 @@ export default function ChatBubble({ message, isLatest }: ChatBubbleProps) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className={`flex gap-3 ${isInterviewer ? 'items-start' : 'items-start flex-row-reverse'} ${
-        isLatest ? '' : ''
-      }`}
+      className={`flex items-start gap-3 ${isInterviewer ? '' : 'flex-row-reverse'}`}
     >
-      {/* Avatar */}
       <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-          isInterviewer
-            ? 'bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-500/30'
-            : 'bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-500/30'
+        aria-hidden="true"
+        className={`grid size-8 shrink-0 place-items-center rounded-full ${
+          isInterviewer ? 'bg-accent text-accent-foreground' : 'border border-border bg-card text-muted-foreground'
         }`}
       >
-        {isInterviewer ? (
-          <Bot className="w-4 h-4 text-cyan-400" />
-        ) : (
-          <User className="w-4 h-4 text-violet-400" />
-        )}
+        {isInterviewer ? <Bot className="size-4" /> : <User className="size-4" />}
       </div>
 
-      {/* Bubble */}
-      <div className={`max-w-[75%] min-w-0 ${isInterviewer ? '' : 'text-right'}`}>
-        {/* Header badges */}
+      <div className={`min-w-0 max-w-[85%] sm:max-w-[75%] ${isInterviewer ? '' : 'flex flex-col items-end'}`}>
         {isInterviewer && meta && (
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Badge
-              variant="outline"
-              className={`text-[10px] py-0 h-5 border ${difficultyBadge(meta.difficulty)}`}
-            >
-              {meta.difficulty}
-            </Badge>
-            <Badge variant="outline" className="text-[10px] py-0 h-5 text-muted-foreground capitalize">
-              {meta.category}
-            </Badge>
+          <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+            <DifficultyChip level={meta.difficulty} />
+            <span className="rounded-full border border-border bg-card px-2 py-0.5 text-xs text-muted-foreground">{meta.category}</span>
             {meta.is_followup && (
-              <Badge variant="outline" className="text-[10px] py-0 h-5 text-cyan-400 border-cyan-500/30 bg-cyan-500/10">
-                <ArrowUpRight className="w-2.5 h-2.5 mr-0.5" />
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-primary">
+                <ArrowUpRight className="size-3" aria-hidden="true" />
                 follow-up
-              </Badge>
+              </span>
             )}
-            <span className="text-[10px] text-muted-foreground/60">Q{meta.question_number}</span>
+            <span className="text-xs text-muted-foreground">Q{meta.question_number}</span>
           </div>
         )}
 
-        {/* Message content */}
         <div
-          className={`rounded-2xl px-4 py-3 ${
+          className={`rounded-2xl px-4 py-3 text-left ${
             isInterviewer
-              ? 'bg-card/80 border border-border/50 rounded-tl-md'
-              : 'bg-primary/10 border border-primary/20 rounded-tr-md text-left'
+              ? 'rounded-tl-md border border-border bg-card shadow-[var(--card-shadow)]'
+              : 'rounded-tr-md border border-primary/15 bg-primary/[0.07]'
           }`}
         >
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.content}</p>
         </div>
 
-        {/* Inline analysis for candidate messages */}
-        {!isInterviewer && message.analysis && (
-          <InlineAnalysis analysis={message.analysis} />
-        )}
+        {!isInterviewer && message.analysis && <InlineAnalysis analysis={message.analysis} />}
 
-        {/* Timestamp */}
+        {/* `timestamp` is the serialized key the backend sends (CLAUDE.md, cross-layer rule 3). */}
         {message.timestamp && (
-          <p className="text-[10px] text-muted-foreground/40 mt-1 px-1">
-            {new Date(message.timestamp).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </p>
+          <time dateTime={message.timestamp} className="mt-1 block px-1 text-[11px] text-muted-foreground">
+            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </time>
         )}
       </div>
     </motion.div>

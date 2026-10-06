@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Video, VideoOff, Settings, AlertTriangle, Loader2, LogOut } from "lucide-react";
+import { BarChart3, Loader2, LogOut, Mic, Video, VideoOff } from "lucide-react";
+import { ScoreBadge } from "@/components/interview/ScoreBadge";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-import { useVideoRecording } from "@/hooks/useVideoRecording";
 import { interviewApi, ChatMessage, SessionProgress } from "@/services/apiClient";
 import ChatBubble from "@/components/chat-interview/ChatBubble";
 import TypingIndicator from "@/components/chat-interview/TypingIndicator";
@@ -24,7 +25,9 @@ export default function ChatInterviewSession() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [progress, setProgress] = useState<SessionProgress | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [cameraOn, setCameraOn] = useState(true);
+  // Opt-in self-view: nothing is recorded, so the camera stays off (and no
+  // permission prompt appears) until the candidate asks for it.
+  const [cameraOn, setCameraOn] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
 
   const storedSetup = (() => {
@@ -90,7 +93,8 @@ export default function ChatInterviewSession() {
     const initCamera = async () => {
       if (!cameraOn) return;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        // Video only: the self-view needs no microphone (voice answers use their own).
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -163,110 +167,128 @@ export default function ChatInterviewSession() {
   // Get last analysis for the sidebar
   const lastAnalyzedMessage = [...messages].reverse().find(m => m.role === 'candidate' && m.analysis);
 
+  const toggleCamera = () => {
+    setVideoError(null);
+    setCameraOn((on) => !on);
+  };
+
+  const progressPanel = (
+    <ProgressSidebar progress={progress} lastAnalysis={lastAnalyzedMessage?.analysis || null} />
+  );
+
   return (
-    <div className="flex h-screen bg-background overflow-hidden relative">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-background to-background pointer-events-none" />
+    <div className="flex h-[100dvh] flex-col bg-background">
+      {/* Focus mode: no app rail. The brand is not a link, so a stray click
+          cannot walk away from a live session. */}
+      <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background/90 px-4 backdrop-blur sm:px-6">
+        <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-accent text-accent-foreground">
+          <Mic className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <h1 className="truncate text-sm font-semibold text-foreground">Live interview</h1>
+          <p className="truncate text-xs text-muted-foreground">
+            {progress ? `Question ${progress.questions_asked} of ${progress.questions_total}` : "Starting…"}
+          </p>
+        </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col relative z-10">
-        {/* Header */}
-        <header className="h-16 px-6 glass-card rounded-none border-t-0 border-x-0 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30">
-              <div className="w-4 h-4 rounded-full bg-primary animate-pulse" />
-            </div>
-            <div>
-              <h1 className="text-sm font-semibold text-foreground">Live Interview Session</h1>
-              <p className="text-xs text-muted-foreground">Amplify AI Interviewer</p>
-            </div>
-          </div>
-          
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-rose-400" onClick={handleEndEarly}>
-            <LogOut className="w-4 h-4 mr-2" />
-            End Session
+        <div className="ml-auto flex items-center gap-2">
+          {progress && progress.average_score > 0 ? (
+            <span className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex lg:hidden">
+              Avg <ScoreBadge score={progress.average_score} size="sm" />
+            </span>
+          ) : null}
+
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="lg:hidden" aria-label="Show progress">
+                <BarChart3 className="size-4" aria-hidden="true" />
+                <span className="ml-1.5 hidden sm:inline">Progress</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" aria-describedby={undefined} className="w-[min(22rem,90vw)] overflow-y-auto bg-background p-4 pt-12">
+              <SheetTitle className="sr-only">Session progress</SheetTitle>
+              {progressPanel}
+            </SheetContent>
+          </Sheet>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:bg-destructive/5 hover:text-destructive"
+            onClick={handleEndEarly}
+          >
+            <LogOut className="size-4" aria-hidden="true" />
+            <span className="ml-1.5">End session</span>
           </Button>
-        </header>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-8 scroll-smooth">
-          <div className="max-w-3xl mx-auto space-y-8">
-            <AnimatePresence initial={false}>
-              {messages.map((msg, i) => (
-                <ChatBubble 
-                  key={msg.message_id || i} 
-                  message={msg} 
-                  isLatest={i === messages.length - 1} 
-                />
-              ))}
-              
-              {isProcessing && (
-                <TypingIndicator key="typing" />
-              )}
-            </AnimatePresence>
-            <div ref={messagesEndRef} />
-          </div>
         </div>
+      </header>
 
-        {/* Input Area */}
-        <div className="p-6 bg-gradient-to-t from-background via-background/95 to-transparent shrink-0">
-          <div className="max-w-3xl mx-auto">
-            {progress?.is_complete ? (
-              <div className="glass-card p-4 text-center">
-                <p className="text-primary font-medium">Session Complete</p>
-                <p className="text-sm text-muted-foreground mt-1">Generating your comprehensive feedback...</p>
-                <Loader2 className="w-6 h-6 animate-spin mx-auto mt-3 text-primary" />
-              </div>
-            ) : (
-              <ChatInput 
-                onSendMessage={handleSendMessage}
-                disabled={isProcessing || !sessionId}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Right Sidebar */}
-      <aside className="w-80 border-l border-border/50 bg-card/30 backdrop-blur-md flex flex-col shrink-0 z-10 p-4 gap-4 overflow-y-auto">
-        {/* Camera Preview */}
-        <div className="glass-card overflow-hidden relative aspect-video rounded-lg border-primary/20 group">
-          {cameraOn && !videoError ? (
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              playsInline 
-              muted 
-              className="w-full h-full object-cover scale-[1.02] transform transition-transform"
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-black/40 text-muted-foreground gap-2">
-              {videoError ? <AlertTriangle className="w-5 h-5 text-amber-500" /> : <VideoOff className="w-5 h-5" />}
-              <span className="text-xs">{videoError || "Camera Off"}</span>
+      <div className="flex min-h-0 flex-1">
+        <main className="flex min-w-0 flex-1 flex-col">
+          <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-6">
+            <div className="mx-auto max-w-3xl space-y-6">
+              <AnimatePresence initial={false}>
+                {messages.map((msg, i) => (
+                  <ChatBubble key={msg.message_id || i} message={msg} isLatest={i === messages.length - 1} />
+                ))}
+                {isProcessing && <TypingIndicator key="typing" />}
+              </AnimatePresence>
+              <div ref={messagesEndRef} />
             </div>
-          )}
-          
-          {/* Camera controls overlay */}
-          <div className="absolute bottom-2 left-2 right-2 flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button 
-              size="icon" 
-              variant="secondary" 
-              className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm shadow-sm"
-              onClick={() => setCameraOn(!cameraOn)}
-            >
-              {cameraOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-            </Button>
           </div>
-        </div>
 
-        {/* Progress Tracker */}
-        <div className="flex-1">
-          <ProgressSidebar 
-            progress={progress} 
-            lastAnalysis={lastAnalyzedMessage?.analysis || null} 
-          />
-        </div>
-      </aside>
+          <div className="shrink-0 border-t border-border bg-background/95 px-4 pb-4 pt-5 sm:px-6">
+            <div className="mx-auto max-w-3xl">
+              {progress?.is_complete ? (
+                <div role="status" className="rounded-2xl border border-border bg-card p-5 text-center shadow-[var(--card-shadow)]">
+                  <p className="font-medium text-foreground">Interview complete</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Generating your feedback…</p>
+                  <Loader2 className="mx-auto mt-3 size-6 animate-spin text-accent" aria-hidden="true" />
+                </div>
+              ) : (
+                <ChatInput onSendMessage={handleSendMessage} disabled={isProcessing || !sessionId} />
+              )}
+            </div>
+          </div>
+        </main>
+
+        <aside
+          aria-label="Session details"
+          className="hidden w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l border-border bg-secondary/30 p-4 lg:flex"
+        >
+          <section aria-labelledby="camera-heading" className="space-y-3 rounded-2xl border border-border bg-card p-4 shadow-[var(--card-shadow)]">
+            <div className="flex items-center justify-between gap-2">
+              <h3 id="camera-heading" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Video className="size-4 text-accent" aria-hidden="true" />
+                Camera
+              </h3>
+              <Button variant="ghost" size="sm" onClick={toggleCamera}>
+                {cameraOn ? <VideoOff className="size-4" aria-hidden="true" /> : <Video className="size-4" aria-hidden="true" />}
+                <span className="ml-1.5">{cameraOn ? "Hide camera" : "Show camera"}</span>
+              </Button>
+            </div>
+            {cameraOn && !videoError ? (
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="aspect-video w-full rounded-xl bg-foreground/90 object-cover"
+                />
+                <p className="text-xs text-muted-foreground">Only you can see this — nothing is recorded</p>
+              </>
+            ) : videoError ? (
+              <p role="alert" className="text-xs text-destructive">
+                {videoError}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Off. Turn it on to practise eye contact.</p>
+            )}
+          </section>
+          {progressPanel}
+        </aside>
+      </div>
     </div>
   );
 }

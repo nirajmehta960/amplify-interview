@@ -11,17 +11,19 @@ export default function TypingIndicator() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       className="flex items-start gap-3"
+      role="status"
     >
-      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-500/30">
-        <Bot className="w-4 h-4 text-cyan-400" />
+      <div aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground">
+        <Bot className="size-4" />
       </div>
 
-      <div className="bg-card/80 border border-border/50 rounded-2xl rounded-tl-md px-4 py-3">
+      <div className="rounded-2xl rounded-tl-md border border-border bg-card px-4 py-3 shadow-[var(--card-shadow)]">
         <div className="flex items-center gap-1.5">
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="w-2 h-2 rounded-full bg-cyan-400/60"
+              aria-hidden="true"
+              className="size-2 rounded-full bg-accent"
               animate={{
                 y: [0, -6, 0],
                 opacity: [0.4, 1, 0.4],
@@ -34,9 +36,7 @@ export default function TypingIndicator() {
               }}
             />
           ))}
-          <span className="text-xs text-muted-foreground ml-2">
-            Interviewer is thinking...
-          </span>
+          <span className="ml-2 text-xs text-muted-foreground">Interviewer is thinking…</span>
         </div>
       </div>
     </motion.div>
