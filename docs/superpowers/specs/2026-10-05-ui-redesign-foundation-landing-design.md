@@ -36,6 +36,15 @@ spec → plan → implementation cycle:
 - No interview-flow regression: sign-in, dashboard and interview session still load
   and function (visually checked; colour glitches logged, not fixed).
 
+> **Amendment 2026-10-06 — accent finalised as electric blue.** After trialling
+> emerald `#10A37F`, electric blue `#3575EE` and indigo `#5B4FE9` across the
+> landing and auth pages, the user chose electric blue. Mapping: `--accent` `#3575EE` (219 84% 57%),
+> solid fills `--primary` `#2A5FD1` (221 67% 49%, white 5.7:1), ink grounds navy
+> (`#0A0F1C`, panels `#0B1733`), the `mint` band renamed `sky` (`#F5F8FE`),
+> artwork re-toned with `scripts/retone-landing-art.py --target #3575EE --hue-nudge -10`.
+> The score scale is unchanged — high scores stay green `#10A37F`, which no
+> longer collides with the brand colour. Emerald values below are historical.
+
 ## 2. Decisions made during brainstorming
 
 | Decision | Choice | Why |
