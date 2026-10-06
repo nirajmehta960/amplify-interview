@@ -43,7 +43,7 @@ When adding the suite: `asyncio_mode = auto` in `pytest.ini` is mandatory — wi
 
 React 18 + TypeScript + Vite, Tailwind + **shadcn/ui** (~45 Radix primitives generated into `src/components/ui/`), react-router-dom v6, framer-motion, Recharts. Path alias `@/` → `src/`, declared in **both** `vite.config.ts` and `tsconfig.app.json` — change one and you must change the other.
 
-- **Routing** is declared centrally in `src/App.tsx`: 5 public routes, 12 wrapped in `ProtectedRoute`. There is **no global layout** — `AppSidebar` is mounted on only two pages (`Dashboard`, `InterviewSetup`), so navigation is inconsistent by construction.
+- **Routing** is declared centrally in `src/AppRoutes.tsx`: 5 public routes and 7 protected ones. Signed-in pages share one layout route (`ProtectedRoute` › `components/shell/AppShell` › `<Outlet/>`) that owns the dark rail; pages title themselves with `PageHeader` and must not mount their own sidebar (`src/test/chrome.test.ts` enforces it). The live interview (`/interview/session`) is protected but deliberately outside the shell.
 - **Data fetching is hand-rolled** `useState` + `useEffect` + `try/catch/finally` in every page. `@tanstack/react-query` is installed and its provider is mounted in `App.tsx`, but there are **zero** `useQuery`/`useMutation` calls. Same story for `react-hook-form` + `@hookform/resolvers` — zero `useForm` calls; the auth pages use controlled `useState` plus `schema.parse()` and an `instanceof z.ZodError` branch.
 - **All HTTP goes through `src/services/apiClient.ts`** — one generic `apiFetch<T>()` plus seven per-domain objects (`interviewApi`, `resumeApi`, `feedbackApi`, `analyticsApi`, `questionsApi`, `userApi`, `emailApi`). No component calls `fetch` directly. Auth header comes from `localStorage["amplify_id_token"]`.
 - **Auth** (`src/contexts/AuthContext.tsx`) calls the Cognito IDP JSON API directly with raw `fetch` — no Amplify SDK. Tokens in `localStorage`.
@@ -90,8 +90,7 @@ When changing a route path or response shape, grep `src/services/apiClient.ts` f
 - Both `.env.example` files are current and document every variable, including the two auth footguns above. Keep them updated when adding config.
 
 **Frontend**
-- **Import `cn` from `@/lib/utils`, never from `@/lib/design-system`.** The latter exports a second `cn()` that is just `classes.filter(Boolean).join(" ")` with no `twMerge`, which silently breaks Tailwind class overriding.
-- `src/lib/design-system.ts` is largely vestigial and references Tailwind classes that **don't exist** (`primary-blue`, `accent-green`, `light-gray`, `dark-navy`, `shadow-professional`). Tailwind ignores unknown classes silently, so components using them render unstyled with no error.
+- **Colour only through tokens.** The UI is the cream/ink/electric-blue system in `src/index.css` (`--primary`, `--accent`, `--score-*`, `band-*` on the landing, `--sidebar-*` for the rail). Scores are coloured only via `src/lib/score.ts` (45/78, mirroring the interview engine). `src/test/palette.test.ts` fails on raw Tailwind palette classes (`bg-blue-500` …) in the redesigned files — Tailwind ignores unknown classes silently, which is how the old theme's leftovers rendered unstyled.
 - Dark mode is ~90% built and 0% reachable: a complete `.dark` token block exists and `darkMode: ["class"]` is set, but nothing ever adds the class and there is no `ThemeProvider`.
 - `src/services/deepgramTranscriptionService.ts` is misnamed twice — there is no Deepgram (the backend uses AWS Transcribe) and `createStreamingSession()` doesn't stream (it buffers blobs and POSTs once). It also bypasses `apiClient`, sends no auth header, and **defaults to port 8080** while `apiClient` defaults to 4000.
 
@@ -108,13 +107,12 @@ When changing a route path or response shape, grep `src/services/apiClient.ts` f
 
 **Live bug:** `backend/app/routers/resume.py:85` (and `:174` for JDs) reads `resume_data["created_at"]`, but `create_document` injects that key into its own copy — the caller's dict never gets it. **Résumé upload and JD creation return 500 on every successful request.** The broad `except Exception` converts the `KeyError` into a generic 500, which is why it hasn't been obvious.
 
-**Dead code, safe to delete:** `openai_client.chat_completion_stream()` (never called), `models/question.py`'s `QuestionBankItem` (zero usages), and on the frontend `components/{Hero,Features,HowItWorks}.tsx`, `components/landing/CTASection.tsx`, `services/{unifiedTranscriptionService,questionDatabaseService,aiAnalysisPrompts,rateLimiter}.ts`.
+**Dead code, safe to delete (backend):** `openai_client.chat_completion_stream()` (never called), `models/question.py`'s `QuestionBankItem` (zero usages). (The frontend's dead services, logo components and `lib/design-system.ts` were deleted in the 2026-10 UI redesign.)
 
 **GCP/Firebase is fully removed** (2026-08-10): `db/firestore.py`, `firebase.json`, `.firebaserc`, `cloudbuild.yaml`, the `firebase` npm dep, the Firebase deploy scripts, all dead GCP config fields, and the `gs://` URI fallbacks are gone. `gcp_speech_language` was renamed to **`aws_transcribe_language`** (env var `AWS_TRANSCRIBE_LANGUAGE`). This project is AWS-only.
 
-**Mocked, despite looking finished:**
-- `src/pages/SessionReview.tsx` — entirely hardcoded (and depends on two features that don't exist: recorded interview video, and emotion/gesture analysis).
-- `src/pages/AnalyticsDashboard.tsx` and `ModernAnalyticsDashboard.tsx` — hardcoded, even though `analyticsApi` works and is used successfully by `Dashboard`/`Progress`/`Insights`.
-- `src/pages/ProcessingInterview.tsx` — a 14-line stub that immediately redirects to `/dashboard`.
+**Mocked pages are gone** (2026-10): `SessionReview`, `AnalyticsDashboard`, `ModernAnalyticsDashboard`, `AnalyticsDemo` and `ProcessingInterview` were hardcoded and unlinked, and were deleted with their routes (the old URLs 404). The real analytics are `Dashboard`, `Progress` and `Insights`, shaped by the pure functions in `src/components/analytics/analytics.ts`. Their rule: report only what `routers/analytics.py` returned — "—" or an honest empty state until there is data, a `LoadError` when a request fails.
+
+**Practice questions are standalone:** the question bank (`routers/questions.py`) is never read by the interview engine; interviews are generated from the résumé and JD only.
 
 **Known behavioural gaps:** no token refresh (sessions 401 after ~1 hour); `/interview/session` takes no session ID in the URL, so refreshing mid-interview starts a new session and orphans the old one; no interview video is ever recorded despite `useVideoRecording.ts` being fully built (it is used only for voice input); rate limiting is `memory://` with no per-route decorators, so it doesn't work across workers; `routers/speech.py` blocks a worker up to 60s polling Transcribe.

@@ -50,13 +50,15 @@ export class MockIntersectionObserver {
 
   takeRecords = () => [];
 
-  static fire(target: Element, isIntersecting: boolean) {
+  /** `top` is the target's viewport position, for observers that read boundingClientRect. */
+  static fire(target: Element, isIntersecting: boolean, { top = 0 }: { top?: number } = {}) {
     for (const observer of MockIntersectionObserver.instances) {
       if (!observer.targets.has(target)) continue;
       const entry = {
         target,
         isIntersecting,
         intersectionRatio: isIntersecting ? 1 : 0,
+        boundingClientRect: { top } as DOMRectReadOnly,
       } as IntersectionObserverEntry;
       observer.callback([entry], observer as unknown as IntersectionObserver);
     }
