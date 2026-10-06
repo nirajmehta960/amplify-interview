@@ -1,7 +1,7 @@
 /* ═══ AMPLIFY LANDING ════════════════════════════════════════════════════
    Everything the landing page needs that is not a Tailwind utility. Ported
    from the Bitplaza landing (BitplazaLanding/landing.css) and re-toned to
-   emerald. Spec: docs/superpowers/specs/2026-10-05-ui-redesign-foundation-landing-design.md §4.
+   electric blue #3575EE (emerald until 2026-10-06). Spec: docs/superpowers/specs/2026-10-05-ui-redesign-foundation-landing-design.md §4.
 
    Every rule is nested under [data-landing], which only the landing root and
    the mobile menu's portal wrapper set, so nothing here reaches the app.
@@ -64,19 +64,19 @@
      fg     #1B140F ....... 16:1   AAA
      muted  #5E574D ....... 6.6:1  AA
      faint  #6B645A ....... 5.4:1  AA — the floor
-     signal #0B7A5F ....... 4.9:1  AA (eyebrow labels; the reference's were 2.8:1) */
+     signal #2A5FD1 ....... 5.3:1  AA (eyebrow labels; the reference's were 2.8:1) */
 [data-landing] [data-band] {
   --band-fg: 27 20 15;
   --band-muted: 94 87 77;
   --band-faint: 107 100 90;
-  --band-signal: 11 122 95;
-  --band-signal-hover: 9 104 81;
+  --band-signal: 42 95 209;
+  --band-signal-hover: 35 79 176;
   --band-rule: rgb(27 20 15 / 0.12);
   --band-rule-faint: rgb(27 20 15 / 0.035);
   --band-rule-strong: rgb(27 20 15 / 0.14);
-  /* One emerald for solid fills on light grounds: white on it is 5.3:1. */
-  --band-accent: 11 122 95;
-  --band-accent-hover: 9 104 81;
+  /* One deep blue for solid fills on light grounds: white on it is 5.7:1. */
+  --band-accent: 42 95 209;
+  --band-accent-hover: 35 79 176;
   --band-on-accent: 255 255 255;
   /* Warm-tinted shadows: neutral grey over cream reads as dirt. */
   --btn-shadow:
@@ -108,10 +108,10 @@
 }
 
 /* The hero glow's echo, the role the reference's `peach` band played. */
-[data-landing] [data-band="mint"] {
-  --band-ground: 245 250 247;
+[data-landing] [data-band="sky"] {
+  --band-ground: 245 248 254;
   --band-raised: 255 255 255;
-  --grid-dot: rgb(11 122 95 / 0.09);
+  --grid-dot: rgb(42 95 209 / 0.08);
 }
 
 /* MUST stay below the shared `[data-band]` block: same specificity, so source
@@ -119,22 +119,22 @@
      fg     on ink ........ 17:1  AAA
      muted  on ink ........ 11:1  AAA
      faint  on ink ........ 7.3:1 AA
-   The accent is the bright brand emerald; white on it is 3.2:1, accepted only
+   The accent is the bright brand blue; white on it is 4.3:1, accepted only
    for the hero's large pill CTAs (spec §2). */
 [data-landing] [data-band="ink"] {
-  --band-ground: 11 20 18;
-  --band-raised: 20 34 30;
-  --band-fg: 244 250 247;
-  --band-muted: 191 211 203;
-  --band-faint: 147 171 162;
-  --band-signal: 16 163 127;
-  --band-signal-hover: 47 211 162;
-  --band-accent: 16 163 127;
-  --band-accent-hover: 34 184 145;
+  --band-ground: 10 15 28;
+  --band-raised: 18 26 46;
+  --band-fg: 244 247 253;
+  --band-muted: 188 200 224;
+  --band-faint: 142 157 189;
+  --band-signal: 53 117 238;
+  --band-signal-hover: 107 155 255;
+  --band-accent: 53 117 238;
+  --band-accent-hover: 76 136 245;
   --band-on-accent: 255 255 255;
-  --band-rule: rgb(244 250 247 / 0.12);
-  --band-rule-faint: rgb(244 250 247 / 0.06);
-  --band-rule-strong: rgb(244 250 247 / 0.22);
+  --band-rule: rgb(244 247 253 / 0.12);
+  --band-rule-faint: rgb(244 247 253 / 0.06);
+  --band-rule-strong: rgb(244 247 253 / 0.22);
   --card-shadow: 0 0 #0000;
   --btn-shadow:
     0 4px 14px rgb(0 0 0 / 0.1),
@@ -193,13 +193,13 @@
    on elements that move every scroll frame. */
 [data-landing] .hero-shot-card {
   box-shadow:
-    0 2px 6px rgb(11 20 18 / 0.08),
-    0 10px 26px rgb(11 20 18 / 0.1),
-    0 22px 52px rgb(11 20 18 / 0.08);
+    0 2px 6px rgb(10 15 28 / 0.08),
+    0 10px 26px rgb(10 15 28 / 0.1),
+    0 22px 52px rgb(10 15 28 / 0.08);
 }
 
 [data-landing] ::selection {
-  background-color: rgb(16 163 127 / 0.28);
+  background-color: rgb(53 117 238 / 0.25);
   color: #1b140f;
 }
 
@@ -280,12 +280,12 @@
 }
 
 [data-landing] :focus-visible {
-  outline: 2px solid #0b7a5f;
+  outline: 2px solid #2a5fd1;
   outline-offset: 2px;
 }
 
 [data-landing] [data-band="ink"] :focus-visible {
-  outline-color: #10a37f;
+  outline-color: #6b9bff;
 }
 
 /* ── FAQ ACCORDION ───────────────────────────────────────────────────
@@ -370,7 +370,7 @@
   will-change: transform;
 }
 
-/* Brand emerald, lower left, the largest. */
+/* Brand blue, lower left, the largest. */
 [data-landing] .landing-fluid-b {
   left: -28%;
   bottom: -34%;
@@ -380,17 +380,17 @@
   animation-duration: 34s;
   background: radial-gradient(
     closest-side circle,
-    rgb(16 163 127 / 0.88) 0%,
-    rgb(16 163 127 / 0.7) 18%,
-    rgb(16 163 127 / 0.49) 34%,
-    rgb(16 163 127 / 0.29) 50%,
-    rgb(16 163 127 / 0.14) 66%,
-    rgb(16 163 127 / 0.04) 82%,
-    rgb(16 163 127 / 0) 100%
+    rgb(53 117 238 / 0.88) 0%,
+    rgb(53 117 238 / 0.7) 18%,
+    rgb(53 117 238 / 0.49) 34%,
+    rgb(53 117 238 / 0.29) 50%,
+    rgb(53 117 238 / 0.14) 66%,
+    rgb(53 117 238 / 0.04) 82%,
+    rgb(53 117 238 / 0) 100%
   );
 }
 
-/* Mint: the light. Small, and in the corner furthest from the type. */
+/* Sky: the light. Small, and in the corner furthest from the type. */
 [data-landing] .landing-fluid-a {
   left: -14%;
   bottom: -20%;
@@ -400,17 +400,17 @@
   animation-duration: 26s;
   background: radial-gradient(
     closest-side circle,
-    rgb(47 211 162 / 0.62) 0%,
-    rgb(47 211 162 / 0.46) 18%,
-    rgb(47 211 162 / 0.3) 34%,
-    rgb(47 211 162 / 0.16) 50%,
-    rgb(47 211 162 / 0.07) 66%,
-    rgb(47 211 162 / 0.02) 82%,
-    rgb(47 211 162 / 0) 100%
+    rgb(107 155 255 / 0.62) 0%,
+    rgb(107 155 255 / 0.46) 18%,
+    rgb(107 155 255 / 0.3) 34%,
+    rgb(107 155 255 / 0.16) 50%,
+    rgb(107 155 255 / 0.07) 66%,
+    rgb(107 155 255 / 0.02) 82%,
+    rgb(107 155 255 / 0) 100%
   );
 }
 
-/* Deep teal answering blob, upper right, a step weaker so the light has a direction. */
+/* Deep navy answering blob, upper right, a step weaker so the light has a direction. */
 [data-landing] .landing-fluid-c {
   right: -18%;
   top: -30%;
@@ -420,13 +420,13 @@
   animation-duration: 41s;
   background: radial-gradient(
     closest-side circle,
-    rgb(8 92 74 / 0.8) 0%,
-    rgb(8 92 74 / 0.62) 18%,
-    rgb(8 92 74 / 0.42) 34%,
-    rgb(8 92 74 / 0.24) 50%,
-    rgb(8 92 74 / 0.1) 66%,
-    rgb(8 92 74 / 0.03) 82%,
-    rgb(8 92 74 / 0) 100%
+    rgb(24 52 140 / 0.8) 0%,
+    rgb(24 52 140 / 0.62) 18%,
+    rgb(24 52 140 / 0.42) 34%,
+    rgb(24 52 140 / 0.24) 50%,
+    rgb(24 52 140 / 0.1) 66%,
+    rgb(24 52 140 / 0.03) 82%,
+    rgb(24 52 140 / 0) 100%
   );
 }
 
@@ -437,10 +437,10 @@
   inset: 0;
   background: radial-gradient(
     52% 58% at 50% 44%,
-    rgb(3 20 16 / 0.5) 0%,
-    rgb(3 20 16 / 0.28) 45%,
-    rgb(3 20 16 / 0.08) 75%,
-    rgb(3 20 16 / 0) 100%
+    rgb(5 10 24 / 0.5) 0%,
+    rgb(5 10 24 / 0.28) 45%,
+    rgb(5 10 24 / 0.08) 75%,
+    rgb(5 10 24 / 0) 100%
   );
 }
 

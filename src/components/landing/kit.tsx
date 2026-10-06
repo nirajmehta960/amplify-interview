@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  */
 
 /** `ink` exists for the hero only; everything else is a light step. */
-export type BandTone = "ink" | "paper" | "cream" | "mint";
+export type BandTone = "ink" | "paper" | "cream" | "sky";
 
 export function Band({
   id,
