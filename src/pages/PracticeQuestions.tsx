@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
-import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import { PageContainer, PageHeader } from "@/components/shell/PageHeader";
+import { LoadError } from "@/components/dashboard/LoadError";
+import { formatSessionDate } from "@/components/dashboard/format";
+import { CARD } from "@/components/analytics/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   userQuestionBankService,
@@ -10,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -39,22 +41,21 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import {
-  ArrowLeft,
   Plus,
   Search,
-  Edit,
+  Pencil,
   Trash2,
   MessageSquare,
   FileText,
   Tag,
-  Clock,
-  Filter,
+  Info,
   LayoutGrid,
   List,
-  LayoutDashboard,
   ChevronLeft,
   ChevronRight,
+  SearchX,
 } from "lucide-react";
 
 const PracticeQuestions = () => {
@@ -66,17 +67,13 @@ const PracticeQuestions = () => {
     []
   );
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<CustomQuestion | null>(
     null
   );
-  const [stats, setStats] = useState({
-    totalQuestions: 0,
-    byCategory: {} as Record<string, number>,
-    recentQuestions: [] as CustomQuestion[],
-  });
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -101,25 +98,9 @@ const PracticeQuestions = () => {
     "AI Engineer",
   ];
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "Product Manager":
-        return "bg-orange-500/20 text-orange-400 border-orange-500/30";
-      case "Technical":
-        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-      case "Behavioral":
-        return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-      case "Leadership":
-        return "bg-purple-500/20 text-purple-400 border-purple-500/30";
-      default:
-        return "bg-primary/20 text-primary border-primary/30";
-    }
-  };
-
   useEffect(() => {
     if (user) {
       loadQuestions();
-      loadStats();
     }
   }, [user]);
 
@@ -143,28 +124,12 @@ const PracticeQuestions = () => {
         user.uid
       );
       setQuestions(userQuestions);
+      setLoadError(false);
     } catch (error) {
       console.error("Error loading questions:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load questions",
-        variant: "destructive",
-      });
+      setLoadError(true);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadStats = async () => {
-    if (!user) return;
-
-    try {
-      const questionStats = await userQuestionBankService.getQuestionBankStats(
-        user.uid
-      );
-      setStats(questionStats);
-    } catch (error) {
-      console.error("Error loading stats:", error);
     }
   };
 
@@ -188,6 +153,11 @@ const PracticeQuestions = () => {
     setFilteredQuestions(filtered);
   };
 
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("all");
+  };
+
   const handleAddQuestion = async () => {
     if (!user || !formData.text.trim()) return;
 
@@ -204,7 +174,6 @@ const PracticeQuestions = () => {
           category: "Behavioral",
         });
         setShowAddDialog(false);
-        loadStats();
         toast({
           title: "Success",
           description: "Question added successfully",
@@ -241,7 +210,6 @@ const PracticeQuestions = () => {
           text: "",
           category: "Behavioral",
         });
-        loadStats();
         toast({
           title: "Success",
           description: "Question updated successfully",
@@ -262,7 +230,6 @@ const PracticeQuestions = () => {
       const success = await userQuestionBankService.deleteQuestion(questionId);
       if (success) {
         setQuestions((prev) => prev.filter((q) => q.id !== questionId));
-        loadStats();
         toast({
           title: "Success",
           description: "Question deleted successfully",
@@ -294,331 +261,309 @@ const PracticeQuestions = () => {
     setEditingQuestion(null);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="text-sm text-muted-foreground mt-4">Loading your questions...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const statsData = [
-    { icon: FileText, label: "Total", value: stats.totalQuestions },
-    { icon: Tag, label: "Categories", value: Object.keys(stats.byCategory).length },
-    { icon: Filter, label: "Filtered", value: filteredQuestions.length },
-    { icon: LayoutGrid, label: "Pages", value: totalPages },
+  // Counted from the loaded bank, so the tiles can never disagree with the list.
+  const tiles = [
+    { icon: FileText, label: "Questions", value: questions.length },
+    { icon: Tag, label: "Categories", value: new Set(questions.map((q) => q.category)).size },
   ];
 
+  const filtersActive = searchTerm !== "" || selectedCategory !== "all";
+
   return (
-    <div className="min-h-screen bg-background">
+    <PageContainer>
       <Helmet>
-        <title>Practice Questions - Amplify Interview</title>
-        <meta name="description" content="Build your personal question bank for better interview preparation." />
+        <title>Practice questions — Amplify Interview</title>
       </Helmet>
 
-      {/* Header */}
-      <header className="border-b border-border/50 bg-card/30 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-              <span>Back to Dashboard</span>
-            </Link>
-            <div className="flex items-center gap-3">
-              <MessageSquare className="w-6 h-6 text-primary" />
-              <div>
-                <h1 className="text-xl font-display font-bold text-foreground">Practice Questions</h1>
-                <p className="text-xs text-muted-foreground">Build your personal question bank for better interview preparation</p>
-              </div>
-            </div>
-            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-              <DialogTrigger asChild>
-                <Button variant="hero" size="sm" className="gap-2" onClick={resetForm}>
-                  <Plus className="w-4 h-4" />
-                  Add Question
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Add New Question</DialogTitle>
-                  <DialogDescription>
-                    Create a custom question for your practice sessions
-                  </DialogDescription>
-                </DialogHeader>
-                <QuestionForm
-                  formData={formData}
-                  setFormData={setFormData}
-                  categories={categories}
-                  onSubmit={handleAddQuestion}
-                  onCancel={() => setShowAddDialog(false)}
-                  editingQuestion={null}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-4 sm:space-y-6">
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-        >
-          {statsData.map((stat, index) => (
-            <div key={index} className="glass-card p-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                <stat.icon className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-display font-bold text-foreground">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-              </div>
-            </div>
-          ))}
-        </motion.div>
-
-        {/* Search & Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="glass-card p-4"
-        >
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="Search questions or categories..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+      <PageHeader
+        title="Practice questions"
+        subtitle="Your own bank of questions to rehearse."
+        actions={
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="mr-1.5 size-4" aria-hidden="true" />
+                Add question
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add a question</DialogTitle>
+                <DialogDescription>Save a question you want to rehearse.</DialogDescription>
+              </DialogHeader>
+              <QuestionForm
+                formData={formData}
+                setFormData={setFormData}
+                categories={categories}
+                onSubmit={handleAddQuestion}
+                onCancel={() => setShowAddDialog(false)}
+                editingQuestion={null}
               />
-            </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-              <Button
-                variant={viewMode === "list" ? "default" : "ghost"}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setViewMode("list")}
-              >
-                <List className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setViewMode("grid")}
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </motion.div>
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
-        {/* Questions List */}
-        {filteredQuestions.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-12"
-          >
-            <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No questions found matching your search.</p>
-            {!searchTerm && selectedCategory === "all" && (
-              <Button onClick={() => setShowAddDialog(true)} className="mt-4">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Question
+      {loadError ? (
+        <LoadError className="mt-8" message="We couldn't load your questions." onRetry={loadQuestions} />
+      ) : loading ? (
+        <div className="mt-8 space-y-4" role="status" aria-label="Loading questions">
+          <Skeleton className="h-[76px] rounded-2xl sm:max-w-md" />
+          <Skeleton className="h-[72px] rounded-2xl" />
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-[92px] rounded-2xl" />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-8 space-y-4 sm:space-y-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <ul className="grid w-full grid-cols-2 gap-4 md:max-w-md md:shrink-0">
+              {tiles.map((tile) => (
+                <li key={tile.label} className={cn(CARD, "flex items-center gap-3 p-4")}>
+                  <tile.icon className="size-5 shrink-0 text-accent" aria-hidden="true" />
+                  <div>
+                    <p className="text-xl font-semibold leading-none text-foreground">{tile.value}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{tile.label}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="flex flex-1 items-start gap-2 text-sm text-muted-foreground">
+              <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              These are for your own practice. Interviews are generated from your résumé and the job description.
+            </p>
+          </div>
+
+          {questions.length === 0 ? (
+            <div className={cn(CARD, "px-6 py-12 text-center")}>
+              <MessageSquare className="mx-auto size-10 text-muted-foreground" aria-hidden="true" />
+              <h2 className="mt-4 text-lg font-semibold text-foreground">No questions yet</h2>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+                Save the questions you expect to be asked, then rehearse them out loud.
+              </p>
+              <Button onClick={() => setShowAddDialog(true)} className="mt-5">
+                <Plus className="mr-1.5 size-4" aria-hidden="true" />
+                Add your first question
               </Button>
-            )}
-          </motion.div>
-        ) : (
-          <>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "space-y-3"}
-            >
-              <AnimatePresence>
-                {currentQuestions.map((question, index) => (
-                  <motion.div
-                    key={question.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ delay: 0.25 + index * 0.03 }}
-                    className="glass-card p-4 hover:border-primary/50 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <p className="text-foreground font-medium group-hover:text-primary transition-colors">
-                          {question.text}
-                        </p>
-                        <div className="flex items-center gap-3 mt-3">
-                          <Badge className={getCategoryColor(question.category)}>
-                            {question.category}
-                          </Badge>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="w-3 h-3" />
-                            <span>{new Date(question.created_at).toLocaleDateString()}</span>
+            </div>
+          ) : (
+            <>
+              <div className={cn(CARD, "p-4")}>
+                <div className="flex flex-col gap-3 md:flex-row">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                    <Input
+                      type="search"
+                      aria-label="Search questions"
+                      placeholder="Search questions or categories…"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger aria-label="Filter by category" className="w-full md:w-52">
+                      <SelectValue placeholder="All categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All categories</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-1 self-start rounded-lg bg-secondary p-1 md:self-auto">
+                    <Button
+                      variant={viewMode === "list" ? "default" : "ghost"}
+                      size="icon"
+                      className="size-8"
+                      aria-label="List view"
+                      aria-pressed={viewMode === "list"}
+                      onClick={() => setViewMode("list")}
+                    >
+                      <List className="size-4" aria-hidden="true" />
+                    </Button>
+                    <Button
+                      variant={viewMode === "grid" ? "default" : "ghost"}
+                      size="icon"
+                      className="size-8"
+                      aria-label="Grid view"
+                      aria-pressed={viewMode === "grid"}
+                      onClick={() => setViewMode("grid")}
+                    >
+                      <LayoutGrid className="size-4" aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {filteredQuestions.length === 0 ? (
+                <div className={cn(CARD, "px-6 py-10 text-center")}>
+                  <SearchX className="mx-auto size-8 text-muted-foreground" aria-hidden="true" />
+                  <h2 className="mt-3 text-base font-semibold text-foreground">No questions match</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Try another word or category.</p>
+                  {filtersActive ? (
+                    <Button variant="outline" size="sm" className="mt-4" onClick={clearFilters}>
+                      Clear filters
+                    </Button>
+                  ) : null}
+                </div>
+              ) : (
+                <>
+                  <ul className={viewMode === "grid" ? "grid grid-cols-1 gap-4 md:grid-cols-2" : "space-y-3"}>
+                    {currentQuestions.map((question) => (
+                      <li key={question.id} className={cn(CARD, "p-5")}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-foreground">{question.text}</p>
+                            <div className="mt-3 flex flex-wrap items-center gap-3">
+                              <span className="rounded-full border border-border bg-secondary/60 px-2.5 py-0.5 text-xs font-medium text-foreground">
+                                {question.category}
+                              </span>
+                              <time dateTime={question.created_at} className="text-xs text-muted-foreground">
+                                Added {formatSessionDate(question.created_at)}
+                              </time>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(question)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
+                          <div className="flex shrink-0 items-center gap-1">
                             <Button
                               variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-destructive"
+                              size="icon"
+                              aria-label="Edit question"
+                              onClick={() => openEditDialog(question)}
+                              className="size-8 text-muted-foreground hover:text-foreground"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Pencil className="size-4" aria-hidden="true" />
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Question</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this question? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteQuestion(question.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Delete question"
+                                  className="size-8 text-muted-foreground hover:text-destructive"
+                                >
+                                  <Trash2 className="size-4" aria-hidden="true" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete this question?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    It will be removed from your bank. This can't be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteQuestion(question.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center justify-between glass-card p-4"
-              >
-                <div className="text-sm text-muted-foreground">
-                  Showing {startIndex + 1} to{" "}
-                  {Math.min(endIndex, filteredQuestions.length)} of{" "}
-                  {filteredQuestions.length} questions
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="h-8 w-8 p-0"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      const pageNum = i + 1;
-                      const isActive = pageNum === currentPage;
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant={isActive ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setCurrentPage(pageNum)}
-                          className="h-8 w-8 p-0"
-                        >
-                          {pageNum}
-                        </Button>
-                      );
-                    })}
-                    {totalPages > 5 && (
-                      <>
-                        <span className="text-muted-foreground">...</span>
+                  {totalPages > 1 && (
+                    <nav
+                      aria-label="Pages"
+                      className={cn(CARD, "flex flex-wrap items-center justify-between gap-3 p-4")}
+                    >
+                      <p className="text-sm text-muted-foreground">
+                        Showing {startIndex + 1}–{Math.min(endIndex, filteredQuestions.length)} of{" "}
+                        {filteredQuestions.length}
+                      </p>
+                      <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
-                          size="sm"
-                          onClick={() => setCurrentPage(totalPages)}
-                          className="h-8 w-8 p-0"
+                          size="icon"
+                          aria-label="Previous page"
+                          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="size-8"
                         >
-                          {totalPages}
+                          <ChevronLeft className="size-4" aria-hidden="true" />
                         </Button>
-                      </>
-                    )}
-                  </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="h-8 w-8 p-0"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-          </>
-        )}
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            const pageNum = i + 1;
+                            const isActive = pageNum === currentPage;
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={isActive ? "default" : "outline"}
+                                size="icon"
+                                aria-current={isActive ? "page" : undefined}
+                                onClick={() => setCurrentPage(pageNum)}
+                                className="size-8"
+                              >
+                                {pageNum}
+                              </Button>
+                            );
+                          })}
+                          {totalPages > 5 && (
+                            <>
+                              <span className="text-muted-foreground" aria-hidden="true">…</span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                aria-current={currentPage === totalPages ? "page" : undefined}
+                                onClick={() => setCurrentPage(totalPages)}
+                                className="size-8"
+                              >
+                                {totalPages}
+                              </Button>
+                            </>
+                          )}
+                        </div>
 
-        {/* Edit Dialog */}
-        <Dialog
-          open={!!editingQuestion}
-          onOpenChange={() => setEditingQuestion(null)}
-        >
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Edit Question</DialogTitle>
-              <DialogDescription>
-                Update your question details
-              </DialogDescription>
-            </DialogHeader>
-            <QuestionForm
-              formData={formData}
-              setFormData={setFormData}
-              categories={categories}
-              onSubmit={handleEditQuestion}
-              onCancel={() => setEditingQuestion(null)}
-              editingQuestion={editingQuestion}
-            />
-          </DialogContent>
-        </Dialog>
-      </main>
-    </div>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          aria-label="Next page"
+                          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                          className="size-8"
+                        >
+                          <ChevronRight className="size-4" aria-hidden="true" />
+                        </Button>
+                      </div>
+                    </nav>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingQuestion} onOpenChange={() => setEditingQuestion(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit question</DialogTitle>
+            <DialogDescription>Change the wording or the category.</DialogDescription>
+          </DialogHeader>
+          <QuestionForm
+            formData={formData}
+            setFormData={setFormData}
+            categories={categories}
+            onSubmit={handleEditQuestion}
+            onCancel={() => setEditingQuestion(null)}
+            editingQuestion={editingQuestion}
+          />
+        </DialogContent>
+      </Dialog>
+    </PageContainer>
   );
 };
 
@@ -651,10 +596,10 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
   return (
     <div className="space-y-4">
       <div>
-        <Label htmlFor="question-text">Question Text</Label>
+        <Label htmlFor="question-text">Question</Label>
         <Textarea
           id="question-text"
-          placeholder="Enter your question here..."
+          placeholder="e.g. Tell me about a time you disagreed with your manager."
           value={formData.text}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, text: e.target.value }))
@@ -665,14 +610,14 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
       </div>
 
       <div>
-        <Label htmlFor="category">Category</Label>
+        <Label htmlFor="question-category">Category</Label>
         <Select
           value={formData.category}
           onValueChange={(value) =>
             setFormData((prev) => ({ ...prev, category: value }))
           }
         >
-          <SelectTrigger className="mt-1">
+          <SelectTrigger id="question-category" className="mt-1">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -690,7 +635,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
           Cancel
         </Button>
         <Button onClick={onSubmit} disabled={!formData.text.trim()}>
-          {editingQuestion ? "Update" : "Add"} Question
+          {editingQuestion ? "Save changes" : "Add question"}
         </Button>
       </div>
     </div>
