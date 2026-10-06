@@ -2,28 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Index from "./pages/Index";
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import PracticeQuestions from "./pages/PracticeQuestions";
-import Dashboard from "./pages/Dashboard";
-import InterviewSetup from "./pages/InterviewSetup";
-import ChatInterviewSession from "./pages/ChatInterviewSession";
-import ProcessingInterview from "./pages/ProcessingInterview";
-import InterviewResults from "./pages/InterviewResults";
-import AnalyticsDashboard from "./pages/AnalyticsDashboard";
-import ModernAnalyticsDashboard from "./pages/ModernAnalyticsDashboard";
-import AnalyticsDemo from "./pages/AnalyticsDemo";
-import Progress from "./pages/Progress";
-import Insights from "./pages/Insights";
-import SessionReview from "./pages/SessionReview";
-import NotFound from "./pages/NotFound";
+import AppRoutes from "./AppRoutes";
 
 const queryClient = new QueryClient();
 
@@ -40,115 +22,7 @@ const App = () => (
           }}
         >
           <AuthProvider>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/auth/signin" element={<SignIn />} />
-            <Route path="/auth/signup" element={<SignUp />} />
-            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-            <Route path="/auth/reset-password" element={<ResetPassword />} />
-
-            {/* Protected routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/analytics"
-              element={
-                <ProtectedRoute>
-                  <AnalyticsDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/analytics/modern"
-              element={
-                <ProtectedRoute>
-                  <ModernAnalyticsDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/demo/analytics"
-              element={
-                <ProtectedRoute>
-                  <AnalyticsDemo />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/progress"
-              element={
-                <ProtectedRoute>
-                  <Progress />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/insights"
-              element={
-                <ProtectedRoute>
-                  <Insights />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/practice-questions"
-              element={
-                <ProtectedRoute>
-                  <PracticeQuestions />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/interview/setup"
-              element={
-                <ProtectedRoute>
-                  <InterviewSetup />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/interview/session"
-              element={
-                <ProtectedRoute>
-                  <ChatInterviewSession />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/processing"
-              element={
-                <ProtectedRoute>
-                  <ProcessingInterview />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/results/:sessionId"
-              element={
-                <ProtectedRoute>
-                  <InterviewResults />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/review/:sessionId"
-              element={
-                <ProtectedRoute>
-                  <SessionReview />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+            <AppRoutes />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

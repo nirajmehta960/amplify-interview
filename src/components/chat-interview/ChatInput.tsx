@@ -126,9 +126,10 @@ export default function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
             exit={{ opacity: 0, scale: 0.95 }}
             className="absolute -top-12 left-0 right-0 flex items-center justify-center pointer-events-none"
           >
-            <div className="glass-card flex items-center gap-3 px-4 py-1.5 rounded-full shadow-lg border-primary/20 bg-background/95">
-              <div className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
-              <span className="text-sm font-medium text-rose-500 w-12 tabular-nums">
+            <div role="status" className="flex items-center gap-3 rounded-full border border-border bg-card px-4 py-1.5 shadow-[var(--card-shadow)]">
+              <div aria-hidden="true" className="h-2.5 w-2.5 animate-pulse rounded-full bg-destructive" />
+              <span className="sr-only">Recording</span>
+              <span className="w-12 text-sm font-medium tabular-nums text-destructive">
                 {formatTime(recordingTime)}
               </span>
             </div>
@@ -136,20 +137,25 @@ export default function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
         )}
       </AnimatePresence>
 
-      <div className={`glass-card p-2 pr-12 flex items-end gap-2 transition-all ${isRecording ? 'border-primary shadow-[0_0_15px_rgba(45,212,191,0.15)] ring-1 ring-primary/20' : ''}`}>
+      <div
+        className={`flex items-end gap-2 rounded-2xl border bg-card p-2 shadow-[var(--card-shadow)] transition-all focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-ring/20 ${
+          isRecording ? 'border-destructive/40 ring-2 ring-destructive/15' : 'border-border'
+        }`}
+      >
         <div className="flex-1 min-h-[60px] relative">
           <Textarea
             ref={textareaRef}
             value={content}
             onChange={handleInput}
             onKeyDown={handleKeyDown}
+            aria-label="Your answer"
             placeholder={isRecording ? "Listening..." : "Type your answer or use voice input..."}
             className="min-h-[60px] max-h-[200px] resize-none border-0 focus-visible:ring-0 shadow-none bg-transparent pt-3 pb-3 px-4 text-base"
             disabled={disabled || isTranscribing}
           />
           
           {isTranscribing && (
-            <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center rounded-md">
+            <div role="status" className="absolute inset-0 flex items-center justify-center rounded-md bg-card/80 backdrop-blur-sm">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
               <span className="ml-2 text-sm text-muted-foreground">Transcribing...</span>
             </div>
@@ -161,8 +167,10 @@ export default function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
             type="button"
             variant={isRecording ? "destructive" : "ghost"}
             size="icon"
-            className={`w-10 h-10 rounded-full transition-all ${isRecording ? 'animate-pulse shadow-lg shadow-rose-500/20' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`w-10 h-10 rounded-full transition-all ${isRecording ? 'animate-pulse' : 'text-muted-foreground hover:text-foreground'}`}
             onClick={toggleRecording}
+            aria-label={isRecording ? 'Stop recording' : 'Answer by voice'}
+            aria-pressed={isRecording}
             disabled={disabled && !isRecording}
           >
             {isRecording ? <Square className="w-4 h-4" /> : <Mic className="w-5 h-5" />}
@@ -179,7 +187,8 @@ export default function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
                   onClick={handleSend}
                   disabled={disabled}
                   size="icon"
-                  className="w-10 h-10 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20"
+                  className="w-10 h-10 rounded-full"
+                  aria-label="Send answer"
                 >
                   <Send className="w-4 h-4 ml-0.5" />
                 </Button>
@@ -190,8 +199,8 @@ export default function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
       </div>
       
       <div className="mt-2 text-center">
-        <p className="text-[10px] text-muted-foreground/60 flex items-center justify-center gap-1">
-          Press <kbd className="px-1.5 py-0.5 rounded-md bg-muted text-[9px] font-sans border border-border/50">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 rounded-md bg-muted text-[9px] font-sans border border-border/50">Shift</kbd> + <kbd className="px-1.5 py-0.5 rounded-md bg-muted text-[9px] font-sans border border-border/50">Enter</kbd> for new line
+        <p className="flex items-center justify-center gap-1 text-[11px] text-muted-foreground">
+          Press <kbd className="rounded-md border border-border bg-secondary px-1.5 py-0.5 font-sans text-[10px]">Enter</kbd> to send, <kbd className="rounded-md border border-border bg-secondary px-1.5 py-0.5 font-sans text-[10px]">Shift</kbd> + <kbd className="rounded-md border border-border bg-secondary px-1.5 py-0.5 font-sans text-[10px]">Enter</kbd> for new line
         </p>
       </div>
     </div>

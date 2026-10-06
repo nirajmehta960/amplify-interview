@@ -1,9 +1,7 @@
-@import url('@fontsource/outfit/400.css');
-@import url('@fontsource/outfit/500.css');
-@import url('@fontsource/outfit/600.css');
-@import url('@fontsource/outfit/700.css');
 @import url('@fontsource/inter/400.css');
 @import url('@fontsource/inter/500.css');
+@import url('@fontsource/inter/600.css');
+@import url('@fontsource/inter/700.css');
 
 @tailwind base;
 @tailwind components;
@@ -11,63 +9,73 @@
 
 @layer base {
   :root {
-    /* Light, production-grade palette (Big Interview inspired) */
-    --background: 210 40% 99%;
-    --foreground: 222 47% 11%;
+    /* Warm cream + ink + electric blue, ported from the Bitplaza/Opten design
+       system. Spec: docs/superpowers/specs/2026-10-05-ui-redesign-foundation-landing-design.md §3
+       (accent switched from emerald #10A37F to blue #3575EE on 2026-10-06; the
+       score scale keeps green for "good"). */
+    --background: 40 55% 96%;        /* #FAF6EE */
+    --foreground: 25 29% 8%;         /* #1B140F */
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 25 29% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 25 29% 8%;
 
-    /* Deep indigo primary — trustworthy, professional */
-    --primary: 231 72% 52%;
+    /* Deep blue. shadcn draws solid buttons, links and switches from
+       --primary, and white on this is 5.7:1. The bright brand blue is
+       --accent, which is 4.3:1 under white and so never carries small text. */
+    --primary: 221 67% 49%;          /* #2A5FD1 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 45 35% 93%;         /* #F4F1E8 */
+    --secondary-foreground: 25 29% 8%;
 
-    --muted: 220 20% 96%;
-    --muted-foreground: 220 12% 45%;
+    --muted: 45 35% 93%;
+    --muted-foreground: 35 9% 39%;   /* #6B645A — 5.4:1 on cream */
 
-    /* Teal accent for success / scores */
-    --accent: 172 72% 38%;
+    --accent: 219 84% 57%;           /* #3575EE — glows, icons, rings, charts */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 6 54% 50%;        /* #C4483A */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 16% 90%;
-    --input: 220 16% 92%;
-    --ring: 231 72% 52%;
+    --border: 45 34% 89%;            /* #ECE7D8 */
+    --input: 45 34% 89%;
+    --ring: 221 67% 49%;
 
     --radius: 0.75rem;
 
-    /* Custom tokens — tuned for light surfaces */
-    --gradient-primary: linear-gradient(135deg, hsl(231 72% 52%) 0%, hsl(250 72% 60%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(220 40% 98%) 0%, hsl(210 40% 99%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100% / 0.9) 0%, hsl(220 30% 98% / 0.8) 100%);
-    --glass-border: hsl(220 16% 90% / 0.8);
-    --glass-bg: hsl(0 0% 100% / 0.75);
-    --glow-primary: 0 20px 50px -20px hsl(231 72% 52% / 0.35);
-    --glow-subtle: 0 10px 30px -12px hsl(231 72% 52% / 0.15);
+    /* Warm-tinted: a neutral grey shadow on cream reads as dirt. */
+    --card-shadow: 0 1px 2px rgb(61 40 23 / 0.04), 0 8px 24px -12px rgb(61 40 23 / 0.1);
 
     /* Status colors */
-    --success: 160 60% 40%;
-    --warning: 38 92% 50%;
-    --info: 217 91% 55%;
+    --success: 165 82% 35%;
+    --warning: 37 91% 55%;
+    --info: 219 84% 57%;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 231 72% 52%;
+    /* Score scale — thresholds in src/lib/score.ts. `-text` variants are for
+       small type on light grounds (≥ 4.5:1). */
+    --score-low: 6 54% 50%;          /* #C4483A */
+    --score-mid: 37 91% 55%;         /* #F5A524 */
+    --score-high: 165 82% 35%;       /* #10A37F */
+    --score-low-text: 6 58% 42%;     /* #A8382C */
+    --score-mid-text: 39 100% 27%;   /* #8A5A00 */
+    --score-high-text: 165 83% 26%;  /* #0B7A5F */
+
+    /* Dark rail (sub-project 3): the landing hero's navy. Only the shadcn
+       sidebar reads these, so setting them globally changes nothing else. */
+    --sidebar-background: 223 47% 7%;          /* #0A0F1C */
+    --sidebar-foreground: 220 37% 81%;         /* #BCC8E0 — 11:1 on the rail */
+    --sidebar-primary: 219 84% 57%;            /* #3575EE */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 220 16% 90%;
-    --sidebar-ring: 231 72% 52%;
+    --sidebar-accent: 221 48% 17%;             /* #16233F — hover / active fill */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 223 33% 16%;             /* #1C2438 */
+    --sidebar-ring: 221 100% 71%;              /* #6B9BFF — focus on navy */
   }
 
+  /* Unchanged from before the redesign: dark mode is unreachable and out of scope. */
   .dark {
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
@@ -108,144 +116,13 @@
     scroll-behavior: smooth;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Outfit', system-ui, sans-serif;
   }
 }
-
-@layer components {
-  .glass-card {
-    @apply bg-card border border-border rounded-xl;
-    box-shadow: 0 1px 2px hsl(220 40% 20% / 0.04), 0 4px 16px -4px hsl(220 40% 20% / 0.06);
-  }
-
-  .glass-card-hover {
-    @apply glass-card transition-all duration-300;
-  }
-
-  .glass-card-hover:hover {
-    @apply border-primary/40;
-    box-shadow: 0 1px 2px hsl(220 40% 20% / 0.04), var(--glow-subtle);
-    transform: translateY(-2px);
-  }
-
-  .gradient-text {
-    @apply bg-clip-text text-transparent;
-    background-image: var(--gradient-primary);
-  }
-
-  .gradient-border {
-    position: relative;
-  }
-
-  .gradient-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: var(--gradient-primary);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-  }
-
-  .hero-glow {
-    position: absolute;
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, hsl(231 72% 52% / 0.10) 0%, transparent 70%);
-    filter: blur(80px);
-    pointer-events: none;
-  }
-
-  .stat-card {
-    @apply glass-card p-6 space-y-3;
-  }
-
-  .session-card {
-    @apply glass-card-hover p-5 cursor-pointer;
-  }
-
-  .nav-link {
-    @apply text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm font-medium;
-  }
-
-  .nav-link-active {
-    @apply text-foreground;
-  }
-
-  .badge-success {
-    @apply bg-accent/10 text-accent border border-accent/20 text-xs px-2.5 py-0.5 rounded-full font-medium;
-  }
-
-  .badge-warning {
-    @apply bg-warning/10 text-warning border border-warning/20 text-xs px-2.5 py-0.5 rounded-full font-medium;
-  }
-
-  .badge-info {
-    @apply bg-info/10 text-info border border-info/20 text-xs px-2.5 py-0.5 rounded-full font-medium;
-  }
-
-  .progress-bar {
-    @apply h-1.5 rounded-full bg-muted overflow-hidden;
-  }
-
-  .progress-bar-fill {
-    @apply h-full rounded-full transition-all duration-500;
-    background: var(--gradient-primary);
-  }
-}
-
-@layer utilities {
-  .animate-fade-up {
-    animation: fadeUp 0.6s ease-out forwards;
-  }
-
-  .animate-fade-up-delay-1 {
-    animation: fadeUp 0.6s ease-out 0.1s forwards;
-    opacity: 0;
-  }
-
-  .animate-fade-up-delay-2 {
-    animation: fadeUp 0.6s ease-out 0.2s forwards;
-    opacity: 0;
-  }
-
-  .animate-fade-up-delay-3 {
-    animation: fadeUp 0.6s ease-out 0.3s forwards;
-    opacity: 0;
-  }
-
-  .animate-glow-pulse {
-    animation: glowPulse 3s ease-in-out infinite;
-  }
-}
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes glowPulse {
-  0%, 100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-

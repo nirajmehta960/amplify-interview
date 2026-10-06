@@ -35,6 +35,5 @@ backend/.mypy_cache/
 *.sw?
 .vercel
 
-# Firebase
-.firebase/
-firebase-debug.log
+# Brainstorm mockups and verification screenshots (superpowers)
+.superpowers/

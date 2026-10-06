@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
   darkMode: ["class"],
@@ -19,10 +20,46 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Outfit', 'system-ui', 'sans-serif'],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        // Kept as a key: ~50 existing `font-display` usages keep working, now on Inter.
+        display: ["Inter", "system-ui", "sans-serif"],
+        landing: ["Inter", "system-ui", "sans-serif"],
+      },
+      // Fluid display scale from the reference. Each size carries its line height.
+      fontSize: {
+        "display-1": ["clamp(2.5rem, 1.2rem + 4.6vw, 5.25rem)", { lineHeight: "1.06" }],
+        "display-2": ["clamp(2rem, 1.5rem + 2.4vw, 3.25rem)", { lineHeight: "1.04" }],
+        "display-3": ["clamp(1.75rem, 1.35rem + 1.7vw, 2.5rem)", { lineHeight: "1.08" }],
+        "body-lg": ["clamp(1.0625rem, 1rem + 0.4vw, 1.25rem)", { lineHeight: "1.55" }],
+        "body-sm": ["clamp(0.9375rem, 0.9rem + 0.2vw, 1rem)", { lineHeight: "1.6" }],
       },
       colors: {
+        // Landing band system. Values are set per `data-band` in
+        // src/components/landing/landing.css, so a component never names a colour.
+        // RGB triplets so `<alpha-value>` works; the rules carry their own alpha.
+        band: {
+          ground: "rgb(var(--band-ground) / <alpha-value>)",
+          raised: "rgb(var(--band-raised) / <alpha-value>)",
+          fg: "rgb(var(--band-fg) / <alpha-value>)",
+          muted: "rgb(var(--band-muted) / <alpha-value>)",
+          faint: "rgb(var(--band-faint) / <alpha-value>)",
+          signal: "rgb(var(--band-signal) / <alpha-value>)",
+          "signal-hover": "rgb(var(--band-signal-hover) / <alpha-value>)",
+          accent: "rgb(var(--band-accent) / <alpha-value>)",
+          "accent-hover": "rgb(var(--band-accent-hover) / <alpha-value>)",
+          "on-accent": "rgb(var(--band-on-accent) / <alpha-value>)",
+          rule: "var(--band-rule)",
+          "rule-faint": "var(--band-rule-faint)",
+          "rule-strong": "var(--band-rule-strong)",
+        },
+        score: {
+          low: "hsl(var(--score-low))",
+          mid: "hsl(var(--score-mid))",
+          high: "hsl(var(--score-high))",
+          "low-text": "hsl(var(--score-low-text))",
+          "mid-text": "hsl(var(--score-mid-text))",
+          "high-text": "hsl(var(--score-high-text))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -74,6 +111,13 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        // Concentric shape scale: a panel inside a panel steps down one rung.
+        pill: "999px",
+        panel: "14px",
+        tile: "10px",
+      },
+      transitionTimingFunction: {
+        plaza: "cubic-bezier(0.22, 1, 0.36, 1)",
       },
       keyframes: {
         "accordion-down": {
@@ -100,7 +144,7 @@ export default {
           "0%": { opacity: "0", transform: "translateY(10px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
-        "glow": {
+        glow: {
           "0%, 100%": { opacity: "0.5" },
           "50%": { opacity: "1" },
         },
@@ -112,9 +156,9 @@ export default {
         "fade-in": "fade-in 0.4s ease-out forwards",
         "scale-in": "scale-in 0.3s ease-out forwards",
         "slide-up": "slide-up 0.4s ease-out forwards",
-        "glow": "glow 3s ease-in-out infinite",
+        glow: "glow 3s ease-in-out infinite",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

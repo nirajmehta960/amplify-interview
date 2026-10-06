@@ -1,0 +1,482 @@
+/* ═══ AMPLIFY LANDING ════════════════════════════════════════════════════
+   Everything the landing page needs that is not a Tailwind utility. Ported
+   from the Bitplaza landing (BitplazaLanding/landing.css) and re-toned to
+   electric blue #3575EE (emerald until 2026-10-06). Spec: docs/superpowers/specs/2026-10-05-ui-redesign-foundation-landing-design.md §4.
+
+   Every rule is nested under [data-landing], which only the landing root and
+   the mobile menu's portal wrapper set, so nothing here reaches the app.
+
+   `Band` sets `data-band`; every `band-*` utility resolves from the custom
+   properties below. Solid colours are RGB triplets so `<alpha-value>` works. */
+
+[data-landing] {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  color: rgb(var(--band-fg));
+  /* Micro-interactions: hover lifts, colour cross-fades. */
+  --ease-plaza: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Entrances: a critically damped spring's step response, p(t) = 1 - (1 + ωt)e^(-ωt). */
+  --ease-damped: cubic-bezier(0.321, 0.664, 0.14, 1);
+  --reveal-dur: 0.56s;
+  --enter-dur: 0.72s;
+}
+
+@supports (animation-timing-function: linear(0, 1)) {
+  [data-landing] {
+    --ease-damped: linear(
+      0,
+      0.1098 6.3%,
+      0.3105 12.5%,
+      0.5035 18.8%,
+      0.6583 25%,
+      0.772 31.3%,
+      0.8513 37.5%,
+      0.9049 43.8%,
+      0.9401 50%,
+      0.9628 56.3%,
+      0.9773 62.5%,
+      0.9864 68.8%,
+      0.9922 75%,
+      0.9957 81.3%,
+      0.9979 87.5%,
+      0.9992 93.8%,
+      1
+    );
+  }
+}
+
+/* The global `* { border-color: hsl(var(--border)) }` would paint every
+   landing hairline in the app's border colour. `:where()` keeps this at zero
+   specificity: it beats the global rule only by coming later in the bundle, and
+   any `border-band-*` utility still wins. */
+:where([data-landing] *),
+:where([data-landing] *)::before,
+:where([data-landing] *)::after {
+  border-color: var(--band-rule);
+}
+
+/* Anchored bands clear the fixed 64px nav. */
+[data-landing] section[id] {
+  scroll-margin-top: 4.5rem;
+}
+
+/* ── BANDS ───────────────────────────────────────────────────────────
+   Light bands, measured on the darkest light ground (cream #FAF6EE):
+     fg     #1B140F ....... 16:1   AAA
+     muted  #5E574D ....... 6.6:1  AA
+     faint  #6B645A ....... 5.4:1  AA — the floor
+     signal #2A5FD1 ....... 5.3:1  AA (eyebrow labels; the reference's were 2.8:1) */
+[data-landing] [data-band] {
+  --band-fg: 27 20 15;
+  --band-muted: 94 87 77;
+  --band-faint: 107 100 90;
+  --band-signal: 42 95 209;
+  --band-signal-hover: 35 79 176;
+  --band-rule: rgb(27 20 15 / 0.12);
+  --band-rule-faint: rgb(27 20 15 / 0.035);
+  --band-rule-strong: rgb(27 20 15 / 0.14);
+  /* One deep blue for solid fills on light grounds: white on it is 5.7:1. */
+  --band-accent: 42 95 209;
+  --band-accent-hover: 35 79 176;
+  --band-on-accent: 255 255 255;
+  /* Warm-tinted shadows: neutral grey over cream reads as dirt. */
+  --btn-shadow:
+    0 4px 14px rgb(61 40 23 / 0.06),
+    0 16px 44px rgb(61 40 23 / 0.07),
+    0 32px 80px rgb(61 40 23 / 0.09);
+  --btn-shadow-hover:
+    0 6px 18px rgb(61 40 23 / 0.07),
+    0 20px 56px rgb(61 40 23 / 0.08),
+    0 40px 96px rgb(61 40 23 / 0.1);
+  --btn-shadow-secondary:
+    0 2px 8px rgb(61 40 23 / 0.03),
+    0 10px 28px rgb(61 40 23 / 0.03);
+  --btn-shadow-secondary-hover:
+    0 3px 10px rgb(61 40 23 / 0.035),
+    0 12px 34px rgb(61 40 23 / 0.045);
+  --card-shadow: 0 1px 2px rgb(61 40 23 / 0.04), 0 8px 24px -12px rgb(61 40 23 / 0.1);
+}
+
+/* Pure white: receives the hero's white foot, so no seam. */
+[data-landing] [data-band="paper"] {
+  --band-ground: 255 255 255;
+  --band-raised: 255 255 255;
+}
+
+[data-landing] [data-band="cream"] {
+  --band-ground: 250 246 238;
+  --band-raised: 255 255 255;
+}
+
+/* The hero glow's echo, the role the reference's `peach` band played. */
+[data-landing] [data-band="sky"] {
+  --band-ground: 245 248 254;
+  --band-raised: 255 255 255;
+  --grid-dot: rgb(42 95 209 / 0.08);
+}
+
+/* MUST stay below the shared `[data-band]` block: same specificity, so source
+   order decides which shadow set and accent the hero gets.
+     fg     on ink ........ 17:1  AAA
+     muted  on ink ........ 11:1  AAA
+     faint  on ink ........ 7.3:1 AA
+   The accent is the bright brand blue; white on it is 4.3:1, accepted only
+   for the hero's large pill CTAs (spec §2). */
+[data-landing] [data-band="ink"] {
+  --band-ground: 10 15 28;
+  --band-raised: 18 26 46;
+  --band-fg: 244 247 253;
+  --band-muted: 188 200 224;
+  --band-faint: 142 157 189;
+  --band-signal: 53 117 238;
+  --band-signal-hover: 107 155 255;
+  --band-accent: 53 117 238;
+  --band-accent-hover: 76 136 245;
+  --band-on-accent: 255 255 255;
+  --band-rule: rgb(244 247 253 / 0.12);
+  --band-rule-faint: rgb(244 247 253 / 0.06);
+  --band-rule-strong: rgb(244 247 253 / 0.22);
+  --card-shadow: 0 0 #0000;
+  --btn-shadow:
+    0 4px 14px rgb(0 0 0 / 0.1),
+    0 18px 48px rgb(0 0 0 / 0.08),
+    0 32px 72px rgb(0 0 0 / 0.1);
+  --btn-shadow-hover:
+    0 6px 18px rgb(0 0 0 / 0.11),
+    0 22px 58px rgb(0 0 0 / 0.09),
+    0 40px 88px rgb(0 0 0 / 0.11);
+  --btn-shadow-secondary:
+    0 4px 16px rgb(0 0 0 / 0.08),
+    0 20px 52px rgb(0 0 0 / 0.09);
+  --btn-shadow-secondary-hover:
+    0 6px 20px rgb(0 0 0 / 0.09),
+    0 24px 64px rgb(0 0 0 / 0.1);
+}
+
+/* Multi-layer shadows live here, not in Tailwind arbitrary values: the
+   arbitrary-property parser can truncate comma-separated shadows. */
+[data-landing] .landing-cta-primary,
+[data-landing] .landing-cta-ink {
+  box-shadow: var(--btn-shadow);
+}
+
+[data-landing] .landing-cta-primary:hover,
+[data-landing] .landing-cta-ink:hover {
+  box-shadow: var(--btn-shadow-hover);
+}
+
+[data-landing] .landing-cta-primary:active,
+[data-landing] .landing-cta-ink:active {
+  box-shadow: var(--btn-shadow);
+}
+
+[data-landing] .landing-cta-secondary {
+  box-shadow: var(--btn-shadow-secondary, none);
+}
+
+[data-landing] .landing-cta-secondary:hover {
+  box-shadow: var(--btn-shadow-secondary-hover, var(--btn-shadow-secondary, none));
+}
+
+/* The screenshot frame never moves while the cards beside it do; its own layer
+   stops it being re-rasterised every scroll frame. */
+[data-landing] .hero-shot-still {
+  will-change: transform;
+}
+
+/* The shot dissolves into the white band below over its last 240px. */
+[data-landing] .hero-shot-mask {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 240px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 240px), transparent);
+}
+
+/* box-shadow, not filter: drop-shadow — the filter costs a blur pass per frame
+   on elements that move every scroll frame. */
+[data-landing] .hero-shot-card {
+  box-shadow:
+    0 2px 6px rgb(10 15 28 / 0.08),
+    0 10px 26px rgb(10 15 28 / 0.1),
+    0 22px 52px rgb(10 15 28 / 0.08);
+}
+
+[data-landing] ::selection {
+  background-color: rgb(53 117 238 / 0.25);
+  color: #1b140f;
+}
+
+/* The nav swaps `data-band` on scroll. Custom properties are not animatable,
+   but the computed `color` they feed is, so the type cross-fades with the glass
+   layer (0.5s). Colour only — a layout property here would move the bar. The CTA
+   is excluded so its own transform/background transition survives. */
+[data-landing] header,
+[data-landing] header a:not(.landing-cta-primary):not(.landing-cta-ink),
+[data-landing] header span,
+[data-landing] header button,
+[data-landing] header svg {
+  transition: color 0.5s var(--ease-plaza);
+}
+
+/* The micro-label: separated from body text by tracking and case alone. */
+[data-landing] .label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+[data-landing] .stat {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dot grid behind the how-it-works timeline. */
+[data-landing] .net-grid {
+  background-image: radial-gradient(circle, var(--grid-dot, rgb(28 22 17 / 0.09)) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000 25%, transparent 100%);
+  mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, #000 25%, transparent 100%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  [data-landing] .net-grid {
+    background-image: none;
+  }
+}
+
+/* ── REVEAL ──────────────────────────────────────────────────────────
+   Visible by DEFAULT. JS opts into hiding by adding `landing-js` to the root
+   (see motion.ts), so if the script never runs the page is fully readable. */
+[data-landing] [data-reveal] {
+  transition:
+    opacity var(--reveal-dur) var(--ease-damped),
+    transform var(--reveal-dur) var(--ease-damped);
+  transition-delay: var(--reveal-delay, 0s);
+}
+
+[data-landing].landing-js [data-reveal]:not([data-revealed]) {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+/* ── LOAD ENTRANCE ───────────────────────────────────────────────────
+   The hero sequence. `landing-enter` is applied during React's first render so
+   the hidden state is in the first committed DOM; `landing-entered` releases it
+   once the ground image and fonts are ready, or after a 900ms cap. */
+[data-landing] [data-enter] {
+  transition:
+    opacity var(--enter-dur) var(--ease-damped),
+    transform var(--enter-dur) var(--ease-damped);
+  transition-delay: var(--enter-delay, 0s);
+}
+
+[data-landing].landing-enter:not(.landing-entered) [data-enter] {
+  opacity: 0;
+  transform: translateY(var(--enter-rise, 22px));
+}
+
+[data-landing] :focus-visible {
+  outline: 2px solid #2a5fd1;
+  outline-offset: 2px;
+}
+
+[data-landing] [data-band="ink"] :focus-visible {
+  outline-color: #6b9bff;
+}
+
+/* ── FAQ ACCORDION ───────────────────────────────────────────────────
+   `grid-template-rows: 0fr -> 1fr` animates to the answer's natural height with
+   no measuring. `visibility` is delayed on close so the text does not blank in
+   frame one, and a closed answer leaves the tab order and the a11y tree.
+   Keep the two 0.32s values in step. */
+[data-landing] .landing-faq-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.32s var(--ease-plaza),
+    visibility 0s linear 0.32s;
+}
+
+[data-landing] .landing-faq-panel[data-open] {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.32s var(--ease-plaza),
+    visibility 0s;
+}
+
+/* ── CLOSING PANEL: FLUID GRADIENT ───────────────────────────────────
+   Three soft-stop radial blobs (pre-blurred, so no filter pass), a static
+   darkening core behind the type, and two-tone alpha grain to dither banding.
+   Blobs run only while `[data-animate-live]` is set by motion.ts's idle
+   observer, i.e. only while the panel is near the viewport. */
+@keyframes landing-fluid-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(7%, -5%, 0) scale(1.14);
+  }
+  66% {
+    transform: translate3d(-4%, 4%, 0) scale(0.94);
+  }
+}
+
+@keyframes landing-fluid-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.06);
+  }
+  40% {
+    transform: translate3d(-6%, -7%, 0) scale(0.92);
+  }
+  70% {
+    transform: translate3d(5%, 3%, 0) scale(1.12);
+  }
+}
+
+@keyframes landing-fluid-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-8%, 6%, 0) scale(1.18);
+  }
+}
+
+[data-landing] .landing-fluid {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+[data-landing] .landing-fluid > span {
+  position: absolute;
+  display: block;
+  animation-play-state: paused;
+  animation-iteration-count: infinite;
+  animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+[data-landing] .landing-fluid[data-animate-live] > span {
+  animation-play-state: running;
+  will-change: transform;
+}
+
+/* Brand blue, lower left, the largest. */
+[data-landing] .landing-fluid-b {
+  left: -28%;
+  bottom: -34%;
+  width: 92%;
+  height: 118%;
+  animation-name: landing-fluid-b;
+  animation-duration: 34s;
+  background: radial-gradient(
+    closest-side circle,
+    rgb(53 117 238 / 0.88) 0%,
+    rgb(53 117 238 / 0.7) 18%,
+    rgb(53 117 238 / 0.49) 34%,
+    rgb(53 117 238 / 0.29) 50%,
+    rgb(53 117 238 / 0.14) 66%,
+    rgb(53 117 238 / 0.04) 82%,
+    rgb(53 117 238 / 0) 100%
+  );
+}
+
+/* Sky: the light. Small, and in the corner furthest from the type. */
+[data-landing] .landing-fluid-a {
+  left: -14%;
+  bottom: -20%;
+  width: 54%;
+  height: 74%;
+  animation-name: landing-fluid-a;
+  animation-duration: 26s;
+  background: radial-gradient(
+    closest-side circle,
+    rgb(107 155 255 / 0.62) 0%,
+    rgb(107 155 255 / 0.46) 18%,
+    rgb(107 155 255 / 0.3) 34%,
+    rgb(107 155 255 / 0.16) 50%,
+    rgb(107 155 255 / 0.07) 66%,
+    rgb(107 155 255 / 0.02) 82%,
+    rgb(107 155 255 / 0) 100%
+  );
+}
+
+/* Deep navy answering blob, upper right, a step weaker so the light has a direction. */
+[data-landing] .landing-fluid-c {
+  right: -18%;
+  top: -30%;
+  width: 84%;
+  height: 116%;
+  animation-name: landing-fluid-c;
+  animation-duration: 41s;
+  background: radial-gradient(
+    closest-side circle,
+    rgb(24 52 140 / 0.8) 0%,
+    rgb(24 52 140 / 0.62) 18%,
+    rgb(24 52 140 / 0.42) 34%,
+    rgb(24 52 140 / 0.24) 50%,
+    rgb(24 52 140 / 0.1) 66%,
+    rgb(24 52 140 / 0.03) 82%,
+    rgb(24 52 140 / 0) 100%
+  );
+}
+
+/* Static, above the blobs: the heading's contrast is a property of the layout,
+   not of where the animation happens to be. */
+[data-landing] .landing-fluid-core {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    52% 58% at 50% 44%,
+    rgb(5 10 24 / 0.5) 0%,
+    rgb(5 10 24 / 0.28) 45%,
+    rgb(5 10 24 / 0.08) 75%,
+    rgb(5 10 24 / 0) 100%
+  );
+}
+
+[data-landing] .landing-grain {
+  position: absolute;
+  inset: 0;
+  background-image: url("/images/landing/grain.webp");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  opacity: 0.32;
+}
+
+/* ── REDUCED MOTION ──────────────────────────────────────────────────
+   motion.ts already never hides anything under reduced motion; this is the
+   belt to those braces. */
+@media (prefers-reduced-motion: reduce) {
+  [data-landing] *,
+  [data-landing] *::before,
+  [data-landing] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  [data-landing] [data-reveal],
+  [data-landing] [data-enter] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  [data-landing] .landing-faq-panel,
+  [data-landing] .landing-faq-panel[data-open] {
+    transition-delay: 0s !important;
+  }
+
+  [data-landing] .landing-fluid > span {
+    animation: none;
+  }
+}

@@ -24,7 +24,7 @@ COPY --from=builder /install /usr/local
 # Copy application code
 COPY app/ app/
 
-# Cloud Run provides PORT env var
+# Nginx reverse-proxies to this port on the EC2 host
 ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
 

@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowLeft, Mail, CheckCircle } from "lucide-react";
+import { ArrowLeft, Mail, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { TextField } from "@/components/auth/fields";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -12,6 +11,13 @@ import { z } from "zod";
 const forgotPasswordSchema = z.object({
   email: z.string().email("Invalid email address"),
 });
+
+const backToSignIn = (
+  <Link to="/auth/signin" className="inline-flex items-center gap-2 font-medium text-primary hover:underline">
+    <ArrowLeft className="size-4" aria-hidden="true" />
+    Back to sign in
+  </Link>
+);
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -58,108 +64,54 @@ const ForgotPassword = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-secondary/5 to-background p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
-        >
-          <div className="glass p-8 rounded-2xl text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            </div>
-
-            <h1 className="text-2xl font-bold mb-2">Check your email</h1>
-            <p className="text-muted-foreground mb-6">
-              We've sent password reset instructions to{" "}
-              <span className="font-medium text-foreground">{email}</span>
-            </p>
-
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Didn't receive the email? Check your spam folder or try again.
-              </p>
-
-              <div className="flex flex-col gap-2">
-                <Button
-                  onClick={() => setEmailSent(false)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Try different email
-                </Button>
-
-                <Link to="/auth/signin">
-                  <Button variant="ghost" className="w-full">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to sign in
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
+      <AuthShell
+        title="Check your email"
+        subtitle={
+          <>
+            We've sent password reset instructions to <span className="font-medium text-foreground">{email}</span>
+          </>
+        }
+        footer={backToSignIn}
+      >
+        <div className="flex flex-col gap-5">
+          <span className="grid size-12 place-items-center rounded-tile bg-accent/10">
+            <MailCheck className="size-6 text-score-high-text" aria-hidden="true" />
+          </span>
+          <p className="text-sm text-muted-foreground">
+            Didn't receive the email? Check your spam folder or try again.
+          </p>
+          <Button onClick={() => setEmailSent(false)} variant="outline" size="lg" className="h-11 w-full bg-card">
+            Try a different email
+          </Button>
+        </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-secondary/5 to-background p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        <div className="glass p-8 rounded-2xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Forgot Password?</h1>
-            <p className="text-muted-foreground">
-              Enter your email address and we'll send you a link to reset your
-              password.
-            </p>
-          </div>
+    <AuthShell
+      title="Forgot your password?"
+      subtitle="Enter your email and we'll send you a code to reset it."
+      footer={backToSignIn}
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <TextField
+          id="email"
+          label="Email"
+          icon={Mail}
+          type="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-              size="lg"
-              disabled={isLoading}
-            >
-              {isLoading ? "Sending..." : "Send Reset Link"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <Link
-              to="/auth/signin"
-              className="text-sm text-muted-foreground hover:text-primary flex items-center justify-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to sign in
-            </Link>
-          </div>
-        </div>
-      </motion.div>
-    </div>
+        <Button size="lg" className="h-11 w-full" type="submit" disabled={isLoading}>
+          {isLoading ? "Sending..." : "Send reset code"}
+        </Button>
+      </form>
+    </AuthShell>
   );
 };
 

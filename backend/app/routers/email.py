@@ -133,7 +133,7 @@ async def send_welcome_email(body: WelcomeEmailRequest):
     """
     Send a welcome email to a newly registered user.
     Does not require authentication — called immediately after sign-up
-    before the Firebase token may be fully available client-side.
+    before the Cognito token may be fully available client-side.
     """
     settings = get_settings()
 

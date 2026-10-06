@@ -133,10 +133,7 @@ class ApiError extends Error {
 
 async function getAuthToken(): Promise<string | null> {
   try {
-    const { auth } = await import('@/lib/firebase');
-    const user = auth.currentUser;
-    if (!user) return null;
-    return user.getIdToken();
+    return localStorage.getItem("amplify_id_token");
   } catch {
     return null;
   }
@@ -339,7 +336,7 @@ export interface UserProfile {
 }
 
 export const userApi = {
-  /** Get the current user's profile from Firebase token claims */
+  /** Get the current user's profile from Cognito token claims */
   getProfile: (): Promise<UserProfile> => apiFetch('/api/user/profile'),
 };
 

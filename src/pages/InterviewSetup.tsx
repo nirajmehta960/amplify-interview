@@ -18,12 +18,7 @@ import {
   Loader2,
   X,
 } from "lucide-react";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { PageContainer, PageHeader } from "@/components/shell/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -117,8 +112,7 @@ const InterviewSetup = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+    <PageContainer className="max-w-5xl">
       <Helmet>
         <title>New Interview - Amplify Interview</title>
         <meta
@@ -126,24 +120,19 @@ const InterviewSetup = () => {
           content="Upload your resume and job description to generate a personalized interview."
         />
       </Helmet>
+      <PageHeader
+        title="New interview"
+        subtitle="A personalised interview from your résumé and the role."
+        actions={
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/dashboard" className="gap-2">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </Link>
+          </Button>
+        }
+      />
 
-        <AppSidebar />
-        <SidebarInset>
-          <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-xl">
-            <div className="h-14 px-4 md:px-6 flex items-center gap-3">
-              <SidebarTrigger />
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/dashboard" className="gap-2">
-                  <ArrowLeft className="w-4 h-4" /> Back
-                </Link>
-              </Button>
-              <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-                <Sparkles className="w-3.5 h-3.5 text-primary" /> Personalized AI Interview
-              </div>
-            </div>
-          </header>
-
-          <main className="px-4 md:px-10 py-8 max-w-5xl mx-auto w-full">
+          <div className="mt-8">
             {/* Stepper */}
             <div className="flex items-center justify-between mb-10">
               {[
@@ -435,10 +424,8 @@ const InterviewSetup = () => {
                 </Button>
               </div>
             )}
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+          </div>
+    </PageContainer>
   );
 };
 
